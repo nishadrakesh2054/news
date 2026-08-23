@@ -1,0 +1,64 @@
+enum ArticleStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ArticleType {
+  STANDARD
+  BREAKING
+  LIVE
+  OPINION
+  FEATURE
+}
+
+enum LanguageEdition {
+  BOTH
+  NEPALI_ONLY
+  ENGLISH_ONLY
+}
+
+model Article {
+  id              String          @id @default(cuid())
+  title           String
+  titleNp         String?
+  slug            String          @unique
+  content         String          @db.Text
+  contentNp       String?         @db.Text
+  excerpt         String?         @db.Text
+  coverImage      String?
+  caption         String?
+  status          ArticleStatus   @default(DRAFT)
+  type            ArticleType     @default(STANDARD)
+  languageEdition LanguageEdition @default(BOTH)
+  isFeatured      Boolean         @default(false)
+  isBreaking      Boolean         @default(false)
+  views           Int             @default(0)
+  metaTitle       String?
+  metaDescription String?
+  keywords        String?
+  ogImage         String?
+  authorId        String
+  author          User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  categoryId      String
+  category        Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  tags            Tag[]
+  comments        Comment[]
+  liveUpdates     LiveUpdate[]
+  province        Int?
+  district        String?
+  scheduledAt     DateTime?
+  publishedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([status, views(sort: Desc)])
+  @@index([status, categoryId])
+  @@index([status, isFeatured])
+  @@index([status, isBreaking])
+  @@index([status, languageEdition])
+  @@index([province])
+  @@index([authorId])
+}

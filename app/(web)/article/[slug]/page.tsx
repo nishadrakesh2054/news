@@ -1,0 +1,324 @@
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { ArticleStatus, AdSlot } from "@prisma/client";
+import { formatTimeAgoNp, getFormattedNepaliDate } from "@/lib/nepaliDate";
+import { Calendar, Eye, User, ChevronRight } from "lucide-react";
+import { FacebookIcon, TwitterIcon } from "@/components/portal/SocialIcons";
+import { ArticleBodyClient } from "@/components/web/ArticleBodyClient";
+import { CommentsSection } from "@/components/web/CommentsSection";
+import { AudioNewsPlayer } from "@/components/portal/AudioNewsPlayer";
+
+interface ArticlePageProps {
+  params: Promise<{ slug: string }>;
+}
+
+// 1. Dynamic SEO Metadata Generator for Social Previews (Facebook/Viber/Twitter)
+export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const article = await prisma.article.findUnique({
+    where: { slug },
+    include: { category: true },
+  });
+
+  if (!article) {
+    return {
+      title: "समाचार भेटिएन | नेपाल खबर",
+    };
+  }
+
+  const title = article.metaTitle || article.titleNp || article.title;
+  const description = article.metaDescription || article.excerpt || "नेपाल खबर डटकम";
+  const image = article.ogImage || article.coverImage || "/favicon.ico";
+
+  return {
+    title: `${title} | नेपाल खबर`,
+    description,
+    keywords: article.keywords ? article.keywords.split(",") : undefined,
+    openGraph: {
+      title,
+      description,
+      url: `https://nepalkhabar.com/article/${article.slug}`,
+      siteName: "नेपाल खबर",
+      images: [
+        {
+          url: image,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  };
+}
+
+export const revalidate = 60; // ISR cache revalidation every 60s
+
+export default async function ArticleDetailPage({ params }: ArticlePageProps) {
+  const { slug } = await params;
+
+  // Increment view counter & fetch article
+  const article = await prisma.article.findUnique({
+    where: { slug },
+    include: {
+      category: true,
+      author: {
+        select: { name: true, email: true },
+      },
+    },
+  });
+
+  if (!article || article.status !== ArticleStatus.PUBLISHED) {
+    return notFound();
+  }
+
+  // Increment views asynchronously without blocking response
+  prisma.article.update({
+    where: { id: article.id },
+    data: { views: { increment: 1 } },
+  }).catch(() => {});
+
+  // Fetch In-Article Ad & Related News simultaneously in parallel
+  const [inArticleAd, relatedArticles] = await Promise.all([
+    prisma.ad.findFirst({
+      where: { slot: AdSlot.IN_ARTICLE, isActive: true },
+      select: { id: true, title: true, imageUrl: true, targetUrl: true },
+    }),
+    prisma.article.findMany({
+      where: {
+        categoryId: article.categoryId,
+        id: { not: article.id },
+        status: ArticleStatus.PUBLISHED,
+      },
+      select: {
+        id: true,
+        title: true,
+        titleNp: true,
+        slug: true,
+        coverImage: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+    }),
+  ]);
+
+  // Google NewsArticle JSON-LD Structured Data
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: article.titleNp || article.title,
+    image: article.coverImage ? [article.coverImage] : [],
+    datePublished: article.createdAt.toISOString(),
+    dateModified: article.updatedAt.toISOString(),
+    author: {
+      "@type": "Person",
+      name: article.author.name || "सम्पादकीय प्रतिनिधि",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "नेपाल खबर",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://nepalkhabar.com/logo.png",
+      },
+    },
+    description: article.excerpt || article.metaDescription || "",
+  };
+
+  const articleTitle = article.titleNp || article.title;
+  const shareUrl = `https://nepalkhabar.com/article/${article.slug}`;
+
+  return (
+    <>
+      {/* 2. Injected Google NewsArticle JSON-LD Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      <main className="w-full bg-background pb-16">
+        <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+          {/* Breadcrumb Navigation */}
+          <nav className="flex items-center space-x-2 text-xs font-semibold text-muted-foreground border-b border-border/40 pb-3">
+            <Link href="/" className="hover:text-[#027081]">गृह</Link>
+            <ChevronRight className="h-3 w-3" />
+            <Link href={`/category/${article.category.slug}`} className="text-[#027081] hover:underline">
+              {article.category.nameNp || article.category.name}
+            </Link>
+          </nav>
+
+          {/* Article Header & Headline */}
+          <header className="space-y-4">
+            <span className="inline-block bg-[#027081]/10 text-[#027081] text-xs font-bold px-3 py-1 rounded-md">
+              {article.category.nameNp || article.category.name}
+            </span>
+
+            <h1 className="text-3xl sm:text-5xl font-extrabold text-foreground leading-tight tracking-tight font-serif">
+              {articleTitle}
+            </h1>
+
+            {article.excerpt && (
+              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed font-serif">
+                {article.excerpt}
+              </p>
+            )}
+
+            {/* Author, Date & View Count Meta */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-y border-border/40 py-3 text-xs text-muted-foreground font-mono">
+              <div className="flex items-center space-x-4">
+                <span className="flex items-center gap-1.5 font-bold text-foreground">
+                  <User className="h-3.5 w-3.5 text-[#027081]" />
+                  <span>{article.author.name || "सम्पादकीय टोली"}</span>
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-[#027081]" />
+                  <span>{getFormattedNepaliDate(article.createdAt)}</span>
+                </span>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <span className="flex items-center gap-1">
+                  <Eye className="h-3.5 w-3.5 text-[#027081]" />
+                  <span>{article.views + 1} पढिएको</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Social Share Bar */}
+            <div className="flex items-center space-x-2 pt-1">
+              <span className="text-xs font-bold text-muted-foreground mr-2">सेयर गर्नुहोस्:</span>
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center space-x-1.5 bg-[#1877F2] text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity"
+              >
+                <FacebookIcon className="h-3.5 w-3.5" />
+                <span>फेसबुक</span>
+              </a>
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(articleTitle)}&url=${encodeURIComponent(shareUrl)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center space-x-1.5 bg-sky-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity"
+              >
+                <TwitterIcon className="h-3.5 w-3.5" />
+                <span>ट्विटर</span>
+              </a>
+              <a
+                href={`viber://forward?text=${encodeURIComponent(articleTitle + " " + shareUrl)}`}
+                className="flex items-center space-x-1.5 bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity"
+              >
+                <span>भाइबर</span>
+              </a>
+            </div>
+
+          </header>
+
+          {/* AI Audio News Reader Player (समाचार सुन्नुहोस्) */}
+          <AudioNewsPlayer
+            textToRead={article.contentNp || article.content}
+            title={articleTitle}
+          />
+
+          {/* Featured Cover Image */}
+          {article.coverImage && (
+            <figure className="space-y-2">
+              <div className="rounded-2xl overflow-hidden border border-border shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={article.coverImage}
+                  alt={articleTitle}
+                  className="w-full h-auto max-h-[500px] object-cover"
+                />
+              </div>
+              {article.caption && (
+                <figcaption className="text-xs text-muted-foreground text-center font-serif italic">
+                  तस्बिर: {article.caption}
+                </figcaption>
+              )}
+            </figure>
+          )}
+
+          {/* In-Article Monetization Banner */}
+          {inArticleAd && inArticleAd.imageUrl && (
+            <a
+              href={inArticleAd.targetUrl || "#"}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full h-[120px] rounded-xl border border-border overflow-hidden block relative shadow-2xs group"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={inArticleAd.imageUrl}
+                alt={inArticleAd.title}
+                className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-200"
+              />
+              <span className="absolute top-2 right-2 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-mono">
+                विज्ञापन
+              </span>
+            </a>
+          )}
+
+          {/* Interactive Article Content with Font Resizer & Audio Reader */}
+          <ArticleBodyClient
+            title={articleTitle}
+            content={article.content}
+            shareUrl={shareUrl}
+          />
+
+          {/* Related Articles Recommendation Grid */}
+          {relatedArticles.length > 0 && (
+            <section className="pt-10 border-t-2 border-[#027081] space-y-6">
+              <h3 className="text-xl font-extrabold text-[#027081] font-serif">
+                यस श्रेणीका थप समाचार
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {relatedArticles.map((rel) => (
+                  <Link
+                    key={rel.id}
+                    href={`/article/${rel.slug}`}
+                    className="group flex space-x-3.5 p-3 rounded-xl border border-border/50 bg-card hover:bg-muted/40 transition-colors"
+                  >
+                    {rel.coverImage && (
+                      <div className="h-20 w-24 rounded-lg overflow-hidden shrink-0 bg-muted">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={rel.coverImage}
+                          alt={rel.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <h4 className="text-xs sm:text-sm font-bold text-foreground line-clamp-2 group-hover:text-[#027081] transition-colors leading-snug font-serif">
+                        {rel.titleNp || rel.title}
+                      </h4>
+                      <span className="text-[10px] text-muted-foreground font-mono block">
+                        {formatTimeAgoNp(rel.createdAt)}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Interactive Comments & Reader Discussion */}
+          <CommentsSection articleId={article.id} />
+        </div>
+      </main>
+    </>
+  );
+}

@@ -1,0 +1,22 @@
+enum AdSlot {
+  HEADER_LEADERBOARD
+  SIDEBAR_TOP
+  IN_ARTICLE
+  STICKY_FOOTER
+}
+
+model Ad {
+  id          String   @id @default(cuid())
+  title       String
+  slot        AdSlot
+  imageUrl    String?
+  targetUrl   String?
+  scriptCode  String?  @db.Text
+  isActive    Boolean  @default(true)
+  clicks      Int      @default(0)
+  impressions Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slot, isActive])
+}

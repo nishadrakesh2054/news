@@ -1,0 +1,63 @@
+import { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
+import cloudinary from "@/lib/cloudinary";
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    const media = await prisma.media.findUnique({ where: { id } });
+    if (!media) {
+      return apiError("Media asset not found", 404);
+    }
+
+    const updated = await prisma.media.update({
+      where: { id },
+      data: {
+        altText: body.altText !== undefined ? body.altText : media.altText,
+        caption: body.caption !== undefined ? body.caption : media.caption,
+        folder: body.folder !== undefined ? body.folder : media.folder,
+        filename: body.filename !== undefined ? body.filename : media.filename,
+      },
+    });
+
+    return apiSuccess(updated, "Media details updated", 200);
+  } catch (error) {
+    return handleServerError(error, "Failed to update media details");
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    const media = await prisma.media.findUnique({ where: { id } });
+    if (!media) {
+      return apiError("Media asset not found", 404);
+    }
+
+    // Delete from Cloudinary CDN if publicId exists
+    if (media.publicId) {
+      try {
+        await cloudinary.uploader.destroy(media.publicId);
+      } catch (err) {
+        console.error("Cloudinary asset deletion error:", err);
+      }
+    }
+
+    // Delete record from Database
+    await prisma.media.delete({ where: { id } });
+
+    return apiSuccess({ id }, "Media asset deleted successfully", 200);
+  } catch (error) {
+    return handleServerError(error, "Failed to delete media asset");
+  }
+}

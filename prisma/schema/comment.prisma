@@ -1,0 +1,24 @@
+enum CommentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SPAM
+}
+
+model Comment {
+  id          String        @id @default(cuid())
+  content     String        @db.Text
+  authorName  String?
+  authorEmail String?
+  status      CommentStatus @default(PENDING)
+  articleId   String
+  article     Article       @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  authorId    String?
+  author      User?         @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([articleId])
+  @@index([status])
+}
+

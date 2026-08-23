@@ -1,0 +1,11 @@
+model EPaper {
+  id          String   @id @default(cuid())
+  title       String
+  pdfUrl      String
+  coverImage  String?
+  publishDate DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([publishDate(sort: Desc)])
+}

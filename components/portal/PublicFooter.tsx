@@ -1,0 +1,106 @@
+"use client";
+
+import Link from "next/link";
+import { Mail, Phone, MapPin, ShieldCheck } from "lucide-react";
+import { FacebookIcon, TwitterIcon, YoutubeIcon } from "./SocialIcons";
+
+export function PublicFooter() {
+  return (
+    <footer className="w-full bg-slate-900 text-slate-300 border-t border-slate-800 select-none pt-12 pb-6">
+      <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-slate-800">
+        {/* Brand & Editorial Registration Info */}
+        <div className="space-y-4 md:col-span-1">
+          <Link href="/" className="inline-block">
+            <span className="text-2xl font-extrabold text-white tracking-tight font-serif">
+              नेपाल खबर
+            </span>
+          </Link>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            नेपालको अग्रणी विश्वसनीय डिजिटल समाचार पत्रिका। निष्पक्ष पत्रकारिता र राष्ट्रिय हितप्रति समर्पित।
+          </p>
+
+          <div className="space-y-1.5 text-xs text-slate-400 pt-2">
+            <div className="flex items-center space-x-2">
+              <ShieldCheck className="h-4 w-4 text-[#027081]" />
+              <span>सूचना विभाग दर्ता नं.: १२३४/०८२-८३</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <ShieldCheck className="h-4 w-4 text-[#027081]" />
+              <span>प्रेस काउन्सिल दर्ता नं.: ५६७/०८२</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Category Links */}
+        <div className="space-y-3">
+          <h4 className="text-sm font-bold uppercase tracking-wider text-white border-b border-slate-800 pb-2">
+            मुख्य समाचार वर्ग
+          </h4>
+          <ul className="space-y-2 text-xs font-medium">
+            <li><Link href="/category/rajniti" className="hover:text-white transition-colors">राजनीति</Link></li>
+            <li><Link href="/category/arthatantra" className="hover:text-white transition-colors">अर्थतन्त्र</Link></li>
+            <li><Link href="/category/samaj" className="hover:text-white transition-colors">समाज</Link></li>
+            <li><Link href="/category/khelkud" className="hover:text-white transition-colors">खेलकुद</Link></li>
+            <li><Link href="/category/vichar" className="hover:text-white transition-colors">विचार / दृष्टिकोण</Link></li>
+          </ul>
+        </div>
+
+        {/* Editorial Contact Details */}
+        <div className="space-y-3">
+          <h4 className="text-sm font-bold uppercase tracking-wider text-white border-b border-slate-800 pb-2">
+            सम्पर्क र ठेगाना
+          </h4>
+          <ul className="space-y-2.5 text-xs text-slate-400">
+            <li className="flex items-start space-x-2">
+              <MapPin className="h-4 w-4 text-[#027081] shrink-0 mt-0.5" />
+              <span>काठमाडौँ, नेपाल (Kathmandu, Nepal)</span>
+            </li>
+            <li className="flex items-center space-x-2">
+              <Phone className="h-4 w-4 text-[#027081] shrink-0" />
+              <span>+९७७ ०१-४५६७८९०</span>
+            </li>
+            <li className="flex items-center space-x-2">
+              <Mail className="h-4 w-4 text-[#027081] shrink-0" />
+              <span>news@nepalkhabar.com</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Editorial Team & Social Links */}
+        <div className="space-y-3">
+          <h4 className="text-sm font-bold uppercase tracking-wider text-white border-b border-slate-800 pb-2">
+            सम्पादकीय टोली
+          </h4>
+          <div className="space-y-1 text-xs text-slate-400">
+            <p><span className="text-slate-300 font-semibold">प्रधान सम्पादक:</span> निषाद राकेश</p>
+            <p><span className="text-slate-300 font-semibold">प्रबन्ध निर्देशक:</span> नेपाल मिडिया हाउस</p>
+          </div>
+
+          <div className="pt-3 flex items-center space-x-3">
+            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-[#027081] hover:text-white transition-colors">
+              <FacebookIcon className="h-4 w-4" />
+            </a>
+            <a href="https://twitter.com" target="_blank" rel="noreferrer" className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-[#027081] hover:text-white transition-colors">
+              <TwitterIcon className="h-4 w-4" />
+            </a>
+            <a href="https://youtube.com" target="_blank" rel="noreferrer" className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-[#027081] hover:text-white transition-colors">
+              <YoutubeIcon className="h-4 w-4" />
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Copyright Bar */}
+      <div className="max-w-7xl mx-auto px-4 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+        <p>© २०८३ नेपाल खबर डटकम। सर्वाधिकार सुरक्षित।</p>
+        <div className="flex flex-wrap items-center space-x-4">
+          <Link href="/editorial-team" className="hover:underline text-amber-400 font-bold">सम्पादकीय टोली तथा दर्ता</Link>
+          <Link href="/epaper" className="hover:underline text-sky-400 font-bold">इ-पत्रिका छापा संस्करण</Link>
+          <Link href="/privacy" className="hover:underline">गोपनीयता नीति</Link>
+          <Link href="/terms" className="hover:underline">सेवाका सर्तहरू</Link>
+          <Link href="/admin" className="hover:underline text-slate-400">एडमिन</Link>
+        </div>
+      </div>
+    </footer>
+  );
+}

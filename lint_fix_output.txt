@@ -1,0 +1,501 @@
+
+/home/arksh/RAKESH/news/app/(admin)/admin/ads/page.tsx
+   15:3   warning  'CheckCircle2' is defined but never used                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+  400:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/app/(admin)/admin/analytics/page.tsx
+   14:3   warning  'ExternalLink' is defined but never used      @typescript-eslint/no-unused-vars
+   16:3   warning  'Monitor' is defined but never used           @typescript-eslint/no-unused-vars
+   17:3   warning  'Tablet' is defined but never used            @typescript-eslint/no-unused-vars
+   22:3   warning  'CheckCircle2' is defined but never used      @typescript-eslint/no-unused-vars
+   40:28  warning  'isError' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  202:44  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  257:40  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  284:44  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  299:44  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/app/(admin)/admin/articles/page.tsx
+   29:3   warning  'Filter' is defined but never used                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+  150:9   warning  The 'rawArticles' logical expression could make the dependencies of useMemo Hook (at line 168) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'rawArticles' in its own useMemo() Hook                                            react-hooks/exhaustive-deps
+  156:17  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  157:17  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  504:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/app/(admin)/admin/breaking/page.tsx
+   12:3   warning  'Trash2' is defined but never used                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   17:3   warning  'FileText' is defined but never used                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+  256:27  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/app/(admin)/admin/comments/page.tsx
+  46:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/arksh/RAKESH/news/app/(admin)/admin/comments/page.tsx:46:5
+  44 |
+  45 |   useEffect(() => {
+> 46 |     fetchComments();
+     |     ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  47 |   }, [activeTab]);
+  48 |
+  49 |   const handleUpdateStatus = async (id: string, newStatus: string) => {  react-hooks/set-state-in-effect
+  47:6   warning  React Hook useEffect has a missing dependency: 'fetchComments'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/exhaustive-deps
+  60:14  warning  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  75:14  warning  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+
+/home/arksh/RAKESH/news/app/(admin)/admin/epaper/page.tsx
+   4:45  warning  'FileText' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+  39:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/arksh/RAKESH/news/app/(admin)/admin/epaper/page.tsx:39:5
+  37 |
+  38 |   useEffect(() => {
+> 39 |     fetchEPapers();
+     |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  40 |   }, []);
+  41 |
+  42 |   const handleSubmit = async (e: React.FormEvent) => {  react-hooks/set-state-in-effect
+  67:14  warning  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+
+/home/arksh/RAKESH/news/app/(admin)/admin/homepage/page.tsx
+   4:20  warning  'useMutation' is defined but never used                      @typescript-eslint/no-unused-vars
+  10:3   warning  'Layers' is defined but never used                           @typescript-eslint/no-unused-vars
+  14:3   warning  'CheckCircle2' is defined but never used                     @typescript-eslint/no-unused-vars
+  30:9   warning  'queryClient' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  38:10  warning  'showTopAdBanner' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  38:27  warning  'setShowTopAdBanner' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  39:10  warning  'showSidebarAdBanner' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  39:31  warning  'setShowSidebarAdBanner' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/arksh/RAKESH/news/app/(admin)/admin/media/page.tsx
+  110:64  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  155:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  413:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  501:23  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  735:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/app/(admin)/admin/polls/page.tsx
+    9:38  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   32:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/arksh/RAKESH/news/app/(admin)/admin/polls/page.tsx:32:5
+  30 |
+  31 |   useEffect(() => {
+> 32 |     fetchPolls();
+     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  33 |   }, []);
+  34 |
+  35 |   const handleCreatePoll = async (e: React.FormEvent) => {  react-hooks/set-state-in-effect
+   60:14  warning  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+  151:72  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  178:44  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/app/(admin)/admin/settings/page.tsx
+    9:3   warning  'Mail' is defined but never used                           @typescript-eslint/no-unused-vars
+   10:3   warning  'Phone' is defined but never used                          @typescript-eslint/no-unused-vars
+   11:3   warning  'MapPin' is defined but never used                         @typescript-eslint/no-unused-vars
+   18:3   warning  'ImageIcon' is defined but never used                      @typescript-eslint/no-unused-vars
+   31:10  warning  'faviconUrl' is assigned a value but never used            @typescript-eslint/no-unused-vars
+   31:22  warning  'setFaviconUrl' is assigned a value but never used         @typescript-eslint/no-unused-vars
+   50:10  warning  'youtubeUrl' is assigned a value but never used            @typescript-eslint/no-unused-vars
+   50:22  warning  'setYoutubeUrl' is assigned a value but never used         @typescript-eslint/no-unused-vars
+   51:10  warning  'viberUrl' is assigned a value but never used              @typescript-eslint/no-unused-vars
+   51:20  warning  'setViberUrl' is assigned a value but never used           @typescript-eslint/no-unused-vars
+   54:10  warning  'isMaintenanceMode' is assigned a value but never used     @typescript-eslint/no-unused-vars
+   54:29  warning  'setIsMaintenanceMode' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  190:65  error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+  219:80  error    Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/app/(admin)/admin/users/page.tsx
+   6:47  warning  'CheckCircle2' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+  47:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/arksh/RAKESH/news/app/(admin)/admin/users/page.tsx:47:5
+  45 |
+  46 |   useEffect(() => {
+> 47 |     fetchUsers();
+     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  48 |   }, []);
+  49 |
+  50 |   const handleRoleChange = async (userId: string, newRole: Role) => {  react-hooks/set-state-in-effect
+
+/home/arksh/RAKESH/news/app/(admin)/admin/utilities/page.tsx
+   25:46  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   28:10  warning  'loading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   49:78  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   75:14  warning  'e' is defined but never used                 @typescript-eslint/no-unused-vars
+  403:38  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/app/(web)/article/[slug]/page.tsx
+    7:10  warning  'Share2' is defined but never used                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+    7:39  warning  'Clock' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  238:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  260:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  294:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/app/(web)/category/[slug]/page.tsx
+  98:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/app/(web)/epaper/page.tsx
+  9:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/app/(web)/forex/page.tsx
+   5:10  warning  'DollarSign' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  42:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/arksh/RAKESH/news/app/(web)/forex/page.tsx:42:5
+  40 |
+  41 |   useEffect(() => {
+> 42 |     setNepaliDateStr(getFormattedNepaliDate());
+     |     ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  43 |     fetch("/api/utilities")
+  44 |       .then((res) => res.json())
+  45 |       .then((json) => {  react-hooks/set-state-in-effect
+
+/home/arksh/RAKESH/news/app/(web)/gold-rate/page.tsx
+  15:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/arksh/RAKESH/news/app/(web)/gold-rate/page.tsx:15:5
+  13 |
+  14 |   useEffect(() => {
+> 15 |     setNepaliDateStr(getFormattedNepaliDate());
+     |     ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  16 |     fetch("/api/utilities")
+  17 |       .then((res) => res.json())
+  18 |       .then((json) => {  react-hooks/set-state-in-effect
+
+/home/arksh/RAKESH/news/app/(web)/live/[slug]/page.tsx
+    6:55  warning  'Share2' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+    7:27  warning  'getFormattedNepaliDate' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+   58:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/arksh/RAKESH/news/app/(web)/live/[slug]/page.tsx:58:7
+  56 |   useEffect(() => {
+  57 |     if (slug) {
+> 58 |       fetchLiveBlog();
+     |       ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  59 |       // Auto refresh every 30 seconds for live blogs
+  60 |       const interval = setInterval(fetchLiveBlog, 30000);
+  61 |       return () => clearInterval(interval);  react-hooks/set-state-in-effect
+   63:6   warning  React Hook useEffect has a missing dependency: 'fetchLiveBlog'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/exhaustive-deps
+  141:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @next/next/no-img-element
+
+/home/arksh/RAKESH/news/app/(web)/page.tsx
+    5:27  warning  'getFormattedNepaliDate' is defined but never used                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+    6:17  warning  'Clock' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+    6:29  warning  'TrendingUp' is defined but never used                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+    6:41  warning  'ChevronRight' is defined but never used                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+    6:66  warning  'ArrowRight' is defined but never used                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+   31:22  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  165:40  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  168:48  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  169:58  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  170:51  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  171:56  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  171:64  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  197:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  236:42  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  244:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  286:37  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  293:23  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  346:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  371:41  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  404:60  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/app/(web)/province/[slug]/page.tsx
+  73:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/app/(web)/rashifal/page.tsx
+   4:8  warning  'Link' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+  26:5  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/arksh/RAKESH/news/app/(web)/rashifal/page.tsx:26:5
+  24 |
+  25 |   useEffect(() => {
+> 26 |     setNepaliDateStr(getFormattedNepaliDate());
+     |     ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  27 |
+  28 |     // Fetch dynamic rashifal predictions from API
+  29 |     fetch("/api/utilities")  react-hooks/set-state-in-effect
+
+/home/arksh/RAKESH/news/app/(web)/search/page.tsx
+    5:43  warning  'SlidersHorizontal' is defined but never used                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+   24:16  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   48:18  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  146:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/app/(web)/share-market/page.tsx
+  4:50  warning  'BarChart2' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/arksh/RAKESH/news/app/(web)/tag/[slug]/page.tsx
+   2:10  warning  'notFound' is defined but never used                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+   6:30  warning  'Newspaper' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+  70:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/app/(web)/unicode/page.tsx
+  5:43  warning  'RotateCcw' is defined but never used  @typescript-eslint/no-unused-vars
+  5:54  warning  'Download' is defined but never used   @typescript-eslint/no-unused-vars
+
+/home/arksh/RAKESH/news/app/api/admin/analytics/route.ts
+  1:10  warning  'NextRequest' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/arksh/RAKESH/news/app/api/admin/articles/route.ts
+  18:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/app/api/admin/comments/route.ts
+  21:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/app/api/admin/media/route.ts
+   20:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  123:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/app/api/admin/polls/route.ts
+   1:23  warning  'NextResponse' is defined but never used  @typescript-eslint/no-unused-vars
+  10:26  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:26  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/app/api/admin/users/route.ts
+  8:27  warning  'request' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/arksh/RAKESH/news/app/api/admin/utilities/route.ts
+   1:23  warning  'NextResponse' is defined but never used  @typescript-eslint/no-unused-vars
+  10:26  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:26  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/app/api/auth/register/route.ts
+  10:36  warning  'role' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/arksh/RAKESH/news/app/api/cron/publish-scheduled/route.ts
+  6:27  warning  'request' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/arksh/RAKESH/news/app/api/polls/route.ts
+   1:23  warning  'NextResponse' is defined but never used  @typescript-eslint/no-unused-vars
+   7:26  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:69  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  28:61  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  57:26  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  64:70  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  65:62  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/app/api/search/route.ts
+  15:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  36:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/app/api/utilities/route.ts
+    1:10  warning  'NextResponse' is defined but never used  @typescript-eslint/no-unused-vars
+   70:49  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:23  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   87:48  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   88:48  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   89:48  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   90:48  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:17  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:26  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/app/news-sitemap.xml/route.ts
+  53:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/arksh/RAKESH/news/app/rss.xml/route.ts
+  52:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/arksh/RAKESH/news/components/admin/ArticleForm.tsx
+    7:97   warning  'Radio' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+    7:104  warning  'FileText' is defined but never used                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+    7:114  warning  'Sparkles' is defined but never used                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+    7:124  warning  'MessageSquare' is defined but never used                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+    7:139  warning  'Upload' is defined but never used                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+    7:147  warning  'Loader2' is defined but never used                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+   71:10   warning  'isUploadingCover' is assigned a value but never used                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   73:9    warning  'coverInputRef' is assigned a value but never used                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   78:9    warning  'handleCoverUpload' is assigned a value but never used                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+  603:17   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  650:25   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/components/admin/DualImagePicker.tsx
+    5:66  warning  'Copy' is defined but never used                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   88:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  117:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  271:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/components/admin/NepaliTypingHelper.tsx
+  4:33  warning  'Sparkles' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/arksh/RAKESH/news/components/admin/TipTapEditor.tsx
+  541:27  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/components/portal/AudioNewsPlayer.tsx
+   4:32  warning  'VolumeX' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+   4:52  warning  'Sparkles' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  14:22  warning  'setSpeechRate' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+  22:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/arksh/RAKESH/news/components/portal/AudioNewsPlayer.tsx:22:7
+  20 |       synthRef.current = window.speechSynthesis;
+  21 |     } else {
+> 22 |       setIsSupported(false);
+     |       ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  23 |     }
+  24 |
+  25 |     return () => {  react-hooks/set-state-in-effect
+
+/home/arksh/RAKESH/news/components/portal/BreakingTicker.tsx
+   4:15  warning  'ChevronRight' is defined but never used  @typescript-eslint/no-unused-vars
+  23:34  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  36:45  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/arksh/RAKESH/news/components/portal/CategoryGridSection.tsx
+   35:3   warning  'accentColor' is assigned a value but never used                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   70:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  111:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/components/portal/CategoryNavbar.tsx
+   6:16  warning  'Flame' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+  24:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/arksh/RAKESH/news/components/portal/CategoryNavbar.tsx:24:5
+  22 |     const langParam = searchParams.get("lang");
+  23 |     const isEnHost = typeof window !== "undefined" && (window.location.hostname.startsWith("english.") || window.location.hostname.startsWith("en."));
+> 24 |     setIsEnglish(langParam === "en" || isEnHost);
+     |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  25 |
+  26 |     fetch("/api/admin/categories")
+  27 |       .then((res) => res.json())  react-hooks/set-state-in-effect
+
+/home/arksh/RAKESH/news/components/portal/OpinionPollWidget.tsx
+   4:29  warning  'BarChart3' is defined but never used   @typescript-eslint/no-unused-vars
+   4:40  warning  'HelpCircle' is defined but never used  @typescript-eslint/no-unused-vars
+  64:14  warning  'e' is defined but never used           @typescript-eslint/no-unused-vars
+
+/home/arksh/RAKESH/news/components/portal/OpinionSection.tsx
+  78:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/components/portal/PhotoVideoFeature.tsx
+   4:18  warning  'PlayCircle' is defined but never used                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+  56:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/components/portal/ProvinceNewsWidget.tsx
+  94:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/arksh/RAKESH/news/components/portal/PublicHeader.tsx
+   28:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/arksh/RAKESH/news/components/portal/PublicHeader.tsx:28:5
+  26 |
+  27 |   useEffect(() => {
+> 28 |     setNepaliDateStr(getFormattedNepaliDate());
+     |     ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  29 |     const today = new Date();
+  30 |     setEnglishDateStr(today.toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric" }));
+  31 |  react-hooks/set-state-in-effect
+   42:41  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  133:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @next/next/no-img-element
+
+/home/arksh/RAKESH/news/components/web/ArticleReaderControls.tsx
+  5:24  warning  'TwitterIcon' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/arksh/RAKESH/news/components/web/AudioNewsPlayer.tsx
+   4:19  warning  'VolumeX' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+  19:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/arksh/RAKESH/news/components/web/AudioNewsPlayer.tsx:19:7
+  17 |   useEffect(() => {
+  18 |     if (typeof window !== "undefined" && "speechSynthesis" in window) {
+> 19 |       setIsSupported(true);
+     |       ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  20 |     }
+  21 |   }, []);
+  22 |  react-hooks/set-state-in-effect
+
+/home/arksh/RAKESH/news/components/web/CommentsSection.tsx
+   4:31  warning  'User' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+  47:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/arksh/RAKESH/news/components/web/CommentsSection.tsx:47:5
+  45 |
+  46 |   useEffect(() => {
+> 47 |     fetchComments();
+     |     ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  48 |   }, [articleId]);
+  49 |
+  50 |   const handleSubmit = async (e: React.FormEvent) => {  react-hooks/set-state-in-effect
+  48:6   warning  React Hook useEffect has a missing dependency: 'fetchComments'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             react-hooks/exhaustive-deps
+  79:14  warning  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+
+✖ 193 problems (71 errors, 122 warnings)
+

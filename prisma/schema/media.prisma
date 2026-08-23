@@ -1,0 +1,20 @@
+model Media {
+  id          String   @id @default(cuid())
+  filename    String
+  url         String
+  publicId    String?
+  mimeType    String
+  size        Int
+  width       Int?
+  height      Int?
+  altText     String?
+  caption     String?
+  folder      String   @default("articles")
+  uploaderId  String?
+  uploader    User?    @relation(fields: [uploaderId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([folder])
+  @@index([mimeType])
+}
