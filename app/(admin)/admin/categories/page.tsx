@@ -183,31 +183,23 @@ export default function AdminCategoriesPage() {
   const totalArticles = categories.reduce((sum, cat) => sum + cat._count.articles, 0);
 
   return (
-    <div className="w-full space-y-6 px-6 py-4 pb-12">
+    <div className="w-full space-y-3 px-6 py-2 pb-6">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
         <div>
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground font-serif flex items-center gap-2">
-              <FolderTree className="h-6 w-6 text-[#027081]" />
-              <span>Categories & Navigation Sections</span>
-            </h1>
-            <span className="text-xs font-bold bg-[#027081]/10 text-[#027081] px-2.5 py-0.5 rounded-full border border-[#027081]/20">
-              {categories.length} Sections
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground pt-1">
-            Manage English and Nepali portal news categories and display ordering
-          </p>
+          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
+            <FolderTree className="h-5 w-5 text-[#027081]" />
+            <span>Categories & Navigation Sections</span>
+          </h1>
         </div>
 
-        <div className="flex items-center space-x-2.5">
+        <div className="flex items-center space-x-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => refetch()}
-            className="h-9 px-3 text-xs rounded-xl border-border font-medium hover:bg-muted"
+            className="h-8 px-2.5 text-xs rounded-lg border-border font-medium hover:bg-muted"
             title="Refresh list"
           >
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? "animate-spin text-[#027081]" : ""}`} />
@@ -216,9 +208,9 @@ export default function AdminCategoriesPage() {
 
           <Button
             onClick={openCreateModal}
-            className="bg-[#027081] hover:bg-[#025c6a] text-white text-xs font-bold px-4 h-9 rounded-xl shadow-2xs flex items-center space-x-1.5 transition-all"
+            className="h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center gap-1.5 transition-all duration-200"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
             <span>Add New Category</span>
           </Button>
         </div>
@@ -257,16 +249,16 @@ export default function AdminCategoriesPage() {
         </div>
       </div>
 
-      {/* Single Unified Filter Toolbar */}
-      <div className="bg-card rounded-xl border border-border p-3 shadow-2xs flex items-center justify-between gap-3">
-        <div className="relative min-w-55 max-w-xs flex-1">
+      {/* Filter Toolbar */}
+      <div className="flex items-center justify-between gap-3 py-1">
+        <div className="relative min-w-[220px] max-w-xs flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search category name or slug..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-background border rounded-lg pl-8 pr-7 py-1 text-xs text-foreground outline-none focus:border-[#027081] transition-colors"
+            className="w-full bg-card border border-border rounded-sm pl-8 pr-7 py-1.5 text-xs text-foreground outline-none focus:border-[#027081] shadow-2xs transition-colors"
           />
           {search && (
             <button
@@ -388,11 +380,11 @@ export default function AdminCategoriesPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold uppercase text-muted-foreground">
-                    Nepali Name (नेपाली नाम)
+                    Nepali Name
                   </label>
                   <input
                     type="text"
-                    placeholder="राजनीति"
+                    placeholder="e.g. Politics"
                     value={nameNp}
                     onChange={(e) => setNameNp(e.target.value)}
                     className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-background px-3 py-2 text-xs outline-none focus:border-[#027081]"

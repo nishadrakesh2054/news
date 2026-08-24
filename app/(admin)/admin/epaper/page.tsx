@@ -58,7 +58,7 @@ export default function AdminEPaperPage() {
       const data = await res.json();
 
       if (data.success) {
-        setMessage({ type: "success", text: "इ-पत्रिका सफलतापूर्वक प्रकाशन गरियो!" });
+        setMessage({ type: "success", text: "EPaper published successfully!" });
         setTitle("");
         setPdfUrl("");
         setPublishDate("");
@@ -66,25 +66,22 @@ export default function AdminEPaperPage() {
         const dataEP = await resEP.json();
         if (dataEP.success) setEpapers(dataEP.data || []);
       } else {
-        setMessage({ type: "error", text: data.message || "प्रकाशन गर्न सकिएन।" });
+        setMessage({ type: "error", text: data.message || "Failed to publish EPaper." });
       }
     } catch {
-      setMessage({ type: "error", text: "समस्या आयो।" });
+      setMessage({ type: "error", text: "An error occurred." });
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-extrabold text-foreground flex items-center gap-2.5">
-          <Newspaper className="h-6 w-6 text-[#027081]" />
-          <span>इ-पत्रिका व्यवस्थापन (EPaper Edition Publisher)</span>
+    <div className="w-full space-y-3 px-6 py-2 pb-6">
+      <div className="border-b border-border/60 pb-2">
+        <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
+          <Newspaper className="h-5 w-5 text-[#027081]" />
+          <span>EPaper Edition Publisher</span>
         </h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          दैनिक छापा संस्करणको PDF फाइल अपलोड तथा प्रकाशन गर्नुहोस्।
-        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -92,7 +89,7 @@ export default function AdminEPaperPage() {
         <form onSubmit={handleSubmit} className="bg-card rounded-2xl border border-border p-5 space-y-4 shadow-xs">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
             <Plus className="h-4 w-4 text-[#027081]" />
-            <span>नयाँ छापा संस्करण थप्नुहोस्</span>
+            <span>Add New EPaper Edition</span>
           </h3>
 
           {message && (
@@ -109,57 +106,57 @@ export default function AdminEPaperPage() {
           )}
 
           <div>
-            <label className="block text-xs font-bold text-foreground mb-1">संस्करण शीर्षक *</label>
+            <label className="block text-xs font-bold text-foreground mb-1">Edition Title *</label>
             <input
               type="text"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="उदा. नेपाल खबर - वि.सं. २०८२ भदौ ६"
-              className="w-full h-10 px-3.5 rounded-xl border border-border bg-background text-foreground text-xs focus:ring-2 focus:ring-[#027081]"
+              placeholder="e.g. Daily National News - Aug 2026 Edition"
+              className="w-full h-9 px-3 rounded-sm border border-border bg-card text-foreground text-xs outline-none focus:border-[#027081]"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-foreground mb-1">PDF फाइल URL *</label>
+            <label className="block text-xs font-bold text-foreground mb-1">PDF File URL *</label>
             <input
               type="url"
               required
               value={pdfUrl}
               onChange={(e) => setPdfUrl(e.target.value)}
               placeholder="https://cloudinary... /epaper.pdf"
-              className="w-full h-10 px-3.5 rounded-xl border border-border bg-background text-foreground text-xs font-mono focus:ring-2 focus:ring-[#027081]"
+              className="w-full h-9 px-3 rounded-sm border border-border bg-card text-foreground text-xs font-mono outline-none focus:border-[#027081]"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-foreground mb-1">प्रकाशन मिति</label>
+            <label className="block text-xs font-bold text-foreground mb-1">Publication Date</label>
             <input
               type="date"
               value={publishDate}
               onChange={(e) => setPublishDate(e.target.value)}
-              className="w-full h-10 px-3.5 rounded-xl border border-border bg-background text-foreground text-xs font-mono focus:ring-2 focus:ring-[#027081]"
+              className="w-full h-9 px-3 rounded-sm border border-border bg-card text-foreground text-xs font-mono outline-none focus:border-[#027081]"
             />
           </div>
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full inline-flex items-center justify-center space-x-2 py-2.5 bg-[#027081] hover:bg-[#025a68] text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
+            className="w-full inline-flex items-center justify-center gap-1.5 h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 transition-all duration-200 disabled:opacity-50"
           >
-            <Upload className="h-4 w-4" />
-            <span>{submitting ? "प्रकाशन हुँदैछ..." : "इ-पत्रिका प्रकाशन गर्नुहोस्"}</span>
+            <Upload className="h-3.5 w-3.5" />
+            <span>{submitting ? "Publishing..." : "Publish EPaper"}</span>
           </button>
         </form>
 
         {/* Existing List */}
         <div className="lg:col-span-2 bg-card rounded-2xl border border-border p-5 space-y-4 shadow-xs">
           <h3 className="text-sm font-bold text-foreground border-b border-border pb-3">
-            प्रकाशित इ-पत्रिकाहरू ({epapers.length})
+            Published EPapers ({epapers.length})
           </h3>
 
           {loading ? (
-            <div className="py-8 text-center text-xs text-muted-foreground">लोड हुँदैछ...</div>
+            <div className="py-8 text-center text-xs text-muted-foreground">Loading...</div>
           ) : epapers.length > 0 ? (
             <div className="space-y-3">
               {epapers.map((ep) => (
@@ -177,14 +174,14 @@ export default function AdminEPaperPage() {
                     rel="noreferrer"
                     className="text-xs font-bold text-[#027081] hover:underline"
                   >
-                    PDF हेर्नुहोस् →
+                    View PDF →
                   </a>
                 </div>
               ))}
             </div>
           ) : (
             <div className="py-8 text-center border border-dashed border-border rounded-xl text-xs text-muted-foreground">
-              कुनै इ-पत्रिका प्रकाशित भएको छैन।
+              No EPaper editions published yet.
             </div>
           )}
         </div>

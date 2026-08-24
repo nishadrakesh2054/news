@@ -84,34 +84,25 @@ export default function AdminAnalyticsPage() {
   const deviceBreakdown = data?.deviceBreakdown || [];
 
   return (
-    <div className="w-full space-y-6 px-6 py-4 pb-12">
+    <div className="w-full space-y-3 px-6 py-2 pb-6">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
         <div>
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground font-serif flex items-center gap-2">
-              <BarChart3 className="h-6 w-6 text-[#027081]" />
-              <span>Portal Analytics & Traffic Insights</span>
-            </h1>
-            <span className="text-xs font-bold bg-emerald-500/10 text-emerald-600 px-2.5 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-              <span>Live Tracking</span>
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground pt-1">
-            Real-time readership metrics, popular news stories, audience devices, and tracking script integrations
-          </p>
+          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-[#027081]" />
+            <span>Portal Analytics & Traffic Insights</span>
+          </h1>
         </div>
 
-        <div className="flex items-center space-x-2.5">
+        <div className="flex items-center space-x-2">
           {/* Timeframe Selector */}
-          <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-xl border border-border/60">
+          <div className="flex items-center gap-1 bg-card p-1 rounded-sm border border-border shadow-2xs">
             {(["today", "7days", "30days", "all"] as const).map((tf) => (
               <button
                 key={tf}
                 type="button"
                 onClick={() => setTimeframe(tf)}
-                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                className={`rounded-xs px-2.5 py-0.5 text-xs font-bold transition-all ${
                   timeframe === tf
                     ? "bg-[#027081] text-white shadow-2xs"
                     : "text-muted-foreground hover:text-foreground"
@@ -127,7 +118,7 @@ export default function AdminAnalyticsPage() {
             variant="outline"
             size="sm"
             onClick={() => refetch()}
-            className="h-9 px-3 text-xs rounded-xl border-border font-medium hover:bg-muted"
+            className="h-8 px-2.5 text-xs rounded-lg border-border font-medium hover:bg-muted"
             title="Refresh analytics"
           >
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? "animate-spin text-[#027081]" : ""}`} />

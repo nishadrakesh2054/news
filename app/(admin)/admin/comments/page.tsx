@@ -65,7 +65,7 @@ export default function AdminCommentsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("के तपाईं यो प्रतिक्रिया मेटाउन चाहनुहुन्छ?")) return;
+    if (!confirm("Are you sure you want to delete this comment?")) return;
     try {
       const res = await fetch(`/api/admin/comments/${id}`, {
         method: "DELETE",
@@ -80,20 +80,17 @@ export default function AdminCommentsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="w-full space-y-3 px-6 py-2 pb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
         <div>
-          <h1 className="text-2xl font-extrabold text-foreground flex items-center gap-2.5">
-            <MessageSquare className="h-6 w-6 text-[#027081]" />
-            <span>प्रतिक्रिया व्यवस्थापन (Comment Moderation)</span>
+          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-[#027081]" />
+            <span>Comment Moderation</span>
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            पाठकहरूले पठाएका प्रतिक्रियाहरू समीक्षा, स्वीकृति र स्पाम व्यवस्थापन गर्नुहोस्।
-          </p>
         </div>
 
         {/* Tab Filters */}
-        <div className="flex bg-muted p-1 rounded-xl border border-border">
+        <div className="flex bg-card p-1 rounded-sm border border-border shadow-2xs">
           {["PENDING", "APPROVED", "REJECTED", "SPAM"].map((tab) => (
             <button
               key={tab}
@@ -101,19 +98,19 @@ export default function AdminCommentsPage() {
                 setLoading(true);
                 setActiveTab(tab);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              className={`px-3 py-1 rounded-xs text-xs font-bold transition-colors ${
                 activeTab === tab
-                  ? "bg-background text-foreground shadow-xs"
+                  ? "bg-[#027081] text-white shadow-2xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {tab === "PENDING"
-                ? "प्रतीक्षारत (Pending)"
+                ? "Pending"
                 : tab === "APPROVED"
-                ? "स्वीकृत (Approved)"
+                ? "Approved"
                 : tab === "REJECTED"
-                ? "अस्वीकृत"
-                : "स्पाम (Spam)"}
+                ? "Rejected"
+                : "Spam"}
             </button>
           ))}
         </div>
@@ -121,7 +118,7 @@ export default function AdminCommentsPage() {
 
       {/* Comment Cards Stream */}
       {loading ? (
-        <div className="p-12 text-center text-xs text-muted-foreground">लोड हुँदैछ...</div>
+        <div className="p-12 text-center text-xs text-muted-foreground">Loading...</div>
       ) : comments.length > 0 ? (
         <div className="space-y-4">
           {comments.map((comment) => (
@@ -132,7 +129,7 @@ export default function AdminCommentsPage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-border/50 pb-3">
                 <div>
                   <span className="text-xs font-bold text-foreground">
-                    {comment.author?.name || comment.authorName || "अज्ञात पाठक"}
+                    {comment.author?.name || comment.authorName || "Anonymous Reader"}
                   </span>
                   {(comment.author?.email || comment.authorEmail) && (
                     <span className="text-[11px] text-muted-foreground ml-2">
@@ -140,7 +137,7 @@ export default function AdminCommentsPage() {
                     </span>
                   )}
                   <span className="text-[10px] text-muted-foreground block font-mono">
-                    मिति: {new Date(comment.createdAt).toLocaleString()}
+                    Date: {new Date(comment.createdAt).toLocaleString()}
                   </span>
                 </div>
 
@@ -150,7 +147,7 @@ export default function AdminCommentsPage() {
                   rel="noreferrer"
                   className="text-xs text-[#027081] font-bold hover:underline flex items-center gap-1"
                 >
-                  <span>समाचार: {comment.article.titleNp || comment.article.title}</span>
+                  <span>Story: {comment.article.title || comment.article.titleNp}</span>
                   <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
@@ -166,7 +163,7 @@ export default function AdminCommentsPage() {
                     className="inline-flex items-center space-x-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors"
                   >
                     <Check className="h-3.5 w-3.5" />
-                    <span>स्वीकृत गर्नुहोस् (Approve)</span>
+                    <span>Approve</span>
                   </button>
                 )}
 
@@ -176,7 +173,7 @@ export default function AdminCommentsPage() {
                     className="inline-flex items-center space-x-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-colors"
                   >
                     <X className="h-3.5 w-3.5" />
-                    <span>अस्वीकृत</span>
+                    <span>Reject</span>
                   </button>
                 )}
 
@@ -186,14 +183,14 @@ export default function AdminCommentsPage() {
                     className="inline-flex items-center space-x-1 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-colors"
                   >
                     <ShieldAlert className="h-3.5 w-3.5" />
-                    <span>स्पाम</span>
+                    <span>Mark Spam</span>
                   </button>
                 )}
 
                 <button
                   onClick={() => handleDelete(comment.id)}
                   className="p-1.5 text-muted-foreground hover:text-rose-600 transition-colors"
-                  title="मेटाउनुहोस्"
+                  title="Delete"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -203,7 +200,7 @@ export default function AdminCommentsPage() {
         </div>
       ) : (
         <div className="p-12 text-center border border-dashed border-border rounded-2xl text-xs text-muted-foreground">
-          कुनै प्रतिक्रिया भेटिएन।
+          No comments found.
         </div>
       )}
     </div>

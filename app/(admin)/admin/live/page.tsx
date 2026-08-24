@@ -82,22 +82,19 @@ export default function AdminLivePage() {
   };
 
   return (
-    <div className="space-y-6 w-full px-6 py-2 pb-10">
+    <div className="w-full space-y-3 px-6 py-2 pb-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
-            <Radio className="h-7 w-7 text-emerald-600 animate-pulse" />
+          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
+            <Radio className="h-5 w-5 text-emerald-600 animate-pulse" />
             <span>Live Coverage & Real-time Blog Ticker</span>
           </h1>
-          <p className="text-muted-foreground text-sm">
-            Post timestamped minute-by-minute live ticker updates for ongoing news events
-          </p>
         </div>
         <Link href="/admin/articles/new">
-          <Button className="bg-[#027081] hover:bg-[#025c6a] text-white font-semibold">
-            <Plus className="h-4 w-4 mr-2" />
-            New Live Coverage Story
+          <Button className="h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center gap-1.5 transition-all duration-200">
+            <Plus className="h-3.5 w-3.5" />
+            <span>New Live Coverage Story</span>
           </Button>
         </Link>
       </div>
@@ -201,7 +198,7 @@ export default function AdminLivePage() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. मतगणनाको पछिल्लो परिणाम..."
+                  placeholder="e.g. Latest live updates on the election..."
                   value={updateTitle}
                   onChange={(e) => setUpdateTitle(e.target.value)}
                   className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30"

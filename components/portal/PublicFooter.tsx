@@ -6,14 +6,17 @@ import { FacebookIcon, TwitterIcon, YoutubeIcon } from "./SocialIcons";
 
 export function PublicFooter() {
   return (
-    <footer className="w-full bg-slate-900 text-slate-300 border-t border-slate-800 select-none pt-12 pb-6">
-      <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-slate-800">
+    <footer className="w-full bg-slate-950 text-slate-300 border-t border-slate-800 select-none pt-12 pb-6">
+      <div className="max-w-[1480px] mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-slate-800">
         {/* Brand & Editorial Registration Info */}
         <div className="space-y-4 md:col-span-1">
           <Link href="/" className="inline-block">
-            <span className="text-2xl font-extrabold text-white tracking-tight font-serif">
-              नेपाल खबर
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/newslogo.png"
+              alt="नेपाल खबर (Nepal News)"
+              className="h-12 w-auto object-contain brightness-0 invert opacity-90 hover:opacity-100 transition-opacity rounded-none"
+            />
           </Link>
           <p className="text-xs text-slate-400 leading-relaxed">
             नेपालको अग्रणी विश्वसनीय डिजिटल समाचार पत्रिका। निष्पक्ष पत्रकारिता र राष्ट्रिय हितप्रति समर्पित।
@@ -77,13 +80,13 @@ export function PublicFooter() {
           </div>
 
           <div className="pt-3 flex items-center space-x-3">
-            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-[#027081] hover:text-white transition-colors">
+            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="h-8 w-8 rounded-none bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-[#027081] hover:text-white transition-colors">
               <FacebookIcon className="h-4 w-4" />
             </a>
-            <a href="https://twitter.com" target="_blank" rel="noreferrer" className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-[#027081] hover:text-white transition-colors">
+            <a href="https://twitter.com" target="_blank" rel="noreferrer" className="h-8 w-8 rounded-none bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-[#027081] hover:text-white transition-colors">
               <TwitterIcon className="h-4 w-4" />
             </a>
-            <a href="https://youtube.com" target="_blank" rel="noreferrer" className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-[#027081] hover:text-white transition-colors">
+            <a href="https://youtube.com" target="_blank" rel="noreferrer" className="h-8 w-8 rounded-none bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-[#027081] hover:text-white transition-colors">
               <YoutubeIcon className="h-4 w-4" />
             </a>
           </div>
@@ -91,7 +94,7 @@ export function PublicFooter() {
       </div>
 
       {/* Bottom Copyright Bar */}
-      <div className="max-w-7xl mx-auto px-4 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+      <div className="max-w-[1480px] mx-auto px-4 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
         <p>© २०८३ नेपाल खबर डटकम। सर्वाधिकार सुरक्षित।</p>
         <div className="flex flex-wrap items-center space-x-4">
           <Link href="/editorial-team" className="hover:underline text-amber-400 font-bold">सम्पादकीय टोली तथा दर्ता</Link>

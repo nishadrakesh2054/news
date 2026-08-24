@@ -1,8 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import { AdminHeader } from "@/components/admin/AdminHeader";
-import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { AdminDashboardShell } from "@/components/admin/AdminDashboardShell";
 import Link from "next/link";
 import { Role } from "@prisma/client";
 
@@ -29,13 +28,5 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     );
   }
 
-  return (
-    <div className="min-h-screen flex flex-col bg-background font-sans">
-      <AdminHeader />
-      <div className="flex flex-1">
-        <AdminSidebar />
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto">{children}</main>
-      </div>
-    </div>
-  );
+  return <AdminDashboardShell>{children}</AdminDashboardShell>;
 }

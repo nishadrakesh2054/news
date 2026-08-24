@@ -167,9 +167,10 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as ArticleStatus)}
-              className="appearance-none rounded-lg border bg-background pl-3 pr-8 py-1 text-xs font-semibold outline-none focus:border-[#027081] focus:ring-2 focus:ring-[#027081]/20 transition-all cursor-pointer shadow-2xs"
+              className="appearance-none rounded-sm border bg-card pl-3 pr-8 py-1 text-xs font-semibold text-foreground outline-none focus:border-[#027081] cursor-pointer shadow-2xs"
             >
               <option value="DRAFT">🟡 DRAFT</option>
+              <option value="PENDING">🟠 SUBMIT FOR REVIEW</option>
               <option value="PUBLISHED">🟢 PUBLISHED</option>
               <option value="ARCHIVED">⚪ ARCHIVED</option>
             </select>
@@ -205,7 +206,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                 placeholder="नेपाली मुख्य शीर्षक यहाँ लेख्नुहोस्..."
                 value={titleNp}
                 onChange={(e) => setTitleNp(e.target.value)}
-                className="w-full rounded-xl border bg-background px-4 py-3 text-xl font-bold text-foreground outline-none focus:border-[#027081] transition-colors duration-150"
+                className="w-full rounded-sm border bg-card px-4 py-3 text-xl font-bold text-foreground outline-none focus:border-[#027081] transition-colors duration-150"
               />
             </div>
 
@@ -221,7 +222,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                   placeholder="English story title..."
                   value={title}
                   onChange={(e) => handleTitleChange(e.target.value)}
-                  className="w-full rounded-lg border bg-background px-3 py-2 text-xs font-semibold text-foreground outline-none focus:border-[#027081] transition-colors duration-150"
+                  className="w-full rounded-sm border bg-card px-3 py-2 text-xs font-semibold text-foreground outline-none focus:border-[#027081] transition-colors duration-150"
                 />
               </div>
 
@@ -235,7 +236,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                   placeholder="url-slug"
                   value={slug}
                   onChange={(e) => setSlug(autoSlug(e.target.value))}
-                  className="w-full rounded-lg border bg-background px-3 py-2 text-xs font-mono text-foreground outline-none focus:border-[#027081] transition-colors duration-150"
+                  className="w-full rounded-sm border bg-card px-3 py-2 text-xs font-mono text-foreground outline-none focus:border-[#027081] transition-colors duration-150"
                 />
               </div>
             </div>
@@ -250,7 +251,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                 placeholder="Brief summary snippet for homepage cards..."
                 value={excerpt}
                 onChange={(e) => setExcerpt(e.target.value)}
-                className="w-full rounded-lg border bg-background px-3.5 py-2.5 text-xs text-foreground outline-none focus:border-[#027081] transition-colors duration-150 leading-relaxed"
+                className="w-full rounded-sm border bg-card px-3.5 py-2.5 text-xs text-foreground outline-none focus:border-[#027081] transition-colors duration-150 leading-relaxed"
               />
             </div>
 
@@ -291,7 +292,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                       placeholder="Custom headline for Google Search..."
                       value={metaTitle}
                       onChange={(e) => setMetaTitle(e.target.value)}
-                      className="w-full rounded-lg border bg-background px-3 py-2 text-xs outline-none focus:border-[#027081] transition-colors duration-150"
+                      className="w-full rounded-sm border bg-card px-3 py-2 text-xs outline-none focus:border-[#027081] transition-colors duration-150"
                     />
                   </div>
 
@@ -305,7 +306,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                       placeholder="नेपाल, राजनीति, संसद, सरकार..."
                       value={keywords}
                       onChange={(e) => setKeywords(e.target.value)}
-                      className="w-full rounded-lg border bg-background px-3 py-2 text-xs outline-none focus:border-[#027081] transition-colors duration-150"
+                      className="w-full rounded-sm border bg-card px-3 py-2 text-xs outline-none focus:border-[#027081] transition-colors duration-150"
                     />
                   </div>
                 </div>
@@ -319,7 +320,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                     placeholder="Custom meta snippet description for Google Search results..."
                     value={metaDescription}
                     onChange={(e) => setMetaDescription(e.target.value)}
-                    className="w-full rounded-lg border bg-background px-3.5 py-2 text-xs text-foreground outline-none focus:border-[#027081] transition-colors duration-150"
+                    className="w-full rounded-sm border bg-card px-3.5 py-2 text-xs text-foreground outline-none focus:border-[#027081] transition-colors duration-150"
                   />
                 </div>
 
@@ -332,7 +333,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                     placeholder="https://... (Leave empty to use main Cover Image)"
                     value={ogImage}
                     onChange={(e) => setOgImage(e.target.value)}
-                    className="w-full rounded-lg border bg-background px-3 py-1.5 text-xs outline-none focus:border-[#027081] transition-colors duration-150"
+                    className="w-full rounded-sm border bg-card px-3 py-1.5 text-xs outline-none focus:border-[#027081] transition-colors duration-150"
                   />
                 </div>
               </div>
@@ -360,7 +361,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                   required
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full appearance-none rounded-xl border bg-background pl-3.5 pr-9 py-2 text-xs font-semibold text-foreground outline-none focus:border-[#027081] focus:ring-2 focus:ring-[#027081]/20 transition-all cursor-pointer shadow-2xs"
+                  className="w-full appearance-none rounded-sm border bg-card pl-3.5 pr-9 py-2 text-xs font-semibold text-foreground outline-none focus:border-[#027081] focus:ring-2 focus:ring-[#027081]/20 transition-all cursor-pointer shadow-2xs"
                 >
                   <option value="">Select Category...</option>
                   {categories.map((cat) => (
@@ -383,7 +384,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value as ArticleType)}
-                  className="w-full appearance-none rounded-xl border bg-background pl-3.5 pr-9 py-2 text-xs font-semibold text-foreground outline-none focus:border-[#027081] focus:ring-2 focus:ring-[#027081]/20 transition-all cursor-pointer shadow-2xs"
+                  className="w-full appearance-none rounded-sm border bg-card pl-3.5 pr-9 py-2 text-xs font-semibold text-foreground outline-none focus:border-[#027081] focus:ring-2 focus:ring-[#027081]/20 transition-all cursor-pointer shadow-2xs"
                 >
                   <option value="STANDARD">📰 STANDARD (सामान्य समाचार)</option>
                   <option value="BREAKING">⚡ BREAKING (ताजा समाचार)</option>
@@ -405,7 +406,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                 <select
                   value={languageEdition}
                   onChange={(e) => setLanguageEdition(e.target.value as LanguageEdition)}
-                  className="w-full appearance-none rounded-xl border bg-background pl-3.5 pr-9 py-2 text-xs font-semibold text-foreground outline-none focus:border-[#027081] focus:ring-2 focus:ring-[#027081]/20 transition-all cursor-pointer shadow-2xs"
+                  className="w-full appearance-none rounded-sm border bg-card pl-3.5 pr-9 py-2 text-xs font-semibold text-foreground outline-none focus:border-[#027081] focus:ring-2 focus:ring-[#027081]/20 transition-all cursor-pointer shadow-2xs"
                 >
                   <option value="BOTH">🌐 BOTH EDITIONS (नेपाली + english.nepalkhabar.com)</option>
                   <option value="NEPALI_ONLY">🇳🇵 NEPALI SITE ONLY (nepalkhabar.com)</option>
@@ -425,7 +426,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                 <select
                   value={province || ""}
                   onChange={(e) => setProvince(e.target.value ? Number(e.target.value) : undefined)}
-                  className="w-full appearance-none rounded-xl border bg-background pl-3.5 pr-9 py-2 text-xs font-semibold text-foreground outline-none focus:border-[#027081] focus:ring-2 focus:ring-[#027081]/20 transition-all cursor-pointer shadow-2xs"
+                  className="w-full appearance-none rounded-sm border bg-card pl-3.5 pr-9 py-2 text-xs font-semibold text-foreground outline-none focus:border-[#027081] focus:ring-2 focus:ring-[#027081]/20 transition-all cursor-pointer shadow-2xs"
                 >
                   <option value="">No Province (राष्ट्रिय / राष्ट्रव्यापी)</option>
                   <option value="1">प्रदेश १ (कोशी प्रदेश)</option>

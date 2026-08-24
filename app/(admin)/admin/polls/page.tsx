@@ -25,9 +25,9 @@ export default function AdminPollsPage() {
   const [creating, setCreating] = useState(false);
 
   const [questionNp, setQuestionNp] = useState("");
-  const [opt1, setOpt1] = useState("गर्छ (Yes)");
-  const [opt2, setOpt2] = useState("गर्दैन (No)");
-  const [opt3, setOpt3] = useState("भन्न सकिन्न (Neutral)");
+  const [opt1, setOpt1] = useState("Yes");
+  const [opt2, setOpt2] = useState("No");
+  const [opt3, setOpt3] = useState("Neutral");
 
   const fetchPolls = useCallback(() => {
     fetch("/api/admin/polls")
@@ -48,7 +48,7 @@ export default function AdminPollsPage() {
   const handleCreatePoll = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!questionNp.trim()) {
-      toast.error("कृपया प्रश्न टाइप गर्नुहोस्");
+      toast.error("Please enter a question");
       return;
     }
 
@@ -64,36 +64,28 @@ export default function AdminPollsPage() {
       });
       const json = await res.json();
       if (json.success) {
-        toast.success("नयाँ जनमत (Poll) सफलतापूर्वक सिर्जना भयो!");
+        toast.success("New opinion poll created successfully!");
         setQuestionNp("");
         fetchPolls();
       } else {
-        toast.error(json.error || "सिर्जना गर्न सकिएन");
+        toast.error(json.error || "Failed to create poll");
       }
     } catch {
-      toast.error("सर्भर त्रुटि");
+      toast.error("Server error");
     } finally {
       setCreating(false);
     }
   };
 
   return (
-    <div className="w-full space-y-6 px-6 py-4 pb-12 select-none">
+    <div className="w-full space-y-3 px-6 py-2 pb-6 select-none">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
         <div>
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground font-serif flex items-center gap-2">
-              <Vote className="h-6 w-6 text-[#027081]" />
-              <span>जनमत तथा पोल व्यवस्थापन (Public Opinion Polls)</span>
-            </h1>
-            <span className="text-xs font-bold bg-[#027081]/10 text-[#027081] px-2.5 py-0.5 rounded-full border border-[#027081]/20">
-              सम्पादक नियन्त्रण
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground pt-1">
-            गृहपृष्ठमा पाठकहरूका लागि नयाँ जनमत (Poll) सिर्जना गर्नुहोस् तथा प्राप्त मत हेर्नुहोस्।
-          </p>
+          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
+            <Vote className="h-5 w-5 text-[#027081]" />
+            <span>Public Opinion Polls Management</span>
+          </h1>
         </div>
       </div>
 
@@ -102,62 +94,62 @@ export default function AdminPollsPage() {
         <form onSubmit={handleCreatePoll} className="bg-card rounded-2xl border border-border p-6 shadow-2xs space-y-4 h-fit">
           <h2 className="text-base font-bold text-foreground font-serif border-b border-border/60 pb-2 flex items-center gap-2">
             <Plus className="h-4.5 w-4.5 text-[#027081]" />
-            <span>नयाँ पोल सिर्जना गर्नुहोस्</span>
+            <span>Create New Opinion Poll</span>
           </h2>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-foreground">जनमत प्रश्न (Nepali Question):</label>
+            <label className="text-xs font-bold text-foreground">Poll Question:</label>
             <textarea
               rows={3}
               required
               value={questionNp}
               onChange={(e) => setQuestionNp(e.target.value)}
-              placeholder="उदा: के बजेटले सेयर बजारलाई सकारात्मक प्रभाव पार्छ?"
-              className="w-full rounded-xl border border-input bg-background p-3 text-xs focus:border-[#027081] outline-none font-serif leading-relaxed"
+              placeholder="e.g. Will the new budget positively impact the economy?"
+              className="w-full rounded-sm border border-input bg-card p-3 text-xs focus:border-[#027081] outline-none font-serif leading-relaxed"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-bold text-foreground">विकल्पहरू (Options):</label>
+            <label className="text-xs font-bold text-foreground">Options:</label>
             <input
               type="text"
               required
               value={opt1}
               onChange={(e) => setOpt1(e.target.value)}
-              className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
+              className="w-full rounded-sm border border-input bg-card px-3 py-1.5 text-xs outline-none focus:border-[#027081]"
             />
             <input
               type="text"
               required
               value={opt2}
               onChange={(e) => setOpt2(e.target.value)}
-              className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
+              className="w-full rounded-sm border border-input bg-card px-3 py-1.5 text-xs outline-none focus:border-[#027081]"
             />
             <input
               type="text"
               value={opt3}
               onChange={(e) => setOpt3(e.target.value)}
-              className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
+              className="w-full rounded-sm border border-input bg-card px-3 py-1.5 text-xs outline-none focus:border-[#027081]"
             />
           </div>
 
           <Button
             type="submit"
             disabled={creating}
-            className="w-full bg-[#027081] hover:bg-[#025a68] text-white text-xs font-bold py-2.5 rounded-xl cursor-pointer"
+            className="w-full h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer disabled:opacity-50"
           >
-            {creating ? "सिर्जना हुँदैछ..." : "नयाँ पोल प्रकाशित गर्नुहोस्"}
+            {creating ? "Creating..." : "Publish New Poll"}
           </Button>
         </form>
 
         {/* Existing Polls List */}
         <div className="lg:col-span-2 space-y-4">
           <h2 className="text-base font-bold text-foreground font-serif">
-            हालसम्मका जनमत इतिहास (Poll History)
+            Opinion Poll History
           </h2>
 
           {loading ? (
-            <div className="text-center py-8 text-xs text-muted-foreground">पोल डाटा लोड हुँदैछ...</div>
+            <div className="text-center py-8 text-xs text-muted-foreground">Loading poll data...</div>
           ) : polls.length > 0 ? (
             <div className="space-y-4">
               {polls.map((p) => {
@@ -173,12 +165,12 @@ export default function AdminPollsPage() {
                   >
                     <div className="flex items-center justify-between border-b border-border/60 pb-2">
                       <span className="text-xs font-mono text-muted-foreground">
-                        मिति: {new Date(p.createdAt).toLocaleDateString()} • कुल मत: {totalVotes}
+                        Date: {new Date(p.createdAt).toLocaleDateString()} • Total Votes: {totalVotes}
                       </span>
                       {isActive && (
                         <span className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
                           <CheckCircle2 className="h-3 w-3" />
-                          <span>सक्रिय पोल (Active)</span>
+                          <span>Active Poll</span>
                         </span>
                       )}
                     </div>
@@ -194,7 +186,7 @@ export default function AdminPollsPage() {
                           <div key={opt.id} className="space-y-1">
                             <div className="flex justify-between text-xs font-bold text-foreground">
                               <span>{opt.optionNp}</span>
-                              <span className="font-mono text-[#027081]">{percent}% ({opt.votes} मत)</span>
+                              <span className="font-mono text-[#027081]">{percent}% ({opt.votes} votes)</span>
                             </div>
                             <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
                               <div
@@ -212,7 +204,7 @@ export default function AdminPollsPage() {
             </div>
           ) : (
             <div className="p-8 text-center text-xs text-muted-foreground border border-dashed rounded-xl">
-              हाल कुनै पोलहरू सिर्जना गरिएका छैनन्।
+              No polls created yet.
             </div>
           )}
         </div>

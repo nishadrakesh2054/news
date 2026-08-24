@@ -14,14 +14,13 @@ import {
   Users,
   BarChart3,
   Settings,
-  ExternalLink,
   MessageSquare,
   Newspaper,
   Coins,
   Vote,
 } from "lucide-react";
 
-export function AdminSidebar() {
+export function AdminSidebar({ collapsed = false }: { collapsed?: boolean }) {
   const pathname = usePathname();
 
   const menuSections = [
@@ -58,16 +57,22 @@ export function AdminSidebar() {
   ];
 
   return (
-    <aside className="sticky top-16 h-[calc(100vh-4rem)] w-64 bg-[#027081] px-0 py-6 hidden md:flex flex-col justify-between text-white select-none shrink-0">
-      <div className="space-y-6 overflow-y-auto">
-        {/* Navigation Section */}
-        <div className="space-y-5">
+    <aside
+      className={`sticky top-12 h-[calc(100vh-3rem)] ${collapsed ? "w-16" : "w-[238px]"} overflow-hidden bg-[#0C4EA0] px-0 py-2.5 hidden md:flex flex-col justify-between text-white select-none shrink-0 border-r border-white/10 shadow-[0_0_25px_rgba(0,0,0,0.12)] transition-all duration-200 ease-out whitespace-nowrap`}
+    >
+      <div className="space-y-2.5 overflow-y-auto px-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/25 hover:scrollbar-thumb-white/40">
+        <div className="flex justify-end pb-1" />
+
+        <div className="space-y-3.5">
           {menuSections.map((section, idx) => (
             <div key={idx} className="space-y-1.5">
-              <h2 className="px-5 text-[11px] font-bold tracking-widest text-white/50 uppercase">
-                {section.title}
-              </h2>
-              <nav className="flex flex-col space-y-0.5">
+              {!collapsed && (
+                <h2 className="px-2 text-[9px] font-bold tracking-[0.18em] text-white/55 uppercase">
+                  {section.title}
+                </h2>
+              )}
+
+              <nav className="flex flex-col gap-1">
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
@@ -75,18 +80,17 @@ export function AdminSidebar() {
                     <Link
                       key={item.label}
                       href={item.href}
-                      className={`group flex items-center space-x-3 py-2.5 px-5 text-sm transition-all duration-150 ${
-                        isActive
-                          ? "bg-white/25 text-white font-bold border-l-4 border-white"
-                          : "text-white/80 hover:text-white hover:bg-white/10 font-medium"
-                      }`}
+                      title={collapsed ? item.label : undefined}
+                      className={`group flex min-h-8 items-center ${collapsed ? "justify-center px-2" : "gap-2.5 px-2.5"} py-1.5 text-[13px] transition-all duration-150 ${isActive
+                        ? "bg-[#C3272E]/90 text-white font-bold"
+                        : "text-white/80 hover:text-white hover:bg-white/10 font-medium"
+                        }`}
                     >
                       <Icon
-                        className={`h-4.5 w-4.5 transition-colors ${
-                          isActive ? "text-white" : "text-white/80 group-hover:text-white"
-                        }`}
+                        className={`h-4 w-4 shrink-0 transition-colors ${isActive ? "text-white" : "text-white/80 group-hover:text-white"
+                          }`}
                       />
-                      <span>{item.label}</span>
+                      {!collapsed && <span className="truncate text-left leading-[1.2]">{item.label}</span>}
                     </Link>
                   );
                 })}
@@ -94,18 +98,6 @@ export function AdminSidebar() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Footer */}
-      <div className="px-4 pt-4 border-t border-white/20">
-        <Link
-          href="/"
-          target="_blank"
-          className="flex items-center justify-between rounded-lg border border-white/30 bg-white/10 px-3.5 py-2.5 text-xs font-semibold text-white hover:bg-white/20 transition-all group"
-        >
-          <span>View Public Site</span>
-          <ExternalLink className="h-3.5 w-3.5 text-white/80 group-hover:text-white transition-transform group-hover:translate-x-0.5" />
-        </Link>
       </div>
     </aside>
   );

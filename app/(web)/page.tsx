@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus, AdSlot, ArticleType, Prisma } from "@prisma/client";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
-import { Flame, Eye, Newspaper } from "lucide-react";
+import { Flame, Eye, Newspaper, Star, TrendingUp } from "lucide-react";
 import { resolveLanguageEdition, resolveArticleTitle, resolveCategoryName } from "@/lib/language";
 import { TrendingHashtags } from "@/components/portal/TrendingHashtags";
 import { ProvinceNewsWidget } from "@/components/portal/ProvinceNewsWidget";
@@ -187,18 +187,125 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
   const secondaryFeatured = (publishedArticles as HomeArticleItem[]).filter((a) => a.id !== leadStory?.id).slice(0, 4);
   const latestList = (publishedArticles as HomeArticleItem[]).filter((a) => a.id !== leadStory?.id).slice(4, 12);
   const trendingList = [...(publishedArticles as HomeArticleItem[])].sort((a, b) => b.views - a.views).slice(0, 5);
+  const topStories = secondaryFeatured.slice(0, 4);
+  const editorPick = (publishedArticles as HomeArticleItem[]).filter((a) => a.id !== leadStory?.id).slice(0, 3);
+  const mostRead = [...(publishedArticles as HomeArticleItem[])].sort((a, b) => b.views - a.views).slice(0, 4);
 
   return (
     <main className="w-full bg-background pb-16">
       {/* TRENDING HASHTAGS BAR */}
       <TrendingHashtags />
 
+      {/* Top Editorial Highlights */}
+      <section className="max-w-[1480px] mx-auto px-4 pt-6 pb-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="border-t-2 border-amber-500 pt-3">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <h3 className="text-base font-extrabold text-foreground flex items-center gap-2 font-serif uppercase tracking-wider">
+                <Star className="h-4 w-4 text-amber-500" />
+                <span>{isEnglish ? "Top Stories" : "शीर्ष समाचार"}</span>
+              </h3>
+            </div>
+
+            <div className="mt-3 space-y-3">
+              {topStories.map((art: HomeArticleItem) => (
+                <Link
+                  key={art.id}
+                  href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}
+                  className="group block border-b border-border/50 pb-2.5 last:border-0"
+                >
+                  <div className="flex items-center justify-between gap-2 pb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#027081]">
+                      {resolveCategoryName(art.category, lang)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                      {formatTimeAgoNp(art.createdAt)}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
+                    {resolveArticleTitle(art, lang)}
+                  </h4>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t-2 border-[#027081] pt-3">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <h3 className="text-base font-extrabold text-foreground flex items-center gap-2 font-serif uppercase tracking-wider">
+                <Newspaper className="h-4 w-4 text-[#027081]" />
+                <span>{isEnglish ? "Editor’s Pick" : "सम्पादकको छनोट"}</span>
+              </h3>
+            </div>
+
+            <div className="mt-3 space-y-3">
+              {editorPick.map((art: HomeArticleItem) => (
+                <Link
+                  key={art.id}
+                  href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}
+                  className="group flex items-start gap-3 border-b border-border/50 pb-2.5 last:border-0"
+                >
+                  {art.coverImage && (
+                    <div className="h-16 w-20 shrink-0 bg-muted overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={art.coverImage}
+                        alt={art.title}
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-none"
+                      />
+                    </div>
+                  )}
+                  <div className="min-w-0 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#027081]">
+                      {resolveCategoryName(art.category, lang)}
+                    </span>
+                    <h4 className="text-sm font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
+                      {resolveArticleTitle(art, lang)}
+                    </h4>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t-2 border-emerald-600 pt-3">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <h3 className="text-base font-extrabold text-foreground flex items-center gap-2 font-serif uppercase tracking-wider">
+                <TrendingUp className="h-4 w-4 text-emerald-600" />
+                <span>{isEnglish ? "Most Read" : "सर्वाधिक पढिएको"}</span>
+              </h3>
+            </div>
+
+            <div className="mt-3 space-y-3">
+              {mostRead.map((art: HomeArticleItem, index: number) => (
+                <Link
+                  key={art.id}
+                  href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}
+                  className="group flex items-start gap-3 border-b border-border/50 pb-2.5 last:border-0"
+                >
+                  <span className="text-base font-black text-[#027081] font-mono shrink-0 w-6">
+                    0{index + 1}
+                  </span>
+                  <div className="min-w-0 space-y-0.5">
+                    <h4 className="text-sm font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
+                      {resolveArticleTitle(art, lang)}
+                    </h4>
+                    <span className="text-[10px] text-muted-foreground font-mono block">
+                      {art.views} {isEnglish ? "reads" : "पढिएको"}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 1. HERO LEAD NEWS SECTION */}
-      <section className="max-w-7xl mx-auto px-4 pt-6 pb-8 border-b border-border/40">
+      <section className="max-w-[1480px] mx-auto px-4 pt-6 pb-8 border-b border-border">
         <div className="flex items-center justify-between pb-4">
-          <div className="flex items-center space-x-2">
-            <span className="h-3.5 w-3.5 rounded-full bg-rose-600 animate-pulse" />
-            <h2 className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight font-serif">
+          <div className="flex items-center space-x-2 border-l-4 border-rose-600 pl-3">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight font-serif uppercase">
               {isEnglish ? "Lead Stories" : "मुख्य समाचार (Lead Stories)"}
             </h2>
           </div>
@@ -209,26 +316,26 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
           {leadStory ? (
             <Link
               href={`/article/${leadStory.slug}${isEnglish ? "?lang=en" : ""}`}
-              className="lg:col-span-2 group relative rounded-2xl overflow-hidden border border-border bg-card shadow-sm flex flex-col justify-end min-h-[380px] sm:min-h-[440px]"
+              className="lg:col-span-2 group relative overflow-hidden bg-slate-950 flex flex-col justify-end min-h-[380px] sm:min-h-[440px] rounded-none"
             >
               {leadStory.coverImage ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={leadStory.coverImage}
                   alt={leadStory.title}
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 rounded-none"
                 />
               ) : (
-                <div className="absolute inset-0 bg-slate-800" />
+                <div className="absolute inset-0 bg-slate-900" />
               )}
-              <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/50 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
               <div className="relative z-10 p-6 sm:p-8 space-y-3">
                 <div className="flex items-center space-x-2">
-                  <span className="bg-[#027081] text-white text-xs font-bold px-3 py-1 rounded-md">
+                  <span className="bg-[#027081] text-white text-xs font-bold px-3 py-1 uppercase rounded-none">
                     {resolveCategoryName(leadStory.category, lang)}
                   </span>
-                  <span className="text-white/70 text-xs font-mono">
+                  <span className="text-white/80 text-xs font-mono">
                     {formatTimeAgoNp(leadStory.createdAt)}
                   </span>
                 </div>
@@ -238,14 +345,14 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
                 </h1>
 
                 {leadStory.excerpt && (
-                  <p className="text-sm text-white/80 line-clamp-2 leading-relaxed max-w-3xl">
+                  <p className="text-sm text-white/85 line-clamp-2 leading-relaxed max-w-3xl font-sans">
                     {leadStory.excerpt}
                   </p>
                 )}
               </div>
             </Link>
           ) : (
-            <div className="lg:col-span-2 rounded-2xl border border-dashed p-12 text-center text-muted-foreground">
+            <div className="lg:col-span-2 border border-dashed p-12 text-center text-muted-foreground rounded-none">
               कुनै समाचार उपलब्ध छैन।
             </div>
           )}
@@ -256,20 +363,20 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
               <Link
                 key={art.id}
                 href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}
-                className="group flex space-x-3.5 p-3 rounded-xl border border-border/50 bg-card hover:bg-muted/40 transition-colors"
+                className="group flex space-x-3.5 p-3 border-b border-border/60 hover:bg-muted/40 transition-colors rounded-none"
               >
                 {art.coverImage && (
-                  <div className="h-20 w-24 rounded-lg overflow-hidden shrink-0 bg-muted">
+                  <div className="h-20 w-24 overflow-hidden shrink-0 bg-muted rounded-none">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={art.coverImage}
                       alt={art.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-none"
                     />
                   </div>
                 )}
                 <div className="flex-1 min-w-0 space-y-1">
-                  <span className="text-[11px] font-bold text-[#027081]">
+                  <span className="text-[11px] font-bold text-[#027081] uppercase tracking-wider">
                     {resolveCategoryName(art.category, lang)}
                   </span>
                   <h3 className="text-xs sm:text-sm font-bold text-foreground line-clamp-2 group-hover:text-[#027081] transition-colors leading-snug font-serif">
@@ -285,18 +392,18 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         </div>
       </section>
 
-      {/* 2. OPINION & COLUMNISTS SHOWCASE (Setopati / Ratopati Parity) */}
-      <div className="max-w-7xl mx-auto px-4">
+      {/* 2. OPINION & COLUMNISTS SHOWCASE */}
+      <div className="max-w-[1480px] mx-auto px-4">
         <OpinionSection articles={opinionArticles} lang={lang} />
       </div>
 
       {/* 3. LATEST NEWS STREAM & TRENDING SIDEBAR */}
-      <section className="max-w-7xl mx-auto px-4 py-8">
+      <section className="max-w-[1480px] mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Stream: Latest Headlines (2 Columns) */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center justify-between border-b border-border/60 pb-3">
-              <h3 className="text-lg sm:text-xl font-extrabold text-foreground flex items-center gap-2 font-serif">
+            <div className="flex items-center justify-between border-b-2 border-[#027081] pb-3">
+              <h3 className="text-lg sm:text-xl font-extrabold text-foreground flex items-center gap-2 font-serif uppercase tracking-wider">
                 <Newspaper className="h-5 w-5 text-[#027081]" />
                 <span>{isEnglish ? "Latest Headlines" : "ताजा तथा भर्खरका समाचार"}</span>
               </h3>
@@ -306,21 +413,21 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
               {latestList.map((art: HomeArticleItem) => (
                 <article
                   key={art.id}
-                  className="group flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 p-4 rounded-xl border border-border/40 bg-card hover:bg-muted/30 transition-colors"
+                  className="group flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 p-4 border-b border-border hover:bg-muted/30 transition-colors rounded-none"
                 >
                   {art.coverImage && (
-                    <div className="h-44 sm:h-32 sm:w-44 rounded-lg overflow-hidden shrink-0 bg-muted">
+                    <div className="h-44 sm:h-32 sm:w-44 overflow-hidden shrink-0 bg-muted rounded-none">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={art.coverImage}
                         alt={art.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-none"
                       />
                     </div>
                   )}
                   <div className="flex-1 space-y-2 flex flex-col justify-between">
                     <div className="space-y-1.5">
-                      <div className="flex items-center space-x-2 text-[11px] font-bold">
+                      <div className="flex items-center space-x-2 text-[11px] font-bold uppercase tracking-wider">
                         <span className="text-[#027081]">
                           {resolveCategoryName(art.category, lang)}
                         </span>
@@ -362,28 +469,28 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
                 href={sidebarAd.targetUrl || "#"}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full h-[250px] rounded-xl border border-border overflow-hidden block relative shadow-2xs group"
+                className="w-full h-62.5 border border-border overflow-hidden block relative group rounded-none"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={sidebarAd.imageUrl}
                   alt={sidebarAd.title}
-                  className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-200"
+                  className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-200 rounded-none"
                 />
-                <span className="absolute top-2 right-2 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-mono">
+                <span className="absolute top-2 right-2 bg-black text-white text-[9px] px-1.5 py-0.5 font-mono rounded-none">
                   विज्ञापन
                 </span>
               </a>
             ) : (
-              <div className="w-full h-[250px] rounded-xl border border-dashed border-border/80 bg-muted/20 flex items-center justify-center text-xs text-muted-foreground font-medium">
+              <div className="w-full h-62.5 border border-dashed border-border/80 bg-muted/20 flex items-center justify-center text-xs text-muted-foreground font-medium rounded-none">
                 विज्ञापन स्थान (Sidebar Ad - 300x250)
               </div>
             )}
 
             {/* Trending News Block */}
-            <div className="rounded-2xl border border-border bg-card p-5 space-y-4 shadow-2xs">
-              <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                <h4 className="text-base font-extrabold text-foreground flex items-center gap-2 font-serif">
+            <div className="border-t-2 border-amber-500 pt-4 space-y-4">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <h4 className="text-base font-extrabold text-foreground flex items-center gap-2 font-serif uppercase tracking-wider">
                   <Flame className="h-4 w-4 text-amber-500" />
                   <span>{isEnglish ? "Trending Stories" : "सर्वाधिक पढिएका समाचार"}</span>
                 </h4>
@@ -396,8 +503,8 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
                     href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}
                     className="group flex items-start space-x-3 pb-3 border-b border-border/30 last:border-0 last:pb-0"
                   >
-                    <span className="text-xl font-extrabold text-[#027081]/40 group-hover:text-[#027081] transition-colors font-mono shrink-0 w-5">
-                      ०{index + 1}
+                    <span className="text-xl font-extrabold text-[#027081] font-mono shrink-0 w-5">
+                      0{index + 1}
                     </span>
                     <div className="space-y-1">
                       <h5 className="text-xs sm:text-sm font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug line-clamp-2 font-serif">
@@ -412,23 +519,23 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
               </div>
             </div>
 
-            {/* Public Opinion Poll Widget (जनमत / पोल) */}
+            {/* Public Opinion Poll Widget */}
             <OpinionPollWidget />
 
-            {/* Nepali Utility Notice Board Widget (सूचनापाटी) */}
+            {/* Nepali Utility Notice Board Widget */}
             <NepaliUtilityWidget />
           </div>
         </div>
       </section>
 
-      {/* 4. PROVINCE NEWS MAP & WIDGET (७ वटा प्रदेश समाचार) */}
-      <section className="max-w-7xl mx-auto px-4 py-4">
+      {/* 4. PROVINCE NEWS MAP & WIDGET */}
+      <section className="max-w-[1480px] mx-auto px-4 py-4">
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <ProvinceNewsWidget articles={publishedArticles as any} />
       </section>
 
-      {/* 5. ECONOMY & BUSINESS SECTION (अर्थतन्त्र / सेयर बजार) */}
-      <div className="max-w-7xl mx-auto px-4">
+      {/* 5. ECONOMY & BUSINESS SECTION */}
+      <div className="max-w-[1480px] mx-auto px-4">
         <CategoryGridSection
           title="Economy & Business"
           titleNp="अर्थतन्त्र र सेयर बजार (Economy)"
@@ -438,8 +545,8 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         />
       </div>
 
-      {/* 6. SPORTS & ENTERTAINMENT SECTION (खेलकुद र मनोरञ्जन) */}
-      <div className="max-w-7xl mx-auto px-4">
+      {/* 6. SPORTS & ENTERTAINMENT SECTION */}
+      <div className="max-w-[1480px] mx-auto px-4">
         <CategoryGridSection
           title="Sports & Entertainment"
           titleNp="खेलकुद र मनोरञ्जन (Sports & Lifestyle)"
@@ -449,8 +556,8 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         />
       </div>
 
-      {/* 7. MULTIMEDIA PHOTO & VIDEO FEATURE (फोटो फिचर र भिडियो) */}
-      <div className="max-w-7xl mx-auto px-4">
+      {/* 7. MULTIMEDIA PHOTO & VIDEO FEATURE */}
+      <div className="max-w-[1480px] mx-auto px-4">
         <PhotoVideoFeature articles={photoFeatureArticles} lang={lang} />
       </div>
     </main>

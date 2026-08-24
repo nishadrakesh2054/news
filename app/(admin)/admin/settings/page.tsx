@@ -52,29 +52,21 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="w-full space-y-6 px-6 py-4 pb-12">
+    <div className="w-full space-y-3 px-6 py-2 pb-6">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
         <div>
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground font-serif flex items-center gap-2">
-              <Settings className="h-6 w-6 text-[#027081]" />
-              <span>Portal Global Settings & System Config</span>
-            </h1>
-            <span className="text-xs font-bold bg-[#027081]/10 text-[#027081] px-2.5 py-0.5 rounded-full border border-[#027081]/20">
-              System Active
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground pt-1">
-            Manage newsroom press council registrations, branding logos, editorial moderation, SEO defaults, and emergency banners
-          </p>
+          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
+            <Settings className="h-5 w-5 text-[#027081]" />
+            <span>Portal Global Settings & System Config</span>
+          </h1>
         </div>
 
         <Button
           onClick={handleSave}
-          className="bg-[#027081] hover:bg-[#025c6a] text-white text-xs font-bold px-4 h-9 rounded-xl shadow-2xs flex items-center space-x-1.5 transition-all"
+          className="h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center gap-1.5 transition-all duration-200"
         >
-          <Save className="h-4 w-4" />
+          <Save className="h-3.5 w-3.5" />
           <span>Save Settings</span>
         </Button>
       </div>
@@ -101,7 +93,7 @@ export default function AdminSettingsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-muted-foreground uppercase">Nepali Title (नेपाली शीर्षक) *</label>
+              <label className="font-semibold text-muted-foreground uppercase">Nepali Title *</label>
               <input
                 type="text"
                 required
@@ -113,7 +105,7 @@ export default function AdminSettingsPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="font-semibold text-muted-foreground uppercase">Slogan / Tagline (नेपाली) *</label>
+            <label className="font-semibold text-muted-foreground uppercase">Slogan / Tagline *</label>
             <input
               type="text"
               required
@@ -132,7 +124,7 @@ export default function AdminSettingsPage() {
               </label>
               <input
                 type="text"
-                placeholder="सूचना विभाग दर्ता नं."
+                placeholder="e.g. 1234/080-81"
                 value={deptInfoReg}
                 onChange={(e) => setDeptInfoReg(e.target.value)}
                 className="w-full bg-background border rounded-lg px-3 py-1.5 text-xs font-mono outline-none focus:border-[#027081]"
@@ -146,7 +138,7 @@ export default function AdminSettingsPage() {
               </label>
               <input
                 type="text"
-                placeholder="प्रेस काउन्सिल सूचीकरण नं."
+                placeholder="e.g. 567/080-81"
                 value={pressCouncilReg}
                 onChange={(e) => setPressCouncilReg(e.target.value)}
                 className="w-full bg-background border rounded-lg px-3 py-1.5 text-xs font-mono outline-none focus:border-[#027081]"

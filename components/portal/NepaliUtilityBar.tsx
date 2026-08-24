@@ -55,7 +55,7 @@ export function NepaliUtilityBar() {
   return (
     <>
       <div className="w-full bg-[#01515e] text-white/90 text-xs py-1.5 px-4 border-b border-[#027081]/30 select-none">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+        <div className="max-w-[1480px] mx-auto flex flex-wrap items-center justify-between gap-3">
           {/* Forex & Gold Rates Ticker */}
           <div className="flex flex-wrap items-center gap-4 sm:gap-6 font-medium">
             {/* Gold & Silver */}
@@ -78,11 +78,18 @@ export function NepaliUtilityBar() {
             </div>
           </div>
 
-          {/* Daily Horoscope (राशिफल) Trigger */}
+          {/* Utility Tools & Rashifal Trigger */}
           <div className="flex items-center space-x-3 ml-auto">
+            <a
+              href="/bs-date-converter"
+              className="hidden sm:inline-flex items-center space-x-1 text-white/90 hover:text-white text-[11px] font-semibold underline"
+            >
+              <span>मिति रूपान्तरण (BS Converter)</span>
+            </a>
+
             <button
               onClick={() => setShowRashifalModal(true)}
-              className="inline-flex items-center space-x-1.5 bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/40 px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all cursor-pointer"
+              className="inline-flex items-center space-x-1.5 bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/40 px-2.5 py-0.5 rounded-none text-[11px] font-bold transition-all cursor-pointer"
             >
               <Sparkles className="h-3 w-3 text-amber-300 animate-pulse" />
               <span>आजको राशिफल (Horoscope)</span>
@@ -94,8 +101,8 @@ export function NepaliUtilityBar() {
 
       {/* Rashifal Modal Overlay */}
       {showRashifalModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-background text-foreground border border-border rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
+          <div className="bg-background text-foreground border border-border rounded-none max-w-2xl w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center space-x-2 text-[#027081]">
                 <Sparkles className="h-5 w-5" />

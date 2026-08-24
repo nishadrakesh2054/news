@@ -29,7 +29,7 @@ export function PhotoVideoFeature({ articles, lang }: PhotoVideoFeatureProps) {
 
   return (
     <section className="w-full bg-slate-950 text-white rounded-2xl p-6 sm:p-8 space-y-6 my-8 border border-slate-800 shadow-xl">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800 pb-4">
         <div className="flex items-center space-x-3">
           <div className="h-9 w-9 rounded-xl bg-rose-600 flex items-center justify-center text-white">
             <Camera className="h-5 w-5" />
@@ -43,6 +43,14 @@ export function PhotoVideoFeature({ articles, lang }: PhotoVideoFeatureProps) {
             </p>
           </div>
         </div>
+
+        <Link
+          href="/media"
+          className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-[11px] font-bold text-white/90 hover:border-rose-500 hover:text-rose-200 transition-colors"
+        >
+          {isEnglish ? "Explore Gallery" : "ग्यालेरी हेर्नुहोस्"}
+          <span aria-hidden="true">→</span>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -50,7 +58,7 @@ export function PhotoVideoFeature({ articles, lang }: PhotoVideoFeatureProps) {
           <Link
             key={art.id}
             href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}
-            className="group relative rounded-xl overflow-hidden border border-slate-800 bg-slate-900 shadow-md flex flex-col justify-end min-h-[260px]"
+            className="group relative rounded-xl overflow-hidden border border-slate-800 bg-slate-900 shadow-md flex flex-col justify-end min-h-65"
           >
             {art.coverImage ? (
               /* eslint-disable-next-line @next/next/no-img-element */

@@ -103,10 +103,31 @@ export default function LiveCoveragePage() {
   }
 
   const title = article.titleNp || article.title;
+  const liveUpdatesCount = article.liveUpdates?.length ?? 0;
+  const liveStatus = isRefreshing ? "REFRESHING..." : "LIVE NOW";
 
   return (
     <main className="w-full bg-background pb-16">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        <div className="rounded-2xl border border-rose-200 bg-linear-to-r from-rose-50 via-white to-amber-50 p-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-rose-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white">
+                Breaking Alert
+              </span>
+              <span className="rounded-full border border-rose-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-rose-700">
+                {liveStatus}
+              </span>
+            </div>
+            <span className="text-[11px] font-mono text-muted-foreground">
+              अन्तिम अपडेट: {formatTimeAgoNp(lastUpdated)}
+            </span>
+          </div>
+          <p className="mt-3 text-sm leading-relaxed text-foreground">
+            {article.excerpt || "Ongoing live coverage is being updated as events unfold."}
+          </p>
+        </div>
+
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-xs font-semibold text-muted-foreground border-b border-border/40 pb-3">
           <Link href="/" className="hover:text-[#027081]">गृह</Link>
@@ -145,6 +166,21 @@ export default function LiveCoveragePage() {
             </p>
           )}
 
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3">
+            <div className="rounded-xl border border-border bg-muted/20 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Status</p>
+              <p className="mt-1 text-base font-extrabold text-[#027081]">{liveStatus}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-muted/20 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Updates</p>
+              <p className="mt-1 text-base font-extrabold text-[#027081]">{liveUpdatesCount}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-muted/20 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Last Update</p>
+              <p className="mt-1 text-base font-extrabold text-[#027081]">{formatTimeAgoNp(lastUpdated)}</p>
+            </div>
+          </div>
+
           <div className="flex items-center space-x-4 text-xs text-muted-foreground font-mono pt-2">
             <span className="flex items-center gap-1 text-foreground font-bold">
               <User className="h-3.5 w-3.5 text-[#027081]" />
@@ -158,9 +194,23 @@ export default function LiveCoveragePage() {
           </div>
         </header>
 
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <div className="flex items-center justify-between border-b border-border/60 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-[#027081]/10 px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#027081]">
+                Special Coverage
+              </span>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Live Desk</span>
+          </div>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            This coverage is being tracked in real time. New developments are added at the top of the timeline as they are verified.
+          </p>
+        </section>
+
         {/* Featured Cover Image if available */}
         {article.coverImage && (
-          <div className="rounded-2xl overflow-hidden border border-border shadow-sm max-h-[450px]">
+          <div className="rounded-2xl overflow-hidden border border-border shadow-sm max-h-112.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={article.coverImage} alt={title} className="w-full h-full object-cover" />
           </div>
@@ -178,7 +228,7 @@ export default function LiveCoveragePage() {
               {article.liveUpdates.map((update) => (
                 <div key={update.id} className="relative group">
                   {/* Timeline dot */}
-                  <span className="absolute -left-[31px] top-1.5 h-3.5 w-3.5 rounded-full bg-[#027081] border-2 border-background shadow-xs group-first:bg-rose-600 group-first:animate-ping" />
+                  <span className="absolute -left-7.75 top-1.5 h-3.5 w-3.5 rounded-full bg-[#027081] border-2 border-background shadow-xs group-first:bg-rose-600 group-first:animate-ping" />
 
                   <div className="bg-card border border-border/70 rounded-xl p-5 shadow-2xs space-y-3">
                     <div className="flex items-center justify-between border-b border-border/40 pb-2">

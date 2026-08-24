@@ -48,31 +48,23 @@ export default function AdminHomepageLayoutPage() {
   };
 
   return (
-    <div className="w-full space-y-6 px-6 py-4 pb-12">
+    <div className="w-full space-y-3 px-6 py-2 pb-6">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
         <div>
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground font-serif flex items-center gap-2">
-              <LayoutGrid className="h-6 w-6 text-[#027081]" />
-              <span>Homepage Layout & Section Manager</span>
-            </h1>
-            <span className="text-xs font-bold bg-[#027081]/10 text-[#027081] px-2.5 py-0.5 rounded-full border border-[#027081]/20">
-              Live Configuration
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground pt-1">
-            Configure featured news blocks, breaking tickers, ad slots, and category grid ordering
-          </p>
+          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
+            <LayoutGrid className="h-5 w-5 text-[#027081]" />
+            <span>Homepage Layout & Section Manager</span>
+          </h1>
         </div>
 
-        <div className="flex items-center space-x-2.5">
+        <div className="flex items-center space-x-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => refetch()}
-            className="h-9 px-3 text-xs rounded-xl border-border font-medium hover:bg-muted"
+            className="h-8 px-2.5 text-xs rounded-lg border-border font-medium hover:bg-muted"
             title="Refresh configuration"
           >
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? "animate-spin text-[#027081]" : ""}`} />
@@ -84,7 +76,7 @@ export default function AdminHomepageLayoutPage() {
               type="button"
               variant="outline"
               size="sm"
-              className="h-9 px-3 text-xs rounded-xl border-border font-medium"
+              className="h-8 px-2.5 text-xs rounded-lg border-border font-medium"
             >
               <Eye className="h-3.5 w-3.5 mr-1.5" />
               <span>Preview Live Portal</span>
@@ -93,10 +85,10 @@ export default function AdminHomepageLayoutPage() {
 
           <Button
             onClick={handleSaveLayout}
-            className="bg-[#027081] hover:bg-[#025c6a] text-white text-xs font-bold px-4 h-9 rounded-xl shadow-2xs flex items-center space-x-1.5 transition-all"
+            className="h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center gap-1.5 transition-all duration-200"
           >
-            <Save className="h-4 w-4" />
-            <span>Save Configuration</span>
+            <Save className="h-3.5 w-3.5" />
+            <span>Save Layout</span>
           </Button>
         </div>
       </div>
@@ -157,7 +149,7 @@ export default function AdminHomepageLayoutPage() {
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-[#027081]" />
-                <span>Lead Story & Hero Section (मुख्य समाचार)</span>
+                <span>Lead Story & Hero Section</span>
               </h2>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input

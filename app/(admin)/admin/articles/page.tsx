@@ -226,30 +226,22 @@ export default function AdminArticlesPage() {
   };
 
   return (
-    <div className="w-full space-y-6 px-6 py-4 pb-12">
+    <div className="w-full space-y-3 px-6 py-2 pb-6">
       {/* Top Header & New Story Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
         <div>
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground font-serif">
-              Article Library
-            </h1>
-            <span className="text-xs font-bold bg-[#027081]/10 text-[#027081] px-2.5 py-0.5 rounded-full border border-[#027081]/20">
-              {totalCount} Stories
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground pt-1">
-            Manage, filter, and publish stories across all news categories
-          </p>
+          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif">
+            Article Library
+          </h1>
         </div>
 
-        <div className="flex items-center space-x-2.5">
+        <div className="flex items-center space-x-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => refetch()}
-            className="h-9 px-3 text-xs rounded-xl border-border font-medium hover:bg-muted"
+            className="h-8 px-2.5 text-xs rounded-lg border-border font-medium hover:bg-muted"
             title="Refresh list"
           >
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? "animate-spin text-[#027081]" : ""}`} />
@@ -257,8 +249,8 @@ export default function AdminArticlesPage() {
           </Button>
 
           <Link href="/admin/articles/new">
-            <Button size="sm" className="bg-[#027081] hover:bg-[#025c6a] text-white text-xs font-bold px-4 h-9 rounded-xl shadow-2xs flex items-center space-x-1.5 transition-all">
-              <Plus className="h-4 w-4" />
+            <Button className="h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center gap-1.5 transition-all duration-200">
+              <Plus className="h-3.5 w-3.5" />
               <span>Create Story</span>
             </Button>
           </Link>
@@ -266,7 +258,7 @@ export default function AdminArticlesPage() {
       </div>
 
       {/* Sleek Compact Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Stories</p>
@@ -308,32 +300,32 @@ export default function AdminArticlesPage() {
         </div>
       </div>
 
-      {/* Unified Minimal Filter Toolbar */}
-      <div className="bg-card rounded-xl border border-border p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+      {/* Filter Toolbar without outer background & border box */}
+      <div className="flex flex-wrap items-center justify-between gap-3 py-1">
         {/* Left Filter Controls */}
-        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-75">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
           {/* Status Pills */}
-          <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border/60">
-            {["ALL", "PUBLISHED", "DRAFT", "ARCHIVED"].map((st) => (
+          <div className="flex items-center gap-1 bg-card p-1 rounded-sm border border-border shadow-2xs">
+            {["ALL", "PUBLISHED", "PENDING", "DRAFT", "ARCHIVED"].map((st) => (
               <button
                 key={st}
                 onClick={() => {
                   setStatusFilter(st);
                   setPage(1);
                 }}
-                className={`rounded-md px-3 py-1 text-xs font-bold transition-all ${
+                className={`rounded-xs px-2.5 py-0.5 text-xs font-bold transition-all ${
                   statusFilter === st
                     ? "bg-[#027081] text-white shadow-2xs"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
-                {st}
+                {st === "PENDING" ? "REVIEW QUEUE" : st}
               </button>
             ))}
           </div>
 
           {/* Search Box */}
-          <div className="relative min-w-50 flex-1 max-w-xs">
+          <div className="relative min-w-[200px] flex-1 max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <input
               type="text"
@@ -343,7 +335,7 @@ export default function AdminArticlesPage() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-full bg-background border rounded-lg pl-8 pr-7 py-1 text-xs text-foreground outline-none focus:border-[#027081] transition-colors"
+              className="w-full bg-card border border-border rounded-sm pl-8 pr-7 py-1.5 text-xs text-foreground outline-none focus:border-[#027081] shadow-2xs transition-colors"
             />
             {search && (
               <button
@@ -363,7 +355,7 @@ export default function AdminArticlesPage() {
               setCategoryFilter(e.target.value);
               setPage(1);
             }}
-            className="bg-background border rounded-lg px-3 py-1 text-xs font-semibold text-foreground outline-none focus:border-[#027081] cursor-pointer"
+            className="bg-card border border-border rounded-sm px-3 py-1.5 text-xs font-semibold text-foreground outline-none focus:border-[#027081] shadow-2xs cursor-pointer"
           >
             <option value="ALL">All Categories</option>
             {categoriesData.map((cat) => (
@@ -380,7 +372,7 @@ export default function AdminArticlesPage() {
               setTypeFilter(e.target.value);
               setPage(1);
             }}
-            className="bg-background border rounded-lg px-3 py-1 text-xs font-semibold text-foreground outline-none focus:border-[#027081] cursor-pointer"
+            className="bg-card border border-border rounded-sm px-3 py-1.5 text-xs font-semibold text-foreground outline-none focus:border-[#027081] shadow-2xs cursor-pointer"
           >
             <option value="ALL">All Formats</option>
             <option value="STANDARD">Standard</option>
@@ -410,7 +402,7 @@ export default function AdminArticlesPage() {
               setLimit(Number(e.target.value));
               setPage(1);
             }}
-            className="bg-background border border-border rounded-lg px-2 py-1 text-xs font-bold text-foreground outline-none focus:border-[#027081]"
+            className="bg-card border border-border rounded-sm px-2 py-1 text-xs font-bold text-foreground outline-none focus:border-[#027081] shadow-2xs cursor-pointer"
           >
             <option value={10}>10</option>
             <option value={25}>25</option>

@@ -89,31 +89,23 @@ export default function AdminBreakingPage() {
   );
 
   return (
-    <div className="w-full space-y-6 px-6 py-4 pb-12">
+    <div className="w-full space-y-3 px-6 py-2 pb-6">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
         <div>
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground font-serif flex items-center gap-2">
-              <Zap className="h-6 w-6 text-rose-600 animate-pulse" />
-              <span>Breaking Ticker Manager</span>
-            </h1>
-            <span className="text-xs font-bold bg-rose-500/10 text-rose-600 px-2.5 py-0.5 rounded-full border border-rose-500/20">
-              {breakingArticles.length} Active
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground pt-1">
-            Real-time breaking headlines broadcasting on top portal ticker
-          </p>
+          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
+            <Zap className="h-5 w-5 text-rose-600 animate-pulse" />
+            <span>Breaking Ticker Manager</span>
+          </h1>
         </div>
 
-        <div className="flex items-center space-x-2.5">
+        <div className="flex items-center space-x-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => refetch()}
-            className="h-9 px-3 text-xs rounded-xl border-border font-medium hover:bg-muted"
+            className="h-8 px-2.5 text-xs rounded-lg border-border font-medium hover:bg-muted"
             title="Refresh breaking news"
           >
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? "animate-spin text-rose-600" : ""}`} />
@@ -121,7 +113,7 @@ export default function AdminBreakingPage() {
           </Button>
 
           <Link href="/admin/articles">
-            <Button size="sm" variant="outline" className="text-xs font-semibold px-4 h-9 rounded-xl border-border">
+            <Button className="h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center gap-1.5 transition-all duration-200">
               <span>View All Articles</span>
             </Button>
           </Link>
@@ -161,18 +153,18 @@ export default function AdminBreakingPage() {
         </div>
       </div>
 
-      {/* Single Unified Filter Toolbar */}
-      <div className="bg-card rounded-xl border border-border p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
+      {/* Filter Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 py-1">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
           {/* Search Box */}
-          <div className="relative min-w-[200px] flex-1 max-w-xs">
+          <div className="relative min-w-[220px] flex-1 max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search breaking headline..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-background border border-border rounded-lg pl-8 pr-7 py-1 text-xs text-foreground outline-none focus:border-rose-500 transition-colors"
+              className="w-full bg-card border border-border rounded-sm pl-8 pr-7 py-1.5 text-xs text-foreground outline-none focus:border-rose-600 shadow-2xs transition-colors"
             />
             {search && (
               <button
@@ -190,7 +182,7 @@ export default function AdminBreakingPage() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-background border border-border rounded-lg px-3 py-1 text-xs font-semibold text-foreground outline-none focus:border-rose-500 cursor-pointer"
+              className="bg-card border border-border rounded-sm px-3 py-1.5 text-xs font-semibold text-foreground outline-none focus:border-rose-600 shadow-2xs cursor-pointer"
             >
               <option value="ALL">All Categories</option>
               {categoriesList.map((cat) => (

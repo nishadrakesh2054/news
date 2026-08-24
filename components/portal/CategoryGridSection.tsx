@@ -62,19 +62,19 @@ export function CategoryGridSection({
         {mainArticle && (
           <Link
             href={`/article/${mainArticle.slug}${isEnglish ? "?lang=en" : ""}`}
-            className="lg:col-span-2 group rounded-xl border border-border bg-card hover:shadow-md transition-all overflow-hidden flex flex-col sm:flex-row"
+            className="lg:col-span-2 group border-b border-border pb-4 hover:bg-muted/20 transition-all overflow-hidden flex flex-col sm:flex-row gap-4 rounded-none"
           >
             {mainArticle.coverImage && (
-              <div className="sm:w-1/2 h-56 sm:h-auto overflow-hidden bg-muted relative shrink-0">
+              <div className="sm:w-1/2 h-56 sm:h-auto overflow-hidden bg-muted relative shrink-0 rounded-none">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={mainArticle.coverImage}
                   alt={mainArticle.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 rounded-none"
                 />
               </div>
             )}
-            <div className="p-5 sm:w-1/2 flex flex-col justify-between space-y-3">
+            <div className="sm:w-1/2 flex flex-col justify-between space-y-3 py-1">
               <div className="space-y-2">
                 <span className="text-[10px] font-bold text-[#027081] uppercase font-mono">
                   {formatTimeAgoNp(mainArticle.createdAt)}
@@ -104,15 +104,15 @@ export function CategoryGridSection({
             <Link
               key={art.id}
               href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}
-              className="group flex space-x-3 p-3 rounded-xl border border-border/50 bg-card hover:bg-muted/40 transition-colors"
+              className="group flex space-x-3 pb-3 border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors rounded-none"
             >
               {art.coverImage && (
-                <div className="h-16 w-20 rounded-lg overflow-hidden shrink-0 bg-muted">
+                <div className="h-16 w-20 overflow-hidden shrink-0 bg-muted rounded-none">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={art.coverImage}
                     alt={art.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-none"
                   />
                 </div>
               )}

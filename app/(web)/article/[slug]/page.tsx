@@ -71,7 +71,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
     include: {
       category: true,
       author: {
-        select: { name: true, email: true },
+        select: { id: true, name: true, email: true, image: true },
       },
     },
   });
@@ -84,7 +84,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
   prisma.article.update({
     where: { id: article.id },
     data: { views: { increment: 1 } },
-  }).catch(() => {});
+  }).catch(() => { });
 
   // Fetch In-Article Ad & Related News simultaneously in parallel
   const [inArticleAd, relatedArticles] = await Promise.all([
@@ -146,7 +146,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
       />
 
       <main className="w-full bg-background pb-16">
-        <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        <div className="max-w-[1480px] mx-auto px-4 py-8 space-y-8">
           {/* Breadcrumb Navigation */}
           <nav className="flex items-center space-x-2 text-xs font-semibold text-muted-foreground border-b border-border/40 pb-3">
             <Link href="/" className="hover:text-[#027081]">गृह</Link>
@@ -158,7 +158,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
 
           {/* Article Header & Headline */}
           <header className="space-y-4">
-            <span className="inline-block bg-[#027081]/10 text-[#027081] text-xs font-bold px-3 py-1 rounded-md">
+            <span className="inline-block bg-[#027081] text-white text-xs font-bold px-3 py-1 uppercase rounded-none">
               {article.category.nameNp || article.category.name}
             </span>
 
@@ -201,7 +201,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                 href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center space-x-1.5 bg-[#1877F2] text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity"
+                className="flex items-center space-x-1.5 bg-[#1877F2] text-white px-3 py-1.5 text-xs font-bold hover:opacity-90 transition-opacity rounded-none"
               >
                 <FacebookIcon className="h-3.5 w-3.5" />
                 <span>फेसबुक</span>
@@ -210,20 +210,57 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                 href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(articleTitle)}&url=${encodeURIComponent(shareUrl)}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center space-x-1.5 bg-sky-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity"
+                className="flex items-center space-x-1.5 bg-sky-500 text-white px-3 py-1.5 text-xs font-bold hover:opacity-90 transition-opacity rounded-none"
               >
                 <TwitterIcon className="h-3.5 w-3.5" />
                 <span>ट्विटर</span>
               </a>
               <a
                 href={`viber://forward?text=${encodeURIComponent(articleTitle + " " + shareUrl)}`}
-                className="flex items-center space-x-1.5 bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity"
+                className="flex items-center space-x-1.5 bg-purple-600 text-white px-3 py-1.5 text-xs font-bold hover:opacity-90 transition-opacity rounded-none"
               >
                 <span>भाइबर</span>
               </a>
             </div>
 
           </header>
+
+          {/* Author profile card */}
+          {article.author && (
+            <section className="border-l-4 border-[#027081] bg-card p-5 border-y border-r border-border rounded-none">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center bg-[#027081]/10 text-[#027081] text-lg font-extrabold rounded-none">
+                    {article.author.image ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={article.author.image}
+                        alt={article.author.name || "Author"}
+                        className="h-full w-full object-cover rounded-none"
+                      />
+                    ) : (
+                      (article.author.name || "ए").charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">लेखक</p>
+                    <h2 className="text-lg font-extrabold text-foreground font-serif">
+                      {article.author.name || "सम्पादकीय टोली"}
+                    </h2>
+                    <p className="text-xs text-muted-foreground">नेपाल खबर समाचार टोली</p>
+                  </div>
+                </div>
+
+                <Link
+                  href={`/author/${article.author.id}`}
+                  className="inline-flex items-center gap-2 border border-[#027081]/30 bg-[#027081]/5 px-3 py-2 text-xs font-bold text-[#027081] hover:bg-[#027081]/10 transition-colors rounded-none"
+                >
+                  प्रोफाइल हेर्नुहोस्
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </section>
+          )}
 
           {/* AI Audio News Reader Player (समाचार सुन्नुहोस्) */}
           <AudioNewsPlayer
@@ -234,12 +271,12 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
           {/* Featured Cover Image */}
           {article.coverImage && (
             <figure className="space-y-2">
-              <div className="rounded-2xl overflow-hidden border border-border shadow-sm">
+              <div className="overflow-hidden border border-border rounded-none">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={article.coverImage}
                   alt={articleTitle}
-                  className="w-full h-auto max-h-[500px] object-cover"
+                  className="w-full h-auto max-h-125 object-cover rounded-none"
                 />
               </div>
               {article.caption && (
@@ -256,15 +293,15 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               href={inArticleAd.targetUrl || "#"}
               target="_blank"
               rel="noreferrer"
-              className="w-full h-[120px] rounded-xl border border-border overflow-hidden block relative shadow-2xs group"
+              className="w-full h-30 border border-border overflow-hidden block relative group rounded-none"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={inArticleAd.imageUrl}
                 alt={inArticleAd.title}
-                className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-200"
+                className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-200 rounded-none"
               />
-              <span className="absolute top-2 right-2 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-mono">
+              <span className="absolute top-2 right-2 bg-black text-white text-[9px] px-1.5 py-0.5 font-mono rounded-none">
                 विज्ञापन
               </span>
             </a>
@@ -280,7 +317,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
           {/* Related Articles Recommendation Grid */}
           {relatedArticles.length > 0 && (
             <section className="pt-10 border-t-2 border-[#027081] space-y-6">
-              <h3 className="text-xl font-extrabold text-[#027081] font-serif">
+              <h3 className="text-xl font-extrabold text-[#027081] font-serif uppercase tracking-wider">
                 यस श्रेणीका थप समाचार
               </h3>
 
@@ -289,15 +326,15 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                   <Link
                     key={rel.id}
                     href={`/article/${rel.slug}`}
-                    className="group flex space-x-3.5 p-3 rounded-xl border border-border/50 bg-card hover:bg-muted/40 transition-colors"
+                    className="group flex space-x-3.5 p-3 border-b border-border/50 hover:bg-muted/40 transition-colors rounded-none"
                   >
                     {rel.coverImage && (
-                      <div className="h-20 w-24 rounded-lg overflow-hidden shrink-0 bg-muted">
+                      <div className="h-20 w-24 overflow-hidden shrink-0 bg-muted rounded-none">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={rel.coverImage}
                           alt={rel.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-none"
                         />
                       </div>
                     )}

@@ -20,6 +20,7 @@ interface RawBreakingItem {
 export function BreakingTicker() {
   const [breakingList, setBreakingList] = useState<BreakingItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/breaking")
@@ -48,35 +49,37 @@ export function BreakingTicker() {
                 );
               }
             })
-            .catch(() => {});
+            .catch(() => { });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {
-    if (breakingList.length <= 1) return;
+    if (breakingList.length <= 1 || isPaused) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % breakingList.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, [breakingList]);
+  }, [breakingList, isPaused]);
 
   if (breakingList.length === 0) return null;
 
   const currentStory = breakingList[currentIndex];
 
   return (
-    <div className="w-full bg-rose-600 text-white text-xs font-semibold select-none border-b border-rose-700">
-      <div className="max-w-7xl mx-auto flex items-center h-10 px-4">
-        {/* Red Breaking Badge */}
-        <div className="flex items-center space-x-1.5 bg-rose-800 px-3 py-1.5 rounded-md text-white font-bold uppercase shrink-0 mr-3 shadow-xs">
+    <div className="w-full bg-linear-to-r from-rose-700 via-rose-600 to-red-500 text-white text-xs font-semibold select-none border-b border-rose-800 shadow-[0_2px_12px_rgba(225,29,72,0.18)]">
+      <div className="max-w-7xl mx-auto flex items-center h-11 px-4 gap-3">
+        <div className="flex items-center gap-1.5 bg-rose-950/30 px-2.5 py-1.5 rounded-md border border-white/10 text-white font-black uppercase shrink-0">
           <Zap className="h-3.5 w-3.5 fill-white animate-pulse" />
-          <span>ताजा खबर</span>
+          <span>LIVE</span>
         </div>
 
-        {/* Dynamic Story Title */}
-        <div className="flex-1 overflow-hidden relative h-5 flex items-center">
+        <div
+          className="flex-1 overflow-hidden relative h-6 flex items-center"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
           <Link
             href={`/article/${currentStory.slug}`}
             className="truncate hover:underline text-white/95 font-medium transition-all duration-300"
@@ -85,9 +88,8 @@ export function BreakingTicker() {
           </Link>
         </div>
 
-        {/* Counter Indicator */}
-        <div className="hidden sm:flex items-center space-x-1 text-rose-200 font-mono text-[11px] shrink-0 ml-3">
-          <span>{currentIndex + 1}</span>
+        <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono font-bold text-rose-100 shrink-0">
+          <span className="rounded-full bg-white/10 px-1.5 py-0.5">{currentIndex + 1}</span>
           <span>/</span>
           <span>{breakingList.length}</span>
         </div>

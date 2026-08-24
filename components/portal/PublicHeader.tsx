@@ -64,7 +64,7 @@ export function PublicHeader() {
     <header className="w-full bg-background border-b border-border/40 select-none">
       {/* Topmost Utility Bar */}
       <div className="bg-[#027081] text-white py-1.5 px-4 text-xs font-medium">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="max-w-[1480px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center space-x-3">
             <span className="flex items-center gap-1.5 font-semibold text-white/95">
               <Calendar className="h-3.5 w-3.5 text-white/80" />
@@ -81,7 +81,7 @@ export function PublicHeader() {
             {/* Language Edition Switcher Button */}
             <button
               onClick={toggleLanguage}
-              className="inline-flex items-center space-x-1.5 bg-amber-400 text-slate-950 px-2.5 py-1 rounded-md text-[11px] font-extrabold hover:bg-amber-300 transition-colors shadow-2xs cursor-pointer"
+              className="inline-flex items-center space-x-1.5 bg-amber-400 text-slate-950 px-2.5 py-1 rounded-none text-[11px] font-extrabold hover:bg-amber-300 transition-colors cursor-pointer"
             >
               <Globe className="h-3.5 w-3.5" />
               <span>{isEnglish ? "नेपाली संस्करण 🇳🇵" : "English Edition 🌐"}</span>
@@ -110,15 +110,15 @@ export function PublicHeader() {
       <NepaliUtilityBar />
 
       {/* Main Brand Logo & Leaderboard Ad Container */}
-      <div className="max-w-7xl mx-auto px-4 py-5 flex flex-col lg:flex-row items-center justify-between gap-6">
-        {/* Brand Name Logo */}
-        <Link href={isEnglish ? "/?lang=en" : "/"} className="flex flex-col items-center lg:items-start group">
-          <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#027081] group-hover:opacity-90 transition-opacity font-serif">
-            {isEnglish ? "NEPAL NEWS" : "नेपाल खबर"}
-          </span>
-          <span className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase pt-0.5">
-            {isEnglish ? "Truth, Facts & Unbiased News Portal" : "सत्य, तथ्य र निष्पक्ष समाचार पोर्टल"}
-          </span>
+      <div className="max-w-[1480px] mx-auto px-4 py-4 flex flex-col lg:flex-row items-center justify-between gap-6">
+        {/* Brand Logo Image */}
+        <Link href={isEnglish ? "/?lang=en" : "/"} className="flex items-center group shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/newslogo.png"
+            alt="नेपाल खबर (Nepal News)"
+            className="h-14 sm:h-16 md:h-20 w-auto object-contain rounded-none group-hover:opacity-95 transition-opacity py-1"
+          />
         </Link>
 
         {/* Top Header Leaderboard Ad Banner (728x90 standard) */}
@@ -127,27 +127,27 @@ export function PublicHeader() {
             href={leaderboardAd.targetUrl || "#"}
             target="_blank"
             rel="noreferrer"
-            className="w-full max-w-[728px] h-[90px] rounded-xl border border-border overflow-hidden block relative shadow-2xs group"
+            className="w-full max-w-182 h-22.5 border border-border overflow-hidden block relative group rounded-none"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={leaderboardAd.imageUrl}
               alt={leaderboardAd.title}
-              className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-200"
+              className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-200 rounded-none"
             />
-            <span className="absolute top-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-mono uppercase">
+            <span className="absolute top-1 right-1 bg-black text-white text-[9px] px-1.5 py-0.5 font-mono uppercase rounded-none">
               विज्ञापन
             </span>
           </a>
         ) : (
-          <div className="hidden lg:flex w-[728px] h-[90px] rounded-xl border border-dashed border-border/80 bg-muted/20 items-center justify-center text-xs text-muted-foreground font-medium">
+          <div className="hidden lg:flex w-182 h-22.5 border border-dashed border-border/80 bg-muted/20 items-center justify-center text-xs text-muted-foreground font-medium rounded-none">
             विज्ञापन स्थान (Header Leaderboard Ad - 728x90)
           </div>
         )}
       </div>
 
       {/* Search Input Bar for Mobile / Tablet */}
-      <div className="max-w-7xl mx-auto px-4 pb-3 lg:hidden">
+      <div className="max-w-[1480px] mx-auto px-4 pb-3 lg:hidden">
         <form onSubmit={handleSearch} className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
@@ -155,7 +155,7 @@ export function PublicHeader() {
             placeholder="समाचार खोज्नुहोस्..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-background pl-9 pr-4 py-2 text-xs outline-none focus:border-[#027081] transition-colors"
+            className="w-full rounded-none border border-slate-300 dark:border-slate-700 bg-background pl-9 pr-4 py-2 text-xs outline-none focus:border-[#027081] transition-colors"
           />
         </form>
       </div>
