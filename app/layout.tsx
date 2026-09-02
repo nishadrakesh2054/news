@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Devanagari, Geist_Mono } from "next/font/google";
+import { Inter, Noto_Sans_Devanagari, Geist_Mono } from "next/font/google";
+import { SITE_CONFIG } from "@/constants/site";
 import "./globals.css";
+
+const inter = Inter({
+  variable: "--font-admin-ui",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
 
 const notoSansDevanagari = Noto_Sans_Devanagari({
   variable: "--font-noto-devanagari",
@@ -14,15 +21,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://nepalkhabar.com"),
-  applicationName: "नेपाल खबर",
+  metadataBase: new URL(SITE_CONFIG.url),
+  applicationName: SITE_CONFIG.name,
   title: {
-    default: "नेपाल खबर | Nepali News, Breaking, Politics, Business & More",
-    template: "%s | नेपाल खबर",
+    default: SITE_CONFIG.title,
+    template: `%s | ${SITE_CONFIG.name}`,
   },
-  description:
-    "नेपाल खबरले राजनीति, अर्थव्यवस्था, खेलकुद, प्रान्तीय समाचार, सामाजिक, संस्कृति, विज्ञान र जीवनसाथी विषयमा ताजा समाचार, विश्लेषण र विशेष सामग्री प्रदान गर्दछ।",
+  description: SITE_CONFIG.description,
   keywords: [
+    "Echo Manch",
     "नेपाल समाचार",
     "नेपाली खबर",
     "breaking news nepal",
@@ -37,11 +44,10 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    siteName: "नेपाल खबर",
-    title: "नेपाल खबर | Nepali News, Breaking, Politics, Business & More",
-    description:
-      "ताजा नेपाली समाचार, राजनीति, अर्थव्यवस्था, खेलकुद, सामाजिक, मानवअधिकार, प्रदेशीय र विशेष रिपोर्टहरू।",
-    url: "https://nepalkhabar.com",
+    siteName: SITE_CONFIG.name,
+    title: SITE_CONFIG.title,
+    description: SITE_CONFIG.description,
+    url: SITE_CONFIG.url,
     type: "website",
     locale: "ne_NP",
     images: [
@@ -49,7 +55,7 @@ export const metadata: Metadata = {
         url: "/logo/logo.png",
         width: 1200,
         height: 630,
-        alt: "नेपाल खबर",
+        alt: SITE_CONFIG.name,
       },
     ],
   },
@@ -57,9 +63,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@nepalkhabar",
     creator: "@nepalkhabar",
-    title: "नेपाल खबर | Nepali News, Breaking, Politics, Business & More",
-    description:
-      "ताजा नेपाली समाचार, राजनीति, अर्थव्यवस्था, खेलकुद, सामाजिक, मानवअधिकार, प्रदेशीय र विशेष रिपोर्टहरू।",
+    title: SITE_CONFIG.title,
+    description: SITE_CONFIG.description,
     images: ["/logo/logo.png"],
   },
   robots: {
@@ -83,7 +88,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="ne"
-      className={`${notoSansDevanagari.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${notoSansDevanagari.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>

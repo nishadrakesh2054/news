@@ -68,6 +68,16 @@ export default function AdminPollsPage() {
     },
   });
 
+  const openCreateModal = () => {
+    setQuestionNp("");
+    setOptions(emptyOptions());
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
   const createMutation = useMutation({
     mutationFn: async (payload: { questionNp: string; options: string[] }) => {
       const res = await fetch("/api/admin/polls", {
@@ -83,7 +93,7 @@ export default function AdminPollsPage() {
       toast.success("Poll published — previous active poll closed");
       setQuestionNp("");
       setOptions(emptyOptions());
-      setIsModalOpen(false);
+      closeModal();
       queryClient.invalidateQueries({ queryKey: ["admin-polls"] });
     },
     onError: (err: Error) => toast.error(err.message),
@@ -104,12 +114,6 @@ export default function AdminPollsPage() {
     0
   );
   const isFiltered = statusFilter !== "ALL" || search.trim() !== "";
-
-  const openCreateModal = () => {
-    setQuestionNp("");
-    setOptions(emptyOptions());
-    setIsModalOpen(true);
-  };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -333,91 +337,108 @@ export default function AdminPollsPage() {
       </div>
 
       {isModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg border border-border bg-card shadow-sm">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <div>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40">
+          <div className="flex min-h-full items-start justify-center p-4 pb-6 pt-16">
+            <div
+              className={`${adminPanel} flex max-h-[calc(100vh-5rem)] w-full max-w-lg flex-col overflow-hidden`}
+            >
+              <div className="flex shrink-0 items-center justify-between border-b border-border/70 px-4 py-3">
                 <h2 className="text-sm font-semibold text-foreground">New poll</h2>
-                <p className="text-[11px] text-muted-foreground">
-                  This will become the active poll and close any current one
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreate} className="space-y-3 p-4">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">
-                  Question <span className="text-[#C3272E]">*</span>
-                </label>
-                <textarea
-                  rows={3}
-                  required
-                  value={questionNp}
-                  onChange={(e) => setQuestionNp(e.target.value)}
-                  placeholder="Poll question…"
-                  className={`${adminInput} h-auto min-h-[72px] py-2`}
-                />
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  disabled={createMutation.isPending}
+                  className="text-muted-foreground hover:text-foreground disabled:opacity-40"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-foreground">
-                    Answer options <span className="text-[#C3272E]">*</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={addOption}
-                    disabled={options.length >= 6}
-                    className="text-[11px] font-medium text-[#0C4EA0] hover:underline disabled:opacity-40"
-                  >
-                    + Add option
-                  </button>
-                </div>
-                {options.map((opt, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <span className="w-5 shrink-0 text-[11px] font-mono text-muted-foreground">
-                      {index + 1}.
-                    </span>
-                    <input
-                      type="text"
-                      required={index < 2}
-                      value={opt}
-                      onChange={(e) => updateOption(index, e.target.value)}
-                      placeholder={`Option ${index + 1}`}
-                      className={`${adminInput} flex-1`}
+              <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                <form id="poll-form" onSubmit={handleCreate} className="space-y-3">
+                  <p className="rounded-sm border border-border/70 bg-muted/15 px-3 py-2 text-[10px] text-muted-foreground">
+                    Publishing a new poll will close the current active poll.
+                  </p>
+
+                  <div className="space-y-1">
+                    <label htmlFor="poll-question" className="text-xs font-medium text-foreground">
+                      Question <span className="text-[#C3272E]">*</span>
+                    </label>
+                    <textarea
+                      id="poll-question"
+                      rows={2}
+                      required
+                      value={questionNp}
+                      onChange={(e) => setQuestionNp(e.target.value)}
+                      placeholder="Poll question…"
+                      className={`${adminInput} min-h-16 w-full resize-y py-2`}
                     />
-                    {options.length > 2 ? (
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium text-foreground">
+                        Answer options <span className="text-[#C3272E]">*</span>
+                      </label>
                       <button
                         type="button"
-                        onClick={() => removeOption(index)}
-                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-[#C3272E] hover:bg-muted"
-                        title="Remove option"
+                        onClick={addOption}
+                        disabled={options.length >= 6}
+                        className="text-[11px] font-medium text-[#0C4EA0] hover:underline disabled:opacity-40"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        + Add option
                       </button>
-                    ) : (
-                      <span className="w-7 shrink-0" />
-                    )}
+                    </div>
+                    {options.map((opt, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <span className="w-5 shrink-0 text-[11px] font-mono text-muted-foreground">
+                          {index + 1}.
+                        </span>
+                        <input
+                          type="text"
+                          required={index < 2}
+                          value={opt}
+                          onChange={(e) => updateOption(index, e.target.value)}
+                          placeholder={`Option ${index + 1}`}
+                          className={`${adminInput} w-full flex-1`}
+                        />
+                        {options.length > 2 ? (
+                          <button
+                            type="button"
+                            onClick={() => removeOption(index)}
+                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-sm text-[#C3272E] hover:bg-muted"
+                            title="Remove option"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        ) : (
+                          <span className="w-7 shrink-0" />
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </form>
               </div>
 
-              <div className="flex justify-end gap-2 border-t border-border pt-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className={adminBtnSecondary}>
+              <div className="flex shrink-0 justify-end gap-2 border-t border-border/70 px-4 py-3">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  disabled={createMutation.isPending}
+                  className={adminBtnSecondary}
+                >
                   Cancel
                 </button>
-                <button type="submit" disabled={createMutation.isPending} className={adminBtnPrimary}>
-                  {createMutation.isPending ? "Publishing…" : "Publish poll"}
+                <button
+                  type="submit"
+                  form="poll-form"
+                  disabled={createMutation.isPending}
+                  className={adminBtnPrimary}
+                >
+                  {createMutation.isPending ? "Publishing…" : "Publish"}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       ) : null}

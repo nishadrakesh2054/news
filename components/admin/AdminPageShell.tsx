@@ -3,7 +3,6 @@
 import { RefreshCw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
-  adminBtnGhost,
   adminBtnSecondary,
   adminPageContainer,
   adminPageDescription,

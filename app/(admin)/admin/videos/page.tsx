@@ -1,8 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Video } from "lucide-react";
+import { Film, HardDrive, Video } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
+import { AdminDataTable, AdminPanel, AdminStatsStrip } from "@/components/admin/content";
+import { adminBtnGhost } from "@/constants/admin-layout";
 
 type VideoItem = {
   id: string;
@@ -12,6 +14,12 @@ type VideoItem = {
   size: number;
   uploader?: { name: string };
 };
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default function AdminVideosPage() {
   const { data, isLoading, refetch, isFetching } = useQuery<{ items: VideoItem[]; total: number }>({
@@ -25,41 +33,92 @@ export default function AdminVideosPage() {
   });
 
   const items = data?.items ?? [];
+  const totalSize = items.reduce((sum, item) => sum + (item.size || 0), 0);
+  const mp4Count = items.filter((item) => item.mimeType.includes("mp4")).length;
 
   return (
-    <AdminPageShell title="Videos" icon={Video} description="Video media from the library" onRefresh={() => refetch()} isRefreshing={isFetching}>
-      <div className="rounded-lg border bg-card overflow-hidden">
-        {isLoading ? (
-          <p className="p-6 text-sm text-muted-foreground">Loading...</p>
-        ) : items.length === 0 ? (
-          <p className="p-6 text-sm text-muted-foreground">No videos yet. Upload via Media Library with a video file.</p>
-        ) : (
-          <table className="w-full text-xs">
-            <thead className="bg-muted/50 text-[10px] uppercase">
-              <tr>
-                <th className="px-4 py-3 text-left">File</th>
-                <th className="px-4 py-3 text-left">Type</th>
-                <th className="px-4 py-3 text-left">Uploader</th>
-                <th className="px-4 py-3 text-left">URL</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {items.map((v) => (
-                <tr key={v.id}>
-                  <td className="px-4 py-3">{v.filename}</td>
-                  <td className="px-4 py-3">{v.mimeType}</td>
-                  <td className="px-4 py-3">{v.uploader?.name ?? "—"}</td>
-                  <td className="px-4 py-3 truncate max-w-xs">
-                    <a href={v.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
-                      Open
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+    <AdminPageShell
+      title="Videos"
+      description="Video media from the library"
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+    >
+      <AdminStatsStrip
+        loading={isLoading}
+        stats={[
+          {
+            label: "Total videos",
+            value: data?.total ?? items.length,
+            hint: "In media library",
+            icon: Video,
+          },
+          {
+            label: "MP4 files",
+            value: mp4Count,
+            hint: "Standard web format",
+            icon: Film,
+          },
+          {
+            label: "Storage used",
+            value: formatBytes(totalSize),
+            hint: "Current page set",
+            icon: HardDrive,
+          },
+          {
+            label: "Upload via",
+            value: "Media",
+            hint: "Use Media library",
+            icon: Video,
+          },
+        ]}
+      />
+
+      <AdminPanel title="Video library">
+        <AdminDataTable
+          loading={isLoading}
+          rows={items}
+          rowKey={(row) => row.id}
+          emptyMessage="No videos yet. Upload via Media library."
+          columns={[
+            {
+              key: "filename",
+              label: "File",
+              render: (row) => <span className="font-medium">{row.filename}</span>,
+            },
+            {
+              key: "mimeType",
+              label: "Type",
+              cellClassName: "text-muted-foreground",
+            },
+            {
+              key: "size",
+              label: "Size",
+              cellClassName: "font-mono tabular-nums text-muted-foreground",
+              render: (row) => formatBytes(row.size),
+            },
+            {
+              key: "uploader",
+              label: "Uploader",
+              render: (row) => row.uploader?.name ?? "—",
+            },
+            {
+              key: "url",
+              label: "Link",
+              align: "right",
+              render: (row) => (
+                <a
+                  href={row.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={adminBtnGhost}
+                >
+                  Open
+                </a>
+              ),
+            },
+          ]}
+        />
+      </AdminPanel>
     </AdminPageShell>
   );
 }

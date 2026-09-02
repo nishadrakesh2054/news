@@ -7,6 +7,12 @@ import { ADMIN_NAV_SECTIONS, isAdminNavItemActive } from "@/constants/admin-navi
 import {
   ADMIN_SIDEBAR_WIDTH_COLLAPSED,
   ADMIN_SIDEBAR_WIDTH_EXPANDED,
+  adminSidebarNavIcon,
+  adminSidebarNavLink,
+  adminSidebarNavLinkActive,
+  adminSidebarNavLinkInactive,
+  adminSidebarSectionLabel,
+  adminSidebarShell,
 } from "@/constants/admin-layout";
 
 type AdminSidebarProps = {
@@ -42,7 +48,7 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
 
   return (
     <aside
-      className={`z-20 h-full hidden md:flex flex-col min-h-0 shrink-0 bg-[#0C4EA0] text-white select-none transition-[width] duration-200 ease-out ${
+      className={`z-20 h-full hidden md:flex flex-col min-h-0 shrink-0 bg-[#0C4EA0] text-white select-none transition-[width] duration-200 ease-out ${adminSidebarShell} ${
         collapsed ? ADMIN_SIDEBAR_WIDTH_COLLAPSED : ADMIN_SIDEBAR_WIDTH_EXPANDED
       }`}
     >
@@ -53,12 +59,15 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
           </div>
         ) : null}
 
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {ADMIN_NAV_SECTIONS.map((section, sectionIndex) => (
-            <div key={section.title} className="space-y-0.5">
+            <div
+              key={section.title}
+              className={sectionIndex > 0 ? "space-y-0.5 border-t border-white/10 pt-2.5" : "space-y-0.5"}
+            >
               {!collapsed && (
-                <div className="flex items-center justify-between gap-1 px-1.5">
-                  <h2 className="text-[8px] font-bold tracking-[0.14em] text-white/50 uppercase truncate">
+                <div className="flex items-center justify-between gap-1 px-2 pb-1">
+                  <h2 className={`${adminSidebarSectionLabel} truncate`}>
                     {section.title}
                   </h2>
                   {sectionIndex === 0 && onToggle ? (
@@ -67,7 +76,7 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
                 </div>
               )}
 
-              <nav className="flex flex-col gap-px">
+              <nav className="flex flex-col gap-0.5">
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = isAdminNavItemActive(pathname, item.href, item.exactMatch);
@@ -76,17 +85,15 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
                       key={item.href}
                       href={item.href}
                       title={collapsed ? item.label : undefined}
-                      className={`group flex min-h-7.5 items-center rounded-sm ${
-                        collapsed ? "justify-center px-1" : "gap-2 px-2"
-                      } py-1 text-[11.5px] leading-tight transition-colors duration-150 ${
-                        isActive
-                          ? "bg-[#C3272E] text-white font-semibold"
-                          : "text-white/75 hover:text-white hover:bg-white/10 font-medium"
+                      className={`group flex min-h-8 items-center rounded-sm transition-colors duration-150 ${adminSidebarNavLink} ${
+                        collapsed ? "justify-center px-1" : "gap-2.5 px-2"
+                      } py-1 ${
+                        isActive ? adminSidebarNavLinkActive : adminSidebarNavLinkInactive
                       }`}
                     >
                       <Icon
-                        className={`h-3.5 w-3.5 shrink-0 ${
-                          isActive ? "text-white" : "text-white/75 group-hover:text-white"
+                        className={`${adminSidebarNavIcon} ${
+                          isActive ? "text-white" : "text-white/80 group-hover:text-white"
                         }`}
                       />
                       {!collapsed && (

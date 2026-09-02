@@ -1,8 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
+import {
+  countByMonth,
+  getRecentMonthBuckets,
+  startOfMonthsAgo,
+} from "@/lib/analytics-time-series";
+
+const CHART_MONTHS = 12;
 
 export async function GET() {
   try {
+    const monthBuckets = getRecentMonthBuckets(CHART_MONTHS);
+    const rangeStart = startOfMonthsAgo(CHART_MONTHS);
+
     // 1. Total readership views across all articles
     const totalAggregate = await prisma.article.aggregate({
       _sum: { views: true },
@@ -65,6 +75,48 @@ export async function GET() {
       };
     }).sort((a, b) => b.views - a.views);
 
+    const [recentUsers, recentPublishedArticles] = await Promise.all([
+      prisma.user.findMany({
+        where: { createdAt: { gte: rangeStart } },
+        select: { createdAt: true },
+      }),
+      prisma.article.findMany({
+        where: {
+          status: "PUBLISHED",
+          OR: [
+            { publishedAt: { gte: rangeStart } },
+            { publishedAt: null, createdAt: { gte: rangeStart } },
+          ],
+        },
+        select: { publishedAt: true, createdAt: true },
+      }),
+    ]);
+
+    const usersByMonth = countByMonth(recentUsers, (user) => user.createdAt, monthBuckets);
+    const articlesByMonth = countByMonth(
+      recentPublishedArticles,
+      (article) => article.publishedAt ?? article.createdAt,
+      monthBuckets
+    );
+
+    const monthlyUserGrowth = monthBuckets.map((bucket) => ({
+      month: bucket.label,
+      users: usersByMonth[bucket.key],
+    }));
+
+    const articlesPublished = monthBuckets.map((bucket) => ({
+      month: bucket.label,
+      articles: articlesByMonth[bucket.key],
+    }));
+
+    const articlesByCategory = [...categoryStats]
+      .sort((a, b) => b.articlesCount - a.articlesCount)
+      .slice(0, 8)
+      .map((category) => ({
+        name: category.name,
+        articles: category.articlesCount,
+      }));
+
     return apiSuccess(
       {
         totalViews,
@@ -73,6 +125,9 @@ export async function GET() {
         breakingCount,
         topArticles,
         categoryStats,
+        monthlyUserGrowth,
+        articlesPublished,
+        articlesByCategory,
         deviceBreakdown: [
           { name: "Mobile Web (Smartphones)", percentage: 68.4, views: Math.round(totalViews * 0.684) },
           { name: "Desktop & Laptops", percentage: 27.2, views: Math.round(totalViews * 0.272) },

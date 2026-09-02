@@ -8,6 +8,7 @@ import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminDataTable } from "@/components/admin/content";
 import {
   adminBtnPrimary,
+  adminBtnSecondary,
   adminInput,
   adminPanel,
 } from "@/constants/admin-layout";
@@ -135,7 +136,7 @@ export function AdminResourcePage<T extends { id: string }>({
             </button>
             <button
               type="button"
-              className="inline-flex h-7 items-center rounded-sm border border-border bg-card px-3 text-xs font-medium hover:bg-muted"
+              className={adminBtnSecondary}
               onClick={() => setShowForm(false)}
             >
               Cancel

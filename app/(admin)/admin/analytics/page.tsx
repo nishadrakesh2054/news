@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AnalyticsSectionNav } from "@/components/admin/AnalyticsSectionNav";
+import { AnalyticsChartsSection } from "@/components/admin/analytics/AnalyticsChartsSection";
 import {
   AdminDataTable,
   AdminPanel,
@@ -72,6 +73,9 @@ export default function AdminAnalyticsPage() {
   const categoryStats: CategoryStatItem[] = data?.categoryStats ?? [];
   const deviceBreakdown: DeviceItem[] = data?.deviceBreakdown ?? [];
   const peakHours: PeakHourItem[] = data?.peakHours ?? [];
+  const monthlyUserGrowth = data?.monthlyUserGrowth ?? [];
+  const articlesPublished = data?.articlesPublished ?? [];
+  const articlesByCategory = data?.articlesByCategory ?? [];
 
   return (
     <AdminPageShell
@@ -91,6 +95,13 @@ export default function AdminAnalyticsPage() {
       />
 
       <AnalyticsSectionNav />
+
+      <AnalyticsChartsSection
+        loading={isLoading}
+        monthlyUserGrowth={monthlyUserGrowth}
+        articlesPublished={articlesPublished}
+        articlesByCategory={articlesByCategory}
+      />
 
       <AdminPanel
         title="Top articles by views"

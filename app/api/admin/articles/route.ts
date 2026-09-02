@@ -37,48 +37,71 @@ export async function GET(request: NextRequest) {
       where.categoryId = categoryId;
     }
 
-    const total = await prisma.article.count({ where });
+    const [total, articles, statusGroups, viewsAggregate, breakingCount] = await Promise.all([
+      prisma.article.count({ where }),
+      prisma.article.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          titleNp: true,
+          slug: true,
+          excerpt: true,
+          coverImage: true,
+          status: true,
+          type: true,
+          isFeatured: true,
+          isBreaking: true,
+          views: true,
+          publishedAt: true,
+          createdAt: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              nameNp: true,
+              slug: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.article.groupBy({
+        by: ["status"],
+        where,
+        _count: { _all: true },
+      }),
+      prisma.article.aggregate({
+        where,
+        _sum: { views: true },
+      }),
+      prisma.article.count({ where: { ...where, isBreaking: true } }),
+    ]);
 
-    const articles = await prisma.article.findMany({
-      where,
-      select: {
-        id: true,
-        title: true,
-        titleNp: true,
-        slug: true,
-        excerpt: true,
-        coverImage: true,
-        status: true,
-        type: true,
-        isFeatured: true,
-        isBreaking: true,
-        views: true,
-        publishedAt: true,
-        createdAt: true,
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-            nameNp: true,
-            slug: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const statusCount = (status: ArticleStatus) =>
+      statusGroups.find((group) => group.status === status)?._count._all ?? 0;
 
     return apiSuccess(
       {
         articles,
+        summary: {
+          total,
+          published: statusCount(ArticleStatus.PUBLISHED),
+          draft: statusCount(ArticleStatus.DRAFT),
+          pending: statusCount(ArticleStatus.PENDING),
+          archived: statusCount(ArticleStatus.ARCHIVED),
+          breaking: breakingCount,
+          views: viewsAggregate._sum.views ?? 0,
+        },
         pagination: {
           total,
           page,

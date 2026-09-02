@@ -3,6 +3,7 @@
 import { use } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArticleForm } from "@/components/admin/ArticleForm";
+import { adminPageContainer } from "@/constants/admin-layout";
 
 export default function EditArticlePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -18,11 +19,21 @@ export default function EditArticlePage({ params }: { params: Promise<{ id: stri
   });
 
   if (isLoading) {
-    return <div className="p-12 text-center text-muted-foreground">Loading article data...</div>;
+    return (
+      <div className={adminPageContainer}>
+        <p className="py-12 text-center text-xs text-muted-foreground">Loading article…</p>
+      </div>
+    );
   }
 
   if (isError || !article) {
-    return <div className="p-12 text-center text-destructive">Article not found or failed to load.</div>;
+    return (
+      <div className={adminPageContainer}>
+        <p className="py-12 text-center text-xs text-destructive">
+          Article not found or failed to load.
+        </p>
+      </div>
+    );
   }
 
   return <ArticleForm initialData={article} />;

@@ -403,104 +403,127 @@ export default function AdminAdsPage() {
       </div>
 
       {isModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto border border-border bg-card shadow-sm">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <h2 className="text-sm font-semibold text-foreground">
-                {editingAd ? "Edit ad unit" : "New ad unit"}
-              </h2>
-              <button
-                type="button"
-                onClick={closeModal}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-3 p-4">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">
-                  Title <span className="text-[#C3272E]">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Campaign name"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className={adminInput}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">
-                  Placement <span className="text-[#C3272E]">*</span>
-                </label>
-                <select
-                  value={slot}
-                  onChange={(e) => setSlot(e.target.value as AdSlot)}
-                  className={adminSelect}
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40">
+          <div className="flex min-h-full items-start justify-center p-4 pb-6 pt-16">
+            <div
+              className={`${adminPanel} flex max-h-[calc(100vh-5rem)] w-full max-w-lg flex-col overflow-hidden`}
+            >
+              <div className="flex shrink-0 items-center justify-between border-b border-border/70 px-4 py-3">
+                <h2 className="text-sm font-semibold text-foreground">
+                  {editingAd ? "Edit ad unit" : "New ad unit"}
+                </h2>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="text-muted-foreground hover:text-foreground"
                 >
-                  <option value="HEADER_LEADERBOARD">Header leaderboard</option>
-                  <option value="SIDEBAR_TOP">Sidebar top</option>
-                  <option value="IN_ARTICLE">In-article inline</option>
-                  <option value="STICKY_FOOTER">Sticky footer</option>
-                </select>
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
-              <DualImagePicker
-                value={imageUrl}
-                onChange={setImageUrl}
-                folder="ads"
-                label="Banner image"
-              />
+              <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                <form id="ad-form" onSubmit={handleSubmit} className="space-y-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <label htmlFor="ad-title" className="text-xs font-medium text-foreground">
+                        Title <span className="text-[#C3272E]">*</span>
+                      </label>
+                      <input
+                        id="ad-title"
+                        type="text"
+                        required
+                        placeholder="Campaign name"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        className={`${adminInput} w-full`}
+                      />
+                    </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">Target URL</label>
-                <input
-                  type="url"
-                  placeholder="https://advertiser.com"
-                  value={targetUrl}
-                  onChange={(e) => setTargetUrl(e.target.value)}
-                  className={`${adminInput} font-mono`}
-                />
+                    <div className="space-y-1">
+                      <label htmlFor="ad-slot" className="text-xs font-medium text-foreground">
+                        Placement <span className="text-[#C3272E]">*</span>
+                      </label>
+                      <select
+                        id="ad-slot"
+                        value={slot}
+                        onChange={(e) => setSlot(e.target.value as AdSlot)}
+                        className={`${adminSelect} w-full`}
+                      >
+                        <option value="HEADER_LEADERBOARD">Header leaderboard</option>
+                        <option value="SIDEBAR_TOP">Sidebar top</option>
+                        <option value="IN_ARTICLE">In-article inline</option>
+                        <option value="STICKY_FOOTER">Sticky footer</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-foreground">Banner image</p>
+                    <DualImagePicker
+                      value={imageUrl}
+                      onChange={setImageUrl}
+                      folder="ads"
+                      label=""
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label htmlFor="ad-target-url" className="text-xs font-medium text-foreground">
+                      Target URL
+                    </label>
+                    <input
+                      id="ad-target-url"
+                      type="url"
+                      placeholder="https://advertiser.com"
+                      value={targetUrl}
+                      onChange={(e) => setTargetUrl(e.target.value)}
+                      className={`${adminInput} w-full font-mono`}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label htmlFor="ad-script" className="text-xs font-medium text-foreground">
+                      Script code
+                    </label>
+                    <textarea
+                      id="ad-script"
+                      rows={2}
+                      placeholder="<script>…</script>"
+                      value={scriptCode}
+                      onChange={(e) => setScriptCode(e.target.value)}
+                      className={`${adminInput} min-h-14 w-full resize-y py-2 font-mono text-[11px]`}
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Optional — for third-party ad networks instead of a banner
+                    </p>
+                  </div>
+
+                  <label className="flex cursor-pointer items-center gap-2 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={isActive}
+                      onChange={(e) => setIsActive(e.target.checked)}
+                      className="h-4 w-4 rounded-sm border-border accent-[#0C4EA0]"
+                    />
+                    Active immediately
+                  </label>
+                </form>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">Script code (optional)</label>
-                <textarea
-                  rows={3}
-                  placeholder="<script>…</script>"
-                  value={scriptCode}
-                  onChange={(e) => setScriptCode(e.target.value)}
-                  className={`${adminInput} h-auto min-h-[72px] py-2 font-mono`}
-                />
-              </div>
-
-              <label className="flex items-center gap-2 text-xs text-foreground">
-                <input
-                  type="checkbox"
-                  checked={isActive}
-                  onChange={(e) => setIsActive(e.target.checked)}
-                  className="h-3.5 w-3.5 rounded-sm border-border"
-                />
-                Active immediately
-              </label>
-
-              <div className="flex justify-end gap-2 border-t border-border pt-3">
+              <div className="flex shrink-0 justify-end gap-2 border-t border-border/70 px-4 py-3">
                 <button type="button" onClick={closeModal} className={adminBtnSecondary}>
                   Cancel
                 </button>
                 <button
                   type="submit"
+                  form="ad-form"
                   className={adminBtnPrimary}
                   disabled={createMutation.isPending || updateMutation.isPending}
                 >
-                  {editingAd ? "Save changes" : "Create ad unit"}
+                  {editingAd ? "Save" : "Create"}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       ) : null}

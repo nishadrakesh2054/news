@@ -2,20 +2,14 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Eye, FileText, Plus, Zap } from "lucide-react";
+import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import {
   AdminDataTable,
   AdminPanel,
   AdminStatsStrip,
 } from "@/components/admin/content";
-import {
-  adminBtnPrimary,
-  adminBtnSecondary,
-  adminPageContainer,
-  adminPageDescription,
-  adminPageHeader,
-  adminPageTitle,
-} from "@/constants/admin-layout";
+import { adminBtnPrimary, adminBtnSecondary } from "@/constants/admin-layout";
 
 const SHORTCUTS = [
   { href: "/admin/articles/new", label: "New article" },
@@ -27,7 +21,7 @@ const SHORTCUTS = [
 ] as const;
 
 export default function AdminDashboardPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin-dashboard"],
     queryFn: async () => {
       const res = await fetch("/api/admin/analytics");
@@ -44,27 +38,45 @@ export default function AdminDashboardPage() {
   const topArticles = data?.topArticles ?? [];
 
   return (
-    <div className={adminPageContainer}>
-      <header className={adminPageHeader}>
-        <div>
-          <h1 className={adminPageTitle}>Overview</h1>
-          <p className={adminPageDescription}>
-            Newsroom activity and publishing summary
-          </p>
-        </div>
+    <AdminPageShell
+      title="Overview"
+      description="Newsroom activity and publishing summary"
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+      actions={
         <Link href="/admin/articles/new" className={adminBtnPrimary}>
           <Plus className="h-3.5 w-3.5" />
           New article
         </Link>
-      </header>
-
+      }
+    >
       <AdminStatsStrip
         loading={isLoading}
         stats={[
-          { label: "Published", value: publishedCount },
-          { label: "Total articles", value: totalArticles },
-          { label: "Total views", value: totalViews.toLocaleString() },
-          { label: "Breaking stories", value: breakingCount },
+          {
+            label: "Published",
+            value: publishedCount,
+            hint: "Live on site",
+            icon: Eye,
+          },
+          {
+            label: "Total articles",
+            value: totalArticles,
+            hint: "All statuses",
+            icon: FileText,
+          },
+          {
+            label: "Total views",
+            value: totalViews.toLocaleString(),
+            hint: "All-time readership",
+            icon: Eye,
+          },
+          {
+            label: "Breaking stories",
+            value: breakingCount,
+            hint: "Active breaking flag",
+            icon: Zap,
+          },
         ]}
       />
 
@@ -120,6 +132,6 @@ export default function AdminDashboardPage() {
           ]}
         />
       </AdminPanel>
-    </div>
+    </AdminPageShell>
   );
 }

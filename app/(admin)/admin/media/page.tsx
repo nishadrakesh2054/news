@@ -21,6 +21,7 @@ import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
 import {
   adminBadgeMuted,
+  adminBtnDanger,
   adminBtnGhost,
   adminBtnPrimary,
   adminBtnSecondary,
@@ -153,7 +154,7 @@ export default function AdminMediaPage() {
 
       toast.success(`Uploaded ${json.data.length} file(s)`);
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
-      setIsUploadModalOpen(false);
+      closeUploadModal();
       setUploadAltText("");
       setUploadCaption("");
     } catch (err: unknown) {
@@ -168,12 +169,28 @@ export default function AdminMediaPage() {
     toast.success("URL copied");
   };
 
+  const openUploadModal = () => {
+    setUploadFolder("articles");
+    setUploadAltText("");
+    setUploadCaption("");
+    setIsUploadModalOpen(true);
+  };
+
+  const closeUploadModal = () => {
+    if (isUploading) return;
+    setIsUploadModalOpen(false);
+  };
+
   const openInspector = (item: MediaItem) => {
     setInspectingItem(item);
     setEditAltText(item.altText || "");
     setEditCaption(item.caption || "");
     setEditFilename(item.filename || "");
     setEditFolder(item.folder || "articles");
+  };
+
+  const closeInspector = () => {
+    setInspectingItem(null);
   };
 
   const handleUpdateSubmit = (e: React.FormEvent) => {
@@ -209,7 +226,7 @@ export default function AdminMediaPage() {
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
       actions={
-        <button type="button" onClick={() => setIsUploadModalOpen(true)} className={adminBtnPrimary}>
+        <button type="button" onClick={openUploadModal} className={adminBtnPrimary}>
           <Upload className="h-3.5 w-3.5" />
           Upload
         </button>
@@ -328,7 +345,7 @@ export default function AdminMediaPage() {
           <p className="text-xs text-muted-foreground">No media found.</p>
           <button
             type="button"
-            onClick={() => setIsUploadModalOpen(true)}
+            onClick={openUploadModal}
             className={`${adminBtnPrimary} mt-3`}
           >
             Upload files
@@ -505,13 +522,14 @@ export default function AdminMediaPage() {
 
       {isUploadModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg border border-border bg-card shadow-sm">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div className={`${adminPanel} w-full max-w-md`}>
+            <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
               <h2 className="text-sm font-semibold text-foreground">Upload media</h2>
               <button
                 type="button"
-                onClick={() => setIsUploadModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground"
+                onClick={closeUploadModal}
+                disabled={isUploading}
+                className="text-muted-foreground hover:text-foreground disabled:opacity-40"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -519,11 +537,14 @@ export default function AdminMediaPage() {
 
             <div className="space-y-3 p-4">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">Folder</label>
+                <label htmlFor="upload-folder" className="text-xs font-medium text-foreground">
+                  Folder
+                </label>
                 <select
+                  id="upload-folder"
                   value={uploadFolder}
                   onChange={(e) => setUploadFolder(e.target.value)}
-                  className={adminSelect}
+                  className={`${adminSelect} w-full`}
                 >
                   <option value="articles">Articles</option>
                   <option value="ads">Advertisements</option>
@@ -531,40 +552,47 @@ export default function AdminMediaPage() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">Alt text</label>
-                  <input
-                    type="text"
-                    placeholder="Image description"
-                    value={uploadAltText}
-                    onChange={(e) => setUploadAltText(e.target.value)}
-                    className={adminInput}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">Caption</label>
-                  <input
-                    type="text"
-                    placeholder="Photo credit"
-                    value={uploadCaption}
-                    onChange={(e) => setUploadCaption(e.target.value)}
-                    className={adminInput}
-                  />
-                </div>
+              <div className="space-y-1">
+                <label htmlFor="upload-alt" className="text-xs font-medium text-foreground">
+                  Alt text
+                </label>
+                <input
+                  id="upload-alt"
+                  type="text"
+                  placeholder="Image description…"
+                  value={uploadAltText}
+                  onChange={(e) => setUploadAltText(e.target.value)}
+                  className={`${adminInput} w-full`}
+                />
               </div>
 
-              <div className="border border-dashed border-border bg-muted/20 p-6 text-center">
+              <div className="space-y-1">
+                <label htmlFor="upload-caption" className="text-xs font-medium text-foreground">
+                  Caption
+                </label>
+                <input
+                  id="upload-caption"
+                  type="text"
+                  placeholder="Photo credit…"
+                  value={uploadCaption}
+                  onChange={(e) => setUploadCaption(e.target.value)}
+                  className={`${adminInput} w-full`}
+                />
+              </div>
+
+              <div className="rounded-sm border border-dashed border-border/70 bg-muted/20 p-6 text-center transition-colors hover:border-[#0C4EA0] hover:bg-muted/30">
                 {isUploading ? (
                   <div className="flex flex-col items-center gap-2 text-[#0C4EA0]">
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    <span className="text-xs">Uploading…</span>
+                    <span className="text-xs font-medium">Uploading…</span>
                   </div>
                 ) : (
                   <label className="block cursor-pointer space-y-2">
-                    <Upload className="mx-auto h-5 w-5 text-muted-foreground" />
+                    <Upload className="mx-auto h-5 w-5 text-[#0C4EA0]" />
                     <p className="text-xs font-medium text-foreground">Choose image files</p>
-                    <p className="text-[11px] text-muted-foreground">PNG, JPG, WEBP, GIF — max 500 KB</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      PNG, JPG, WEBP, GIF — max 500 KB each
+                    </p>
                     <input
                       type="file"
                       accept="image/*"
@@ -577,8 +605,13 @@ export default function AdminMediaPage() {
               </div>
             </div>
 
-            <div className="flex justify-end border-t border-border px-4 py-3">
-              <button type="button" onClick={() => setIsUploadModalOpen(false)} className={adminBtnSecondary}>
+            <div className="flex justify-end gap-2 border-t border-border/70 px-4 py-3">
+              <button
+                type="button"
+                onClick={closeUploadModal}
+                disabled={isUploading}
+                className={adminBtnSecondary}
+              >
                 Cancel
               </button>
             </div>
@@ -588,83 +621,97 @@ export default function AdminMediaPage() {
 
       {inspectingItem ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto border border-border bg-card shadow-sm">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <h2 className="text-sm font-semibold text-foreground">Media details</h2>
+          <div className={`${adminPanel} flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden`}>
+            <div className="flex shrink-0 items-center justify-between border-b border-border/70 px-4 py-3">
+              <h2 className="text-sm font-semibold text-foreground">Edit media</h2>
               <button
                 type="button"
-                onClick={() => setInspectingItem(null)}
+                onClick={closeInspector}
                 className="text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <div className="flex h-48 items-center justify-center border border-border bg-muted/20">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={inspectingItem.url}
-                    alt={inspectingItem.filename}
-                    className="max-h-full max-w-full object-contain"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(inspectingItem.url)}
-                    className={`${adminBtnSecondary} flex-1`}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                    Copy URL
-                  </button>
-                  <a
-                    href={inspectingItem.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={adminBtnGhost}
-                    title="Open"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <div className="mb-3 overflow-hidden rounded-sm border border-border/70 bg-muted/20">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={inspectingItem.url}
+                  alt={inspectingItem.altText || inspectingItem.filename}
+                  className="mx-auto max-h-44 w-full object-contain"
+                />
               </div>
 
-              <form onSubmit={handleUpdateSubmit} className="space-y-3">
+              <div className="mb-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(inspectingItem.url)}
+                  className={`${adminBtnSecondary} flex-1`}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  Copy URL
+                </button>
+                <a
+                  href={inspectingItem.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={adminBtnGhost}
+                  title="Open in new tab"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
+
+              <form id="media-edit-form" onSubmit={handleUpdateSubmit} className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">Filename</label>
+                  <label htmlFor="edit-filename" className="text-xs font-medium text-foreground">
+                    Filename
+                  </label>
                   <input
+                    id="edit-filename"
                     type="text"
                     value={editFilename}
                     onChange={(e) => setEditFilename(e.target.value)}
-                    className={adminInput}
+                    className={`${adminInput} w-full`}
                   />
                 </div>
+
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">Alt text</label>
+                  <label htmlFor="edit-alt" className="text-xs font-medium text-foreground">
+                    Alt text
+                  </label>
                   <input
+                    id="edit-alt"
                     type="text"
                     value={editAltText}
                     onChange={(e) => setEditAltText(e.target.value)}
-                    className={adminInput}
+                    className={`${adminInput} w-full`}
                   />
                 </div>
+
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">Caption</label>
+                  <label htmlFor="edit-caption" className="text-xs font-medium text-foreground">
+                    Caption
+                  </label>
                   <input
+                    id="edit-caption"
                     type="text"
                     value={editCaption}
                     onChange={(e) => setEditCaption(e.target.value)}
-                    className={adminInput}
+                    className={`${adminInput} w-full`}
                   />
                 </div>
+
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">Folder</label>
+                  <label htmlFor="edit-folder" className="text-xs font-medium text-foreground">
+                    Folder
+                  </label>
                   <select
+                    id="edit-folder"
                     value={editFolder}
                     onChange={(e) => setEditFolder(e.target.value)}
-                    className={adminSelect}
+                    className={`${adminSelect} w-full`}
                   >
                     <option value="articles">Articles</option>
                     <option value="ads">Advertisements</option>
@@ -672,33 +719,45 @@ export default function AdminMediaPage() {
                   </select>
                 </div>
 
-                <div className="space-y-1 border-t border-border pt-2 text-[11px] text-muted-foreground">
+                <div className="rounded-sm border border-border/70 bg-muted/15 px-3 py-2 text-[10px] text-muted-foreground">
                   <p>Size: {formatSize(inspectingItem.size)}</p>
                   <p>Type: {inspectingItem.mimeType}</p>
+                  {inspectingItem.width && inspectingItem.height ? (
+                    <p>
+                      Dimensions: {inspectingItem.width}×{inspectingItem.height}
+                    </p>
+                  ) : null}
                   <p>Uploaded: {new Date(inspectingItem.createdAt).toLocaleString()}</p>
                 </div>
-
-                <div className="flex items-center justify-between border-t border-border pt-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm(`Delete "${inspectingItem.filename}"?`)) {
-                        deleteMutation.mutate(inspectingItem.id);
-                      }
-                    }}
-                    className="inline-flex h-7 items-center px-2 text-xs font-medium text-[#C3272E] hover:underline"
-                  >
-                    Delete
-                  </button>
-                  <button
-                    type="submit"
-                    className={adminBtnPrimary}
-                    disabled={updateMutation.isPending}
-                  >
-                    Save changes
-                  </button>
-                </div>
               </form>
+            </div>
+
+            <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border/70 px-4 py-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm(`Delete "${inspectingItem.filename}"?`)) {
+                    deleteMutation.mutate(inspectingItem.id);
+                  }
+                }}
+                className={adminBtnDanger}
+              >
+                <Trash2 className="h-3 w-3" />
+                Delete
+              </button>
+              <div className="flex gap-2">
+                <button type="button" onClick={closeInspector} className={adminBtnSecondary}>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  form="media-edit-form"
+                  className={adminBtnPrimary}
+                  disabled={updateMutation.isPending}
+                >
+                  {updateMutation.isPending ? "Saving…" : "Save"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

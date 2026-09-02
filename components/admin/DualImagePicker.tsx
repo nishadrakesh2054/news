@@ -113,7 +113,7 @@ export function DualImagePicker({
 
       {/* Preview Thumbnail if Value exists */}
       {value ? (
-        <div className="relative rounded-xl border border-border bg-muted/20 p-2 flex items-center justify-between gap-3">
+        <div className="relative rounded-sm border border-border/70 bg-muted/20 p-2 flex items-center justify-between gap-3">
           <div className="flex items-center space-x-3 min-w-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -147,13 +147,13 @@ export function DualImagePicker({
       ) : (
         /* Selector Tabs: Local File vs URL vs Media Library */
         <div className="space-y-2">
-          <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border">
+          <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-sm border border-border/70">
             <button
               type="button"
               onClick={() => setActiveTab("file")}
               className={`flex-1 py-1 px-2.5 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === "file"
-                  ? "bg-[#027081] text-white shadow-2xs"
+                  ? "bg-[#0C4EA0] text-white shadow-2xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -169,7 +169,7 @@ export function DualImagePicker({
               }}
               className={`flex-1 py-1 px-2.5 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === "library"
-                  ? "bg-[#027081] text-white shadow-2xs"
+                  ? "bg-[#0C4EA0] text-white shadow-2xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -182,7 +182,7 @@ export function DualImagePicker({
               onClick={() => setActiveTab("url")}
               className={`flex-1 py-1 px-2.5 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                 activeTab === "url"
-                  ? "bg-[#027081] text-white shadow-2xs"
+                  ? "bg-[#0C4EA0] text-white shadow-2xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -193,15 +193,15 @@ export function DualImagePicker({
 
           {/* TAB 1: LOCAL FILE UPLOAD */}
           {activeTab === "file" && (
-            <div className="border border-dashed border-border hover:border-[#027081] rounded-xl p-4 text-center bg-muted/20 hover:bg-muted/40 transition-colors">
+            <div className="border border-dashed border-border/70 hover:border-[#0C4EA0] rounded-sm p-4 text-center bg-muted/20 hover:bg-muted/40 transition-colors">
               {isUploading ? (
-                <div className="flex items-center justify-center space-x-2 text-[#027081] text-xs font-semibold">
+                <div className="flex items-center justify-center space-x-2 text-[#0C4EA0] text-xs font-semibold">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>Uploading to server...</span>
                 </div>
               ) : (
                 <label className="cursor-pointer space-y-1 block">
-                  <Upload className="h-5 w-5 text-[#027081] mx-auto" />
+                  <Upload className="h-5 w-5 text-[#0C4EA0] mx-auto" />
                   <p className="text-xs font-bold text-foreground">Click to select image file from computer</p>
                   <p className="text-[10px] text-muted-foreground">Supports PNG, JPG, WEBP, GIF (Max 500 KB)</p>
                   <input
@@ -224,13 +224,13 @@ export function DualImagePicker({
                 placeholder="https://example.com/image.jpg"
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
-                className="flex-1 bg-background border border-border rounded-lg px-3 py-1.5 text-xs font-mono outline-none focus:border-[#027081]"
+                className="flex-1 bg-background border border-border rounded-lg px-3 py-1.5 text-xs font-mono outline-none focus:border-[#0C4EA0]"
               />
               <Button
                 type="button"
                 size="sm"
                 onClick={handleApplyUrl}
-                className="bg-[#027081] text-white text-xs font-bold h-8 px-3 rounded-lg"
+                className="bg-[#0C4EA0] text-white text-xs font-bold h-8 px-3 rounded-lg"
               >
                 Apply URL
               </Button>
@@ -242,10 +242,10 @@ export function DualImagePicker({
       {/* Media Asset Library Picker Drawer Modal */}
       {isLibraryOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card w-full max-w-xl rounded-2xl border border-border shadow-2xl p-5 space-y-4 animate-in fade-in-50">
+          <div className="bg-card w-full max-w-xl rounded-sm border border-border/70 shadow-xs p-5 space-y-4 animate-in fade-in-50">
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <ImageIcon className="h-4 w-4 text-[#027081]" />
+                <ImageIcon className="h-4 w-4 text-[#0C4EA0]" />
                 <span>Select Image from Media Library</span>
               </h3>
               <button
@@ -268,7 +268,7 @@ export function DualImagePicker({
                     setIsLibraryOpen(false);
                     toast.success("Image selected from library");
                   }}
-                  className="group relative rounded-xl border border-border overflow-hidden h-24 bg-slate-100 dark:bg-slate-900 cursor-pointer hover:border-[#027081] transition-all"
+                  className="group relative rounded-sm border border-border/70 overflow-hidden h-24 bg-muted cursor-pointer hover:border-[#0C4EA0] transition-all"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -277,7 +277,7 @@ export function DualImagePicker({
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <span className="text-white text-[10px] font-bold bg-[#027081] px-2 py-0.5 rounded">
+                    <span className="text-white text-[10px] font-bold bg-[#0C4EA0] px-2 py-0.5 rounded">
                       Select
                     </span>
                   </div>

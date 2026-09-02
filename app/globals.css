@@ -7,6 +7,7 @@
 @theme inline {
     --font-heading: var(--font-noto-devanagari), system-ui, sans-serif;
     --font-sans: var(--font-noto-devanagari), system-ui, sans-serif;
+    --font-admin: var(--font-admin-ui), ui-sans-serif, system-ui, sans-serif;
     --color-brand: #0C4EA0;
     --color-steel-blue: #0C4EA0;
     --color-sidebar-ring: var(--sidebar-ring);

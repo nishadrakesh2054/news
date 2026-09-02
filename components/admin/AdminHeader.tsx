@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Search, Bell, LogOut, ChevronDown } from "lucide-react";
+import { SITE_CONFIG } from "@/constants/site";
 import { MESSAGES } from "@/constants/messages";
 
 export function AdminHeader() {
@@ -32,7 +33,7 @@ export function AdminHeader() {
           href="/admin"
           className="group font-serif text-lg font-bold uppercase tracking-[0.14em] text-white transition-opacity hover:opacity-90 sm:text-xl"
         >
-          Echo Manch
+          {SITE_CONFIG.name}
         </Link>
       </div>
 

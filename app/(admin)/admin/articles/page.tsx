@@ -17,11 +17,14 @@ import {
   ArrowDown,
   ChevronLeft,
   ChevronRight,
+  FileText,
+  Eye,
+  Zap,
+  Clock,
 } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
 import {
-  adminBadge,
   adminBadgeMuted,
   adminBtnGhost,
   adminBtnPrimary,
@@ -197,10 +200,8 @@ export default function AdminArticlesPage() {
     search.trim() !== "" || statusFilter !== "ALL" || typeFilter !== "ALL" || categoryFilter !== "ALL";
 
   const pagination = data?.pagination;
-  const totalCount = pagination?.total || sortedArticles.length;
-  const publishedCount = sortedArticles.filter((a) => a.status === ArticleStatus.PUBLISHED).length;
-  const draftCount = sortedArticles.filter((a) => a.status === ArticleStatus.DRAFT).length;
-  const totalViews = sortedArticles.reduce((acc, curr) => acc + (curr.views || 0), 0);
+  const summary = data?.summary;
+  const filteredHint = isFiltered ? "Matching filters" : "All articles";
 
   const formatTypeLabel = (type: ArticleType) => {
     switch (type) {
@@ -239,11 +240,41 @@ export default function AdminArticlesPage() {
       }
     >
       <AdminStatsStrip
+        loading={isLoading}
         stats={[
-          { label: "Total", value: totalCount },
-          { label: "Published", value: publishedCount },
-          { label: "Drafts", value: draftCount },
-          { label: "Views (page)", value: totalViews.toLocaleString() },
+          {
+            label: "Total articles",
+            value: summary?.total ?? 0,
+            hint: filteredHint,
+            icon: FileText,
+          },
+          {
+            label: "Published",
+            value: summary?.published ?? 0,
+            hint:
+              summary?.pending && summary.pending > 0
+                ? `${summary.pending} in review`
+                : "Live on site",
+            icon: Eye,
+          },
+          {
+            label: "Drafts",
+            value: summary?.draft ?? 0,
+            hint:
+              summary?.archived && summary.archived > 0
+                ? `${summary.archived} archived`
+                : "Not published",
+            icon: Clock,
+          },
+          {
+            label: "Total views",
+            value: (summary?.views ?? 0).toLocaleString(),
+            hint:
+              summary?.breaking && summary.breaking > 0
+                ? `${summary.breaking} breaking`
+                : "Across filtered set",
+            icon: Zap,
+          },
         ]}
       />
 
@@ -419,10 +450,10 @@ export default function AdminArticlesPage() {
                           <img
                             src={art.coverImage}
                             alt=""
-                            className="h-8 w-8 shrink-0 border border-border object-cover"
+                            className="h-8 w-8 shrink-0 border border-border/70 object-cover"
                           />
                         ) : (
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-dashed border-border bg-muted/20 text-muted-foreground">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-dashed border-border/70 bg-muted/20 text-muted-foreground">
                             <ImageIcon className="h-3.5 w-3.5" />
                           </div>
                         )}

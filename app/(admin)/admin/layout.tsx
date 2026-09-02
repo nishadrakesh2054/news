@@ -1,9 +1,18 @@
+import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { AdminDashboardShell } from "@/components/admin/AdminDashboardShell";
+import { SITE_CONFIG } from "@/constants/site";
 import Link from "next/link";
 import { Role } from "@prisma/client";
+
+export const metadata: Metadata = {
+  title: {
+    default: `Admin | ${SITE_CONFIG.name}`,
+    template: `%s | ${SITE_CONFIG.name}`,
+  },
+};
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -22,7 +31,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           Your account role is <span className="font-semibold text-foreground">{session.user.role}</span>. You do not have administrative privileges to access this area.
         </p>
         <Link href="/" className="text-sm font-semibold text-blue-600 hover:underline">
-          Return to News Homepage
+          Return to {SITE_CONFIG.name}
         </Link>
       </div>
     );

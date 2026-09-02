@@ -311,8 +311,8 @@ export default function AdminCategoriesPage() {
 
       {isModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg border border-border bg-card shadow-sm">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div className={`${adminPanel} w-full max-w-md`}>
+            <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
               <h2 className="text-sm font-semibold text-foreground">
                 {editingCategory ? "Edit category" : "New category"}
               </h2>
@@ -326,70 +326,80 @@ export default function AdminCategoriesPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3 p-4">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">Nepali name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. राजनीति"
-                    value={nameNp}
-                    onChange={(e) => setNameNp(e.target.value)}
-                    className={adminInput}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">
-                    English name <span className="text-[#C3272E]">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Politics"
-                    value={name}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    className={adminInput}
-                  />
-                </div>
+              <div className="space-y-1">
+                <label htmlFor="category-name-np" className="text-xs font-medium text-foreground">
+                  Nepali name
+                </label>
+                <input
+                  id="category-name-np"
+                  type="text"
+                  placeholder="राजनीति"
+                  value={nameNp}
+                  onChange={(e) => setNameNp(e.target.value)}
+                  className={`${adminInput} w-full`}
+                />
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label htmlFor="category-name" className="text-xs font-medium text-foreground">
+                  English name <span className="text-[#C3272E]">*</span>
+                </label>
+                <input
+                  id="category-name"
+                  type="text"
+                  required
+                  placeholder="Politics"
+                  value={name}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  className={`${adminInput} w-full`}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">
+                  <label htmlFor="category-slug" className="text-xs font-medium text-foreground">
                     Slug <span className="text-[#C3272E]">*</span>
                   </label>
                   <input
+                    id="category-slug"
                     type="text"
                     required
                     placeholder="politics"
                     value={slug}
                     onChange={(e) => setSlug(autoSlug(e.target.value))}
-                    className={`${adminInput} font-mono`}
+                    className={`${adminInput} w-full font-mono`}
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">Display order</label>
+                  <label htmlFor="category-order" className="text-xs font-medium text-foreground">
+                    Order
+                  </label>
                   <input
+                    id="category-order"
                     type="number"
                     min="0"
                     value={order}
                     onChange={(e) => setOrder(parseInt(e.target.value, 10) || 0)}
-                    className={adminInput}
+                    className={`${adminInput} w-full`}
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">Description</label>
+                <label htmlFor="category-description" className="text-xs font-medium text-foreground">
+                  Description
+                </label>
                 <textarea
-                  rows={3}
-                  placeholder="Optional category description…"
+                  id="category-description"
+                  rows={2}
+                  placeholder="Optional…"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className={`${adminInput} h-auto min-h-[72px] py-2`}
+                  className={`${adminInput} min-h-16 w-full resize-y py-2`}
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 border-t border-border pt-3">
+              <div className="flex justify-end gap-2 border-t border-border/70 pt-3">
                 <button type="button" onClick={closeModal} className={adminBtnSecondary}>
                   Cancel
                 </button>
@@ -398,7 +408,7 @@ export default function AdminCategoriesPage() {
                   className={adminBtnPrimary}
                   disabled={createMutation.isPending || updateMutation.isPending}
                 >
-                  {editingCategory ? "Save changes" : "Create category"}
+                  {editingCategory ? "Save" : "Create"}
                 </button>
               </div>
             </form>
