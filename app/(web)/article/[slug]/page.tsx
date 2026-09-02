@@ -11,6 +11,7 @@ import { CommentsSection } from "@/components/web/CommentsSection";
 import { AudioNewsPlayer } from "@/components/portal/AudioNewsPlayer";
 import { ArticleViewTracker } from "@/components/portal/ArticleViewTracker";
 import { AdUnit } from "@/components/portal/AdUnit";
+import { absoluteUrl } from "@/lib/site-url";
 import { SITE_CONFIG, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
 
 interface ArticlePageProps {

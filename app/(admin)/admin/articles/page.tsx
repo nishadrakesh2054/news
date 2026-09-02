@@ -37,7 +37,8 @@ import {
   adminTableHead,
   adminTableHeadCell,
   adminTableRow,
-  adminToolbarRow,
+  adminToolbarPanel,
+  adminToolbarFilters,
   adminToolbarSearch,
   adminToolbarSelectMd,
   adminToolbarSelectSm,
@@ -356,23 +357,9 @@ export default function AdminArticlesPage() {
         ]}
       />
 
-      <div className={adminToolbarRow}>
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setPage(1);
-          }}
-          className={adminToolbarSelectStatus}
-        >
-          {statusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-
-        <div className={adminToolbarSearch}>
+      <div className={adminToolbarPanel}>
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+          <div className={adminToolbarSearch}>
             <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
@@ -394,6 +381,39 @@ export default function AdminArticlesPage() {
               </button>
             ) : null}
           </div>
+
+          <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground lg:ml-auto">
+            <span>Rows</span>
+            <select
+              value={limit}
+              onChange={(e) => {
+                setLimit(Number(e.target.value));
+                setPage(1);
+              }}
+              className={adminToolbarSelectSm}
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+        </div>
+
+        <div className={`${adminToolbarFilters} border-t border-border/50 pt-2`}>
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            className={adminToolbarSelectStatus}
+          >
+            {statusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
 
           <select
             value={categoryFilter}
@@ -467,10 +487,10 @@ export default function AdminArticlesPage() {
               setDistrictFilter(e.target.value);
               setPage(1);
             }}
-            className={`${adminInput} h-8 w-28 shrink-0`}
+            className={`${adminInput} h-8 w-full min-w-[7rem] sm:w-28`}
           />
 
-          <label className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-sm border border-border/70 px-2 text-xs text-muted-foreground">
+          <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-sm border border-border/70 px-2 text-xs text-muted-foreground">
             <input
               type="checkbox"
               checked={scheduledOnly}
@@ -487,28 +507,13 @@ export default function AdminArticlesPage() {
             <button
               type="button"
               onClick={resetFilters}
-              className="inline-flex h-8 shrink-0 items-center px-2 text-xs font-medium text-[#C3272E] hover:underline"
+              className="inline-flex h-8 items-center px-2 text-xs font-medium text-[#C3272E] hover:underline"
             >
-              Reset
+              Reset filters
             </button>
           ) : null}
-
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 pl-2 text-xs text-muted-foreground">
-            <span>Rows</span>
-            <select
-              value={limit}
-              onChange={(e) => {
-                setLimit(Number(e.target.value));
-                setPage(1);
-              }}
-              className={adminToolbarSelectSm}
-            >
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-            </select>
-          </div>
         </div>
+      </div>
 
       <div className={adminPanel}>
         {isLoading ? (

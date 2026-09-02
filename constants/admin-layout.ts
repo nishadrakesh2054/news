@@ -116,14 +116,20 @@ export const adminFilterTabActive =
   "inline-flex h-[30px] items-center rounded-sm bg-[#0C4EA0] px-2 text-[11px] font-medium text-white";
 
 export const adminToolbarRow =
-  "flex flex-nowrap items-center gap-2 overflow-x-auto";
+  "flex flex-wrap items-center gap-2";
+
+export const adminToolbarPanel =
+  "space-y-2 rounded-sm border border-border/70 bg-card p-2.5 shadow-xs";
+
+export const adminToolbarFilters =
+  "flex flex-wrap items-center gap-2";
 
 export const adminToolbarSearch =
-  "relative min-w-[220px] flex-1 max-w-[480px]";
+  "relative min-w-0 w-full flex-1 sm:max-w-md lg:max-w-lg";
 
-export const adminToolbarSelectMd = `${adminSelect} w-[132px]`;
-export const adminToolbarSelectSm = `${adminSelect} w-[108px]`;
-export const adminToolbarSelectStatus = `${adminSelect} w-[124px]`;
+export const adminToolbarSelectMd = `${adminSelect} w-full min-w-[7.5rem] sm:w-[132px]`;
+export const adminToolbarSelectSm = `${adminSelect} w-[72px] sm:w-[108px]`;
+export const adminToolbarSelectStatus = `${adminSelect} w-full min-w-[7.5rem] sm:w-[124px]`;
 
 /* Badges */
 export const adminBadge =

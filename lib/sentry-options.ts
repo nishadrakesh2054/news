@@ -10,13 +10,21 @@ export function getSentryDsn(): string | undefined {
   );
 }
 
+/** Sentry is production-only by default — enabling in dev slows `next dev` a lot. */
+export function isSentryEnabled(): boolean {
+  if (process.env.SENTRY_ENABLE_DEV === "true") {
+    return Boolean(getSentryDsn());
+  }
+  return isProd && Boolean(getSentryDsn());
+}
+
 export function getBaseSentryOptions(): NodeOptions & EdgeOptions & BrowserOptions {
   const dsn = getSentryDsn();
 
   return {
     dsn,
-    enabled: Boolean(dsn),
-    environment: process.env.VERCEL_ENV || process.env.NODE_ENV,
+    enabled: isSentryEnabled(),
+    environment: process.env.SENTRY_ENVIRONMENT || process.env.VERCEL_ENV || process.env.NODE_ENV,
     tracesSampleRate: isProd ? 0.1 : 1,
   };
 }
