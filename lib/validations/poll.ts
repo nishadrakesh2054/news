@@ -1,6 +1,7 @@
 export type PollInput = {
   questionNp: string;
   options: string[];
+  expiresAt?: Date | null;
 };
 
 export type PollValidationResult =
@@ -32,5 +33,16 @@ export function validatePollCreate(body: unknown): PollValidationResult {
     return { ok: false, error: "कृपया कम्तीमा २ वटा विकल्पहरू दिनुहोस्" };
   }
 
-  return { ok: true, data: { questionNp, options } };
+  let expiresAt: Date | null | undefined;
+  if (input.expiresAt !== undefined && input.expiresAt !== null && input.expiresAt !== "") {
+    const date = new Date(String(input.expiresAt));
+    if (Number.isNaN(date.getTime())) {
+      return { ok: false, error: "Invalid expiry date" };
+    }
+    expiresAt = date;
+  } else if (input.expiresAt === null || input.expiresAt === "") {
+    expiresAt = null;
+  }
+
+  return { ok: true, data: { questionNp, options, expiresAt } };
 }

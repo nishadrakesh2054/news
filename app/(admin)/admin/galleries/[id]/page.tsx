@@ -81,7 +81,7 @@ export default function AdminGalleryManagePage() {
     },
   });
 
-  const items = gallery?.items ?? [];
+  const items = useMemo(() => gallery?.items ?? [], [gallery?.items]);
   const mediaOptions = useMemo(
     () => (mediaData?.media ?? []).filter((m) => !items.some((item) => item.media.id === m.id)),
     [mediaData?.media, items]

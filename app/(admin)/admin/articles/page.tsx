@@ -283,11 +283,13 @@ export default function AdminArticlesPage() {
     });
   };
 
+  const [now] = useState(() => Date.now());
+
   const isScheduledPending = (art: ArticleItem) => {
     if (!art.scheduledAt) return false;
     const scheduled = new Date(art.scheduledAt);
     return (
-      scheduled.getTime() > Date.now() &&
+      scheduled.getTime() > now &&
       (art.status === ArticleStatus.DRAFT || art.status === ArticleStatus.PENDING)
     );
   };

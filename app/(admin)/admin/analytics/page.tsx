@@ -42,6 +42,16 @@ interface PeakHourItem {
   volume: string;
 }
 
+interface AdPerformanceItem {
+  id: string;
+  title: string;
+  slot: string;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  isActive: boolean;
+}
+
 function volumeBadge(volume: string) {
   const normalized = volume.toLowerCase();
   if (normalized === "peak" || normalized === "high") {
@@ -76,6 +86,8 @@ export default function AdminAnalyticsPage() {
   const monthlyUserGrowth = data?.monthlyUserGrowth ?? [];
   const articlesPublished = data?.articlesPublished ?? [];
   const articlesByCategory = data?.articlesByCategory ?? [];
+  const pageViewsByMonth = data?.pageViewsByMonth ?? [];
+  const adPerformance: AdPerformanceItem[] = data?.adPerformance ?? [];
 
   return (
     <AdminPageShell
@@ -101,6 +113,7 @@ export default function AdminAnalyticsPage() {
         monthlyUserGrowth={monthlyUserGrowth}
         articlesPublished={articlesPublished}
         articlesByCategory={articlesByCategory}
+        pageViewsByMonth={pageViewsByMonth}
       />
 
       <AdminPanel
@@ -201,6 +214,40 @@ export default function AdminAnalyticsPage() {
         />
       </AdminPanel>
 
+      <AdminPanel title="Ad performance">
+        <AdminDataTable
+          loading={isLoading}
+          rows={adPerformance}
+          rowKey={(row) => row.id}
+          emptyMessage="No ad data yet."
+          columns={[
+            { key: "title", label: "Campaign" },
+            { key: "slot", label: "Slot" },
+            {
+              key: "impressions",
+              label: "Impressions",
+              align: "right",
+              cellClassName: "font-mono tabular-nums",
+              render: (row) => row.impressions.toLocaleString(),
+            },
+            {
+              key: "clicks",
+              label: "Clicks",
+              align: "right",
+              cellClassName: "font-mono tabular-nums",
+              render: (row) => row.clicks.toLocaleString(),
+            },
+            {
+              key: "ctr",
+              label: "CTR",
+              align: "right",
+              cellClassName: "font-mono tabular-nums text-muted-foreground",
+              render: (row) => `${row.ctr}%`,
+            },
+          ]}
+        />
+      </AdminPanel>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <AdminPanel title="Device breakdown">
           <AdminDataTable
@@ -219,7 +266,7 @@ export default function AdminAnalyticsPage() {
               },
               {
                 key: "views",
-                label: "Est. views",
+                label: "Views",
                 align: "right",
                 cellClassName: "font-mono tabular-nums text-muted-foreground",
                 render: (row) => row.views.toLocaleString(),

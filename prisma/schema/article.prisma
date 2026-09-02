@@ -47,6 +47,7 @@ model Article {
   tags            Tag[]
   comments        Comment[]
   liveUpdates     LiveUpdate[]
+  analyticsEvents AnalyticsEvent[]
   province        Int?
   district        String?
   scheduledAt     DateTime?

@@ -5,6 +5,12 @@ import {
   getRecentMonthBuckets,
   startOfMonthsAgo,
 } from "@/lib/analytics-time-series";
+import {
+  getAdPerformanceSummary,
+  getDeviceBreakdown,
+  getPageViewsByMonth,
+  getPeakHours,
+} from "@/lib/analytics-aggregate";
 
 const CHART_MONTHS = 12;
 
@@ -13,7 +19,6 @@ export async function GET() {
     const monthBuckets = getRecentMonthBuckets(CHART_MONTHS);
     const rangeStart = startOfMonthsAgo(CHART_MONTHS);
 
-    // 1. Total readership views across all articles
     const totalAggregate = await prisma.article.aggregate({
       _sum: { views: true },
       _count: { id: true },
@@ -22,7 +27,6 @@ export async function GET() {
     const totalViews = totalAggregate._sum.views || 0;
     const totalArticles = totalAggregate._count.id || 0;
 
-    // 2. Published & Breaking counts
     const publishedCount = await prisma.article.count({
       where: { status: "PUBLISHED" },
     });
@@ -31,7 +35,6 @@ export async function GET() {
       where: { isBreaking: true },
     });
 
-    // 3. Top 5 Most Viewed Articles
     const topArticles = await prisma.article.findMany({
       take: 5,
       orderBy: { views: "desc" },
@@ -51,7 +54,6 @@ export async function GET() {
       },
     });
 
-    // 4. Category Readership Distribution
     const categories = await prisma.category.findMany({
       select: {
         id: true,
@@ -63,34 +65,41 @@ export async function GET() {
       },
     });
 
-    const categoryStats = categories.map((cat) => {
-      const viewsSum = cat.articles.reduce((acc, a) => acc + (a.views || 0), 0);
-      const percentage = totalViews > 0 ? Number(((viewsSum / totalViews) * 100).toFixed(1)) : 0;
-      return {
-        id: cat.id,
-        name: cat.nameNp || cat.name,
-        articlesCount: cat.articles.length,
-        views: viewsSum,
-        percentage,
-      };
-    }).sort((a, b) => b.views - a.views);
+    const categoryStats = categories
+      .map((cat) => {
+        const viewsSum = cat.articles.reduce((acc, a) => acc + (a.views || 0), 0);
+        const percentage = totalViews > 0 ? Number(((viewsSum / totalViews) * 100).toFixed(1)) : 0;
+        return {
+          id: cat.id,
+          name: cat.nameNp || cat.name,
+          articlesCount: cat.articles.length,
+          views: viewsSum,
+          percentage,
+        };
+      })
+      .sort((a, b) => b.views - a.views);
 
-    const [recentUsers, recentPublishedArticles] = await Promise.all([
-      prisma.user.findMany({
-        where: { createdAt: { gte: rangeStart } },
-        select: { createdAt: true },
-      }),
-      prisma.article.findMany({
-        where: {
-          status: "PUBLISHED",
-          OR: [
-            { publishedAt: { gte: rangeStart } },
-            { publishedAt: null, createdAt: { gte: rangeStart } },
-          ],
-        },
-        select: { publishedAt: true, createdAt: true },
-      }),
-    ]);
+    const [recentUsers, recentPublishedArticles, deviceBreakdown, peakHours, pageViewsByMonth, adPerformance] =
+      await Promise.all([
+        prisma.user.findMany({
+          where: { createdAt: { gte: rangeStart } },
+          select: { createdAt: true },
+        }),
+        prisma.article.findMany({
+          where: {
+            status: "PUBLISHED",
+            OR: [
+              { publishedAt: { gte: rangeStart } },
+              { publishedAt: null, createdAt: { gte: rangeStart } },
+            ],
+          },
+          select: { publishedAt: true, createdAt: true },
+        }),
+        getDeviceBreakdown(rangeStart),
+        getPeakHours(rangeStart),
+        getPageViewsByMonth(CHART_MONTHS),
+        getAdPerformanceSummary(),
+      ]);
 
     const usersByMonth = countByMonth(recentUsers, (user) => user.createdAt, monthBuckets);
     const articlesByMonth = countByMonth(
@@ -128,16 +137,10 @@ export async function GET() {
         monthlyUserGrowth,
         articlesPublished,
         articlesByCategory,
-        deviceBreakdown: [
-          { name: "Mobile Web (Smartphones)", percentage: 68.4, views: Math.round(totalViews * 0.684) },
-          { name: "Desktop & Laptops", percentage: 27.2, views: Math.round(totalViews * 0.272) },
-          { name: "Tablets & iPad", percentage: 4.4, views: Math.round(totalViews * 0.044) },
-        ],
-        peakHours: [
-          { time: "07:00 AM - 09:00 AM", label: "Morning News Rush", volume: "High" },
-          { time: "12:30 PM - 02:00 PM", label: "Lunch Hour Highlights", volume: "Medium" },
-          { time: "07:00 PM - 10:00 PM", label: "Evening Recap & Prime Time", volume: "Peak" },
-        ],
+        pageViewsByMonth,
+        deviceBreakdown,
+        peakHours,
+        adPerformance,
       },
       "Analytics data retrieved",
       200

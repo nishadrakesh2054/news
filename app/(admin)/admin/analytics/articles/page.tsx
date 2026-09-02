@@ -43,7 +43,10 @@ export default function AdminAnalyticsArticlesPage() {
     },
   });
 
-  const topArticles: ArticleRow[] = data?.topArticles ?? [];
+  const topArticles = useMemo(
+    () => (data?.topArticles ?? []) as ArticleRow[],
+    [data?.topArticles]
+  );
   const categoryStats: CategoryRow[] = data?.categoryStats ?? [];
 
   const totalViews = useMemo(

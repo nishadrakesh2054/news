@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { RotateCcw, Save } from "lucide-react";
@@ -27,11 +27,6 @@ function formatRole(role: string) {
 }
 
 export default function AdminAccountProfilePage() {
-  const [form, setForm] = useState({ name: "", email: "", role: "" });
-  const [password, setPassword] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [saving, setSaving] = useState(false);
-
   const { data, isLoading, refetch, isFetching } = useQuery<ProfileData>({
     queryKey: ["admin-account-profile"],
     queryFn: async () => {
@@ -42,13 +37,29 @@ export default function AdminAccountProfilePage() {
     },
   });
 
-  useEffect(() => {
-    if (!data) return;
-    setForm({ name: data.name, email: data.email, role: data.role });
-  }, [data]);
+  return (
+    <AdminPageShell
+      title="My profile"
+      description="Account details and password settings"
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+    >
+      {isLoading || !data ? (
+        <p className="text-xs text-muted-foreground">Loading profile…</p>
+      ) : (
+        <ProfileEditor key={`${data.id}-${data.name}-${data.email}`} data={data} onSaved={refetch} />
+      )}
+    </AdminPageShell>
+  );
+}
+
+function ProfileEditor({ data, onSaved }: { data: ProfileData; onSaved: () => void }) {
+  const [form, setForm] = useState({ name: data.name, email: data.email, role: data.role });
+  const [password, setPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const resetForm = () => {
-    if (!data) return;
     setForm({ name: data.name, email: data.email, role: data.role });
     setPassword("");
     setCurrentPassword("");
@@ -82,7 +93,7 @@ export default function AdminAccountProfilePage() {
       toast.success("Profile updated");
       setPassword("");
       setCurrentPassword("");
-      refetch();
+      onSaved();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Update failed");
     } finally {
@@ -91,46 +102,33 @@ export default function AdminAccountProfilePage() {
   };
 
   const hasChanges =
-  data &&
-  (form.name !== data.name ||
-    form.email !== data.email ||
-    password.length > 0);
+    form.name !== data.name || form.email !== data.email || password.length > 0;
 
   return (
-    <AdminPageShell
-      title="My profile"
-      description="Account details and password settings"
-      onRefresh={() => refetch()}
-      isRefreshing={isFetching}
-      actions={
-        <>
-          <button
-            type="button"
-            onClick={resetForm}
-            disabled={isLoading || !hasChanges}
-            className={adminBtnSecondary}
-          >
-            <RotateCcw className="h-3 w-3" />
-            Reset
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving || isLoading || !hasChanges}
-            className={adminBtnPrimary}
-          >
-            <Save className="h-3 w-3" />
-            {saving ? "Saving…" : "Save changes"}
-          </button>
-        </>
-      }
-    >
+    <>
+      <div className="mb-4 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={resetForm}
+          disabled={!hasChanges}
+          className={adminBtnSecondary}
+        >
+          <RotateCcw className="h-3 w-3" />
+          Reset
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || !hasChanges}
+          className={adminBtnPrimary}
+        >
+          <Save className="h-3 w-3" />
+          {saving ? "Saving…" : "Save changes"}
+        </button>
+      </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <AdminPanel title="Profile details">
-          {isLoading ? (
-            <p className="px-3 py-6 text-xs text-muted-foreground">Loading profile…</p>
-          ) : (
-            <div className="space-y-3 p-3">
+          <div className="space-y-3 p-3">
               <div className="space-y-1">
                 <label
                   htmlFor="profile-name"
@@ -175,14 +173,10 @@ export default function AdminAccountProfilePage() {
                 </p>
               </div>
             </div>
-          )}
         </AdminPanel>
 
         <AdminPanel title="Password">
-          {isLoading ? (
-            <p className="px-3 py-6 text-xs text-muted-foreground">Loading…</p>
-          ) : (
-            <div className="space-y-3 p-3">
+          <div className="space-y-3 p-3">
               <p className="text-xs text-muted-foreground">
                 Leave blank to keep your current password. You will need your current
                 password to set a new one.
@@ -223,9 +217,8 @@ export default function AdminAccountProfilePage() {
                 />
               </div>
             </div>
-          )}
         </AdminPanel>
       </div>
-    </AdminPageShell>
+    </>
   );
 }

@@ -51,6 +51,7 @@ export default function AdminCommentsPage() {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("PENDING");
   const [search, setSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["admin-comments", statusFilter],
@@ -95,6 +96,32 @@ export default function AdminCommentsPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const bulkMutation = useMutation({
+    mutationFn: async ({
+      ids,
+      action,
+      status,
+    }: {
+      ids: string[];
+      action: "update" | "delete";
+      status?: string;
+    }) => {
+      const res = await fetch("/api/admin/comments/bulk", {
+        method: action === "delete" ? "DELETE" : "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(action === "delete" ? { ids } : { ids, status }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || "Bulk action failed");
+    },
+    onSuccess: () => {
+      toast.success("Bulk action completed");
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: ["admin-comments"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const filtered = comments.filter((comment) => {
     if (!search.trim()) return true;
     const term = search.toLowerCase();
@@ -105,6 +132,20 @@ export default function AdminCommentsPage() {
       (comment.article.titleNp && comment.article.titleNp.includes(term))
     );
   });
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filtered.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filtered.map((c) => c.id));
+    }
+  };
 
   return (
     <AdminPageShell
@@ -154,6 +195,44 @@ export default function AdminCommentsPage() {
             </button>
           ) : null}
         </div>
+
+        {selectedIds.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">{selectedIds.length} selected</span>
+            <button
+              type="button"
+              onClick={() => bulkMutation.mutate({ ids: selectedIds, action: "update", status: "APPROVED" })}
+              className={adminBtnSecondary}
+            >
+              Approve all
+            </button>
+            <button
+              type="button"
+              onClick={() => bulkMutation.mutate({ ids: selectedIds, action: "update", status: "REJECTED" })}
+              className={adminBtnGhost}
+            >
+              Reject all
+            </button>
+            <button
+              type="button"
+              onClick={() => bulkMutation.mutate({ ids: selectedIds, action: "update", status: "SPAM" })}
+              className={adminBtnGhost}
+            >
+              Mark spam
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm(`Delete ${selectedIds.length} comments?`)) {
+                  bulkMutation.mutate({ ids: selectedIds, action: "delete" });
+                }
+              }}
+              className="text-xs font-medium text-[#C3272E] hover:underline"
+            >
+              Delete selected
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <div className={adminPanel}>
@@ -168,6 +247,14 @@ export default function AdminCommentsPage() {
             <table className={adminTable}>
               <thead className={adminTableHead}>
                 <tr>
+                  <th className={adminTableHeadCell}>
+                    <input
+                      type="checkbox"
+                      checked={filtered.length > 0 && selectedIds.length === filtered.length}
+                      onChange={toggleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </th>
                   <th className={adminTableHeadCell}>Author</th>
                   <th className={adminTableHeadCell}>Comment</th>
                   <th className={adminTableHeadCell}>Story</th>
@@ -178,6 +265,14 @@ export default function AdminCommentsPage() {
               <tbody>
                 {filtered.map((comment) => (
                   <tr key={comment.id} className={adminTableRow}>
+                    <td className={adminTableCell}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(comment.id)}
+                        onChange={() => toggleSelect(comment.id)}
+                        aria-label="Select comment"
+                      />
+                    </td>
                     <td className={`${adminTableCell} whitespace-nowrap`}>
                       <p className="font-medium text-foreground">
                         {comment.author?.name || comment.authorName || "Anonymous"}

@@ -76,33 +76,37 @@ export default function AdminHomepageLayoutPage() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (sectionOrder.length === 0 && sortedCategories.length > 0) {
-      setSectionOrder(sortedCategories.map((cat) => cat.id));
-    }
-  }, [sortedCategories, sectionOrder.length]);
+  const effectiveSectionOrder = useMemo(() => {
+    if (sectionOrder.length > 0) return sectionOrder;
+    return sortedCategories.map((cat) => cat.id);
+  }, [sectionOrder, sortedCategories]);
 
-  const orderedSections = sectionOrder
+  const orderedSections = effectiveSectionOrder
     .map((id) => sortedCategories.find((cat) => cat.id === id))
     .filter((cat): cat is CategoryOption => Boolean(cat));
 
   const hiddenCount = sortedCategories.length - orderedSections.length;
 
   const toggleCategory = (categoryId: string, enabled: boolean) => {
-    if (enabled) {
-      setSectionOrder((current) => [...current, categoryId]);
-    } else {
-      setSectionOrder((current) => current.filter((id) => id !== categoryId));
-    }
+    setSectionOrder((current) => {
+      const base = current.length > 0 ? current : sortedCategories.map((cat) => cat.id);
+      if (enabled) {
+        return base.includes(categoryId) ? base : [...base, categoryId];
+      }
+      return base.filter((id) => id !== categoryId);
+    });
   };
 
   const moveSection = (index: number, direction: -1 | 1) => {
-    const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= sectionOrder.length) return;
-    const next = [...sectionOrder];
-    const [item] = next.splice(index, 1);
-    next.splice(nextIndex, 0, item);
-    setSectionOrder(next);
+    setSectionOrder((current) => {
+      const base = current.length > 0 ? current : sortedCategories.map((cat) => cat.id);
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= base.length) return base;
+      const next = [...base];
+      const [item] = next.splice(index, 1);
+      next.splice(nextIndex, 0, item);
+      return next;
+    });
   };
 
   const handleSaveLayout = async () => {
@@ -117,7 +121,7 @@ export default function AdminHomepageLayoutPage() {
           showHeroFeatured,
           heroLayoutMode,
           showLiveBar,
-          sectionOrder,
+          sectionOrder: effectiveSectionOrder,
         }),
       });
       const json = await res.json();
@@ -249,8 +253,8 @@ export default function AdminHomepageLayoutPage() {
           ) : (
             <div className="divide-y divide-border/70">
               {sortedCategories.map((cat) => {
-                const enabled = sectionOrder.includes(cat.id);
-                const index = sectionOrder.indexOf(cat.id);
+                const enabled = effectiveSectionOrder.includes(cat.id);
+                const index = effectiveSectionOrder.indexOf(cat.id);
                 return (
                   <div key={cat.id} className="flex items-center gap-2 px-3 py-2">
                     <input
@@ -278,7 +282,7 @@ export default function AdminHomepageLayoutPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={index === sectionOrder.length - 1}
+                          disabled={index === effectiveSectionOrder.length - 1}
                           onClick={() => moveSection(index, 1)}
                           className="rounded-sm p-1 hover:bg-muted"
                         >

@@ -7,12 +7,9 @@ import { FacebookIcon, TwitterIcon, YoutubeIcon } from "./SocialIcons";
 import { getFormattedNepaliDate } from "@/lib/nepaliDate";
 import { useRouter, useSearchParams } from "next/navigation";
 import { NepaliUtilityBar } from "./NepaliUtilityBar";
+import { AdUnit, type AdUnitData } from "@/components/portal/AdUnit";
 
-interface AdItem {
-  id: string;
-  title: string;
-  imageUrl: string;
-  targetUrl?: string | null;
+interface AdItem extends AdUnitData {
   slot?: string;
   isActive?: boolean;
 }
@@ -123,22 +120,11 @@ export function PublicHeader() {
 
         {/* Top Header Leaderboard Ad Banner (728x90 standard) */}
         {leaderboardAd ? (
-          <a
-            href={leaderboardAd.targetUrl || "#"}
-            target="_blank"
-            rel="noreferrer"
-            className="w-full max-w-182 h-22.5 border border-border overflow-hidden block relative group rounded-none"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={leaderboardAd.imageUrl}
-              alt={leaderboardAd.title}
-              className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-200 rounded-none"
-            />
-            <span className="absolute top-1 right-1 bg-black text-white text-[9px] px-1.5 py-0.5 font-mono uppercase rounded-none">
-              विज्ञापन
-            </span>
-          </a>
+          <AdUnit
+            ad={leaderboardAd}
+            path="/"
+            className="w-full max-w-182 h-22.5 border border-border rounded-none"
+          />
         ) : (
           <div className="hidden lg:flex w-182 h-22.5 border border-dashed border-border/80 bg-muted/20 items-center justify-center text-xs text-muted-foreground font-medium rounded-none">
             विज्ञापन स्थान (Header Leaderboard Ad - 728x90)

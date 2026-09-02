@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ChevronDown, ChevronUp, RotateCcw, Save, Search, X } from "lucide-react";
@@ -48,17 +48,6 @@ const GOLD_ROWS = [
 ];
 
 export default function AdminUtilitiesPage() {
-  const [section, setSection] = useState<UtilitySection>("gold");
-  const [search, setSearch] = useState("");
-  const [expandedRashi, setExpandedRashi] = useState<number | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  const [goldFine, setGoldFine] = useState("1,60,500");
-  const [goldTejabi, setGoldTejabi] = useState("1,59,800");
-  const [silver, setSilver] = useState("1,950");
-  const [rashifal, setRashifal] = useState<DetailedRashi[]>(DEFAULT_DETAILED_RASHIFAL);
-  const [forexData, setForexData] = useState<ForexItem[]>([]);
-
   const { data, isFetching, refetch } = useQuery({
     queryKey: ["admin-utilities-data"],
     queryFn: async () => {
@@ -74,14 +63,51 @@ export default function AdminUtilitiesPage() {
     staleTime: 60_000,
   });
 
-  useEffect(() => {
-    if (!data) return;
-    if (data.gold?.fine) setGoldFine(data.gold.fine);
-    if (data.gold?.tejabi) setGoldTejabi(data.gold.tejabi);
-    if (data.gold?.silver) setSilver(data.gold.silver);
-    if (data.rashifal && Array.isArray(data.rashifal)) setRashifal(data.rashifal);
-    if (data.allForexRates) setForexData(data.allForexRates);
-  }, [data]);
+  if (!data) {
+    return (
+      <AdminPageShell title="Market & Horoscope" description="Gold, forex, and rashifal rates">
+        <p className="text-xs text-muted-foreground">Loading utilities…</p>
+      </AdminPageShell>
+    );
+  }
+
+  const dataKey = `${data.gold?.fine ?? ""}-${data.gold?.tejabi ?? ""}-${data.rashifal?.length ?? 0}-${data.allForexRates?.length ?? 0}`;
+
+  return (
+    <UtilitiesEditor
+      key={dataKey}
+      data={data}
+      isFetching={isFetching}
+      refetch={refetch}
+    />
+  );
+}
+
+function UtilitiesEditor({
+  data,
+  isFetching,
+  refetch,
+}: {
+  data: {
+    gold?: { fine?: string; tejabi?: string; silver?: string };
+    rashifal?: DetailedRashi[];
+    allForexRates?: ForexItem[];
+  };
+  isFetching: boolean;
+  refetch: () => void;
+}) {
+  const [section, setSection] = useState<UtilitySection>("gold");
+  const [search, setSearch] = useState("");
+  const [expandedRashi, setExpandedRashi] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const [goldFine, setGoldFine] = useState(data.gold?.fine ?? "1,60,500");
+  const [goldTejabi, setGoldTejabi] = useState(data.gold?.tejabi ?? "1,59,800");
+  const [silver, setSilver] = useState(data.gold?.silver ?? "1,950");
+  const [rashifal, setRashifal] = useState<DetailedRashi[]>(
+    data.rashifal && Array.isArray(data.rashifal) ? data.rashifal : DEFAULT_DETAILED_RASHIFAL
+  );
+  const forexData = useMemo(() => data.allForexRates ?? [], [data.allForexRates]);
 
   const goldValues = { fine: goldFine, tejabi: goldTejabi, silver };
 

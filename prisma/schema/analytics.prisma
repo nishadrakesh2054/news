@@ -1,0 +1,24 @@
+enum AnalyticsEventType {
+  PAGE_VIEW
+  AD_IMPRESSION
+  AD_CLICK
+}
+
+model AnalyticsEvent {
+  id         String             @id @default(cuid())
+  type       AnalyticsEventType
+  path       String?
+  articleId  String?
+  article    Article?           @relation(fields: [articleId], references: [id], onDelete: SetNull)
+  adId       String?
+  ad         Ad?                @relation(fields: [adId], references: [id], onDelete: SetNull)
+  referrer   String?
+  deviceType String?
+  hourOfDay  Int?
+  createdAt  DateTime           @default(now())
+
+  @@index([type, createdAt])
+  @@index([articleId, createdAt])
+  @@index([adId, createdAt])
+  @@index([createdAt])
+}

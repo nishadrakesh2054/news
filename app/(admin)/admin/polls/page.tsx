@@ -34,6 +34,7 @@ interface PollItem {
   id: string;
   questionNp: string;
   status: string;
+  expiresAt: string | null;
   createdAt: string;
   options: PollOption[];
 }
@@ -42,6 +43,7 @@ const STATUS_OPTIONS = [
   { value: "ALL", label: "All statuses" },
   { value: "ACTIVE", label: "Active" },
   { value: "CLOSED", label: "Closed" },
+  { value: "ARCHIVED", label: "Archived" },
 ];
 
 function emptyOptions() {
@@ -57,6 +59,7 @@ export default function AdminPollsPage() {
 
   const [questionNp, setQuestionNp] = useState("");
   const [options, setOptions] = useState<string[]>(emptyOptions);
+  const [expiresAt, setExpiresAt] = useState("");
 
   const { data: polls = [], isLoading, isError, refetch, isFetching } = useQuery<PollItem[]>({
     queryKey: ["admin-polls"],
@@ -71,6 +74,7 @@ export default function AdminPollsPage() {
   const openCreateModal = () => {
     setQuestionNp("");
     setOptions(emptyOptions());
+    setExpiresAt("");
     setIsModalOpen(true);
   };
 
@@ -79,11 +83,15 @@ export default function AdminPollsPage() {
   };
 
   const createMutation = useMutation({
-    mutationFn: async (payload: { questionNp: string; options: string[] }) => {
+    mutationFn: async (payload: { questionNp: string; options: string[]; expiresAt?: string }) => {
       const res = await fetch("/api/admin/polls", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          questionNp: payload.questionNp,
+          options: payload.options,
+          expiresAt: payload.expiresAt || null,
+        }),
       });
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || "Failed to create poll");
@@ -94,6 +102,31 @@ export default function AdminPollsPage() {
       setQuestionNp("");
       setOptions(emptyOptions());
       closeModal();
+      queryClient.invalidateQueries({ queryKey: ["admin-polls"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const pollActionMutation = useMutation({
+    mutationFn: async ({
+      id,
+      status,
+      action,
+    }: {
+      id: string;
+      status?: string;
+      action: "patch" | "delete";
+    }) => {
+      const res = await fetch(`/api/admin/polls/${id}`, {
+        method: action === "delete" ? "DELETE" : "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: action === "patch" ? JSON.stringify({ status }) : undefined,
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || "Action failed");
+    },
+    onSuccess: () => {
+      toast.success("Poll updated");
       queryClient.invalidateQueries({ queryKey: ["admin-polls"] });
     },
     onError: (err: Error) => toast.error(err.message),
@@ -126,7 +159,11 @@ export default function AdminPollsPage() {
       toast.error("At least 2 options are required");
       return;
     }
-    createMutation.mutate({ questionNp: questionNp.trim(), options: cleanOptions });
+    createMutation.mutate({
+      questionNp: questionNp.trim(),
+      options: cleanOptions,
+      expiresAt: expiresAt || undefined,
+    });
   };
 
   const updateOption = (index: number, value: string) => {
@@ -179,7 +216,11 @@ export default function AdminPollsPage() {
           </p>
           <p className="mt-0.5 text-sm font-medium text-foreground">{activePoll.questionNp}</p>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            {getVoteTotal(activePoll)} votes · Publishing a new poll will close this one
+            {getVoteTotal(activePoll)} votes
+            {activePoll.expiresAt
+              ? ` · Expires ${new Date(activePoll.expiresAt).toLocaleString()}`
+              : ""}
+            {" · "}Publishing a new poll will close this one
           </p>
         </div>
       ) : null}
@@ -251,7 +292,8 @@ export default function AdminPollsPage() {
                   <th className={adminTableHeadCell}>Votes</th>
                   <th className={adminTableHeadCell}>Leading</th>
                   <th className={adminTableHeadCell}>Created</th>
-                  <th className={`${adminTableHeadCell} text-right`}>Results</th>
+                  <th className={adminTableHeadCell}>Expires</th>
+                  <th className={`${adminTableHeadCell} text-right`}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -283,23 +325,64 @@ export default function AdminPollsPage() {
                         <td className={`${adminTableCell} whitespace-nowrap text-muted-foreground`}>
                           {new Date(poll.createdAt).toLocaleDateString()}
                         </td>
+                        <td className={`${adminTableCell} whitespace-nowrap font-mono text-[11px] text-muted-foreground`}>
+                          {poll.expiresAt ? new Date(poll.expiresAt).toLocaleString() : "—"}
+                        </td>
                         <td className={`${adminTableCell} text-right`}>
-                          <button
-                            type="button"
-                            onClick={() => setExpandedId(isExpanded ? null : poll.id)}
-                            className={adminBtnGhost}
-                          >
-                            {isExpanded ? (
-                              <ChevronUp className="h-3.5 w-3.5" />
-                            ) : (
-                              <ChevronDown className="h-3.5 w-3.5" />
-                            )}
-                          </button>
+                          <div className="inline-flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedId(isExpanded ? null : poll.id)}
+                              className={adminBtnGhost}
+                              title="Results"
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="h-3.5 w-3.5" />
+                              ) : (
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                            {poll.status === "ACTIVE" ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  pollActionMutation.mutate({ id: poll.id, status: "CLOSED", action: "patch" })
+                                }
+                                className={adminBtnGhost}
+                                title="Close poll"
+                              >
+                                Close
+                              </button>
+                            ) : poll.status === "CLOSED" ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  pollActionMutation.mutate({ id: poll.id, status: "ARCHIVED", action: "patch" })
+                                }
+                                className={adminBtnGhost}
+                                title="Archive"
+                              >
+                                Archive
+                              </button>
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm("Delete this poll permanently?")) {
+                                  pollActionMutation.mutate({ id: poll.id, action: "delete" });
+                                }
+                              }}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#C3272E] hover:bg-muted"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                       {isExpanded ? (
                         <tr className="bg-muted/20">
-                          <td colSpan={7} className="px-3 py-3">
+                          <td colSpan={8} className="px-3 py-3">
                             <div className="max-w-2xl space-y-2">
                               <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                                 Vote breakdown
@@ -416,6 +499,19 @@ export default function AdminPollsPage() {
                         )}
                       </div>
                     ))}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label htmlFor="poll-expires" className="text-xs font-medium text-foreground">
+                      Expires (optional)
+                    </label>
+                    <input
+                      id="poll-expires"
+                      type="datetime-local"
+                      value={expiresAt}
+                      onChange={(e) => setExpiresAt(e.target.value)}
+                      className={adminInput}
+                    />
                   </div>
                 </form>
               </div>

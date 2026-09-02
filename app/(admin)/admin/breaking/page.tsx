@@ -6,6 +6,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { ExternalLink, ImageIcon, Pencil, Search, X } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
+import { ArticleSearchPicker, type ArticleSearchResult } from "@/components/admin/ArticleSearchPicker";
 import { AdminStatsStrip } from "@/components/admin/content";
 import {
   adminBadgeMuted,
@@ -33,6 +34,7 @@ interface BreakingItem {
   status: string;
   updatedAt: string;
   isBreaking: boolean;
+  breakingExpiresAt: string | null;
   category: {
     name: string;
     nameNp: string | null;
@@ -43,6 +45,7 @@ export default function AdminBreakingPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [addExpiry, setAddExpiry] = useState("");
 
   const { data: breakingArticles = [], isLoading, isError, refetch, isFetching } = useQuery<BreakingItem[]>({
     queryKey: ["admin-breaking"],
@@ -55,11 +58,19 @@ export default function AdminBreakingPage() {
   });
 
   const toggleBreakingMutation = useMutation({
-    mutationFn: async ({ articleId, isBreaking }: { articleId: string; isBreaking: boolean }) => {
+    mutationFn: async ({
+      articleId,
+      isBreaking,
+      expiresAt,
+    }: {
+      articleId: string;
+      isBreaking: boolean;
+      expiresAt?: string | null;
+    }) => {
       const res = await fetch("/api/admin/breaking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ articleId, isBreaking }),
+        body: JSON.stringify({ articleId, isBreaking, expiresAt: expiresAt || null }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to update breaking ticker");
@@ -168,7 +179,38 @@ export default function AdminBreakingPage() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        To add breaking news, edit an article and enable &quot;Breaking&quot; or set format to Breaking.
+        Search a published article to add it to the ticker. Optionally set an auto-expiry time.
+      </p>
+
+      <div className={`${adminPanel} space-y-3 p-3`}>
+        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          Add to ticker
+        </p>
+        <ArticleSearchPicker
+          excludeIds={breakingArticles.map((a) => a.id)}
+          placeholder="Search published articles to add…"
+          onSelect={(article: ArticleSearchResult) => {
+            toggleBreakingMutation.mutate({
+              articleId: article.id,
+              isBreaking: true,
+              expiresAt: addExpiry || null,
+            });
+            setAddExpiry("");
+          }}
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="text-xs text-muted-foreground">Auto-expire (optional)</label>
+          <input
+            type="datetime-local"
+            value={addExpiry}
+            onChange={(e) => setAddExpiry(e.target.value)}
+            className={adminInput}
+          />
+        </div>
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        You can also enable breaking from the article editor.
       </p>
 
       <div className={adminPanel}>
@@ -188,6 +230,7 @@ export default function AdminBreakingPage() {
                   <th className={adminTableHeadCell}>Headline</th>
                   <th className={adminTableHeadCell}>Category</th>
                   <th className={adminTableHeadCell}>Status</th>
+                  <th className={adminTableHeadCell}>Expires</th>
                   <th className={adminTableHeadCell}>Updated</th>
                   <th className={`${adminTableHeadCell} text-right`}>Actions</th>
                 </tr>
@@ -225,6 +268,11 @@ export default function AdminBreakingPage() {
                       </span>
                     </td>
                     <td className={`${adminTableCell} text-muted-foreground`}>{art.status}</td>
+                    <td className={`${adminTableCell} font-mono text-[11px] text-muted-foreground`}>
+                      {art.breakingExpiresAt
+                        ? new Date(art.breakingExpiresAt).toLocaleString()
+                        : "—"}
+                    </td>
                     <td className={`${adminTableCell} font-mono text-muted-foreground`}>
                       {new Date(art.updatedAt).toLocaleString()}
                     </td>

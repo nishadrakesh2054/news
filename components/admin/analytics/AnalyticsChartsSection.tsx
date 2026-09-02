@@ -31,11 +31,17 @@ export type CategoryPoint = {
   articles: number;
 };
 
+export type PageViewsPoint = {
+  month: string;
+  views: number;
+};
+
 type AnalyticsChartsSectionProps = {
   loading?: boolean;
   monthlyUserGrowth: MonthlyPoint[];
   articlesPublished: PublishedPoint[];
   articlesByCategory: CategoryPoint[];
+  pageViewsByMonth?: PageViewsPoint[];
 };
 
 function ChartPlaceholder({ loading }: { loading?: boolean }) {
@@ -59,6 +65,7 @@ export function AnalyticsChartsSection({
   monthlyUserGrowth,
   articlesPublished,
   articlesByCategory,
+  pageViewsByMonth = [],
 }: AnalyticsChartsSectionProps) {
   const categoryChartHeight = Math.max(220, articlesByCategory.length * 36 + 48);
 
@@ -128,6 +135,41 @@ export function AnalyticsChartsSection({
           </div>
         </AdminPanel>
       </div>
+
+      <AdminPanel title="Page views (tracked events)">
+        <div className="h-64 p-3 pt-1">
+          {!loading && pageViewsByMonth.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={pageViewsByMonth} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.35)" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "#64748b" }}
+                  axisLine={false}
+                  tickLine={false}
+                  allowDecimals={false}
+                  width={28}
+                />
+                <Tooltip
+                  contentStyle={chartTooltipStyle()}
+                  labelStyle={{ fontWeight: 600, marginBottom: 4 }}
+                  formatter={(value: number) => [value, "Page views"]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="views"
+                  stroke="#C3272E"
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: "#C3272E", strokeWidth: 0 }}
+                  activeDot={{ r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <ChartPlaceholder loading={loading} />
+          )}
+        </div>
+      </AdminPanel>
 
       <AdminPanel title="Articles by category">
         <div className="p-3 pt-1" style={{ height: categoryChartHeight }}>

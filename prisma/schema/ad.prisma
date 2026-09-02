@@ -17,6 +17,7 @@ model Ad {
   impressions Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  analyticsEvents AnalyticsEvent[]
 
   @@index([slot, isActive])
 }

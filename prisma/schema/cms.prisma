@@ -38,16 +38,23 @@ model GalleryItem {
 }
 
 model Notification {
-  id        String             @id @default(cuid())
-  title     String
-  titleNp   String?
-  body      String             @db.Text
-  type      NotificationType   @default(SYSTEM)
-  status    NotificationStatus @default(DRAFT)
-  linkUrl   String?
-  sentAt    DateTime?
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  id             String             @id @default(cuid())
+  title          String
+  titleNp        String?
+  body           String             @db.Text
+  type           NotificationType   @default(SYSTEM)
+  status         NotificationStatus @default(DRAFT)
+  linkUrl        String?
+  scheduledAt    DateTime?
+  sendPush       Boolean            @default(true)
+  sendEmail      Boolean            @default(false)
+  pushDelivered  Int                @default(0)
+  emailDelivered Int                @default(0)
+  sentAt         DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([status, scheduledAt])
 }
 
 model Menu {

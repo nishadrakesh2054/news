@@ -1,16 +1,16 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { PollStatus } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireEditor } from "@/lib/admin-auth";
 import { validatePollCreate } from "@/lib/validations/poll";
 
 export async function GET() {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = prisma as any;
-    if (!db?.poll) return apiSuccess([]);
+    const auth = await requireEditor();
+    if (auth.error) return auth.error;
 
-    const polls = await db.poll.findMany({
+    const polls = await prisma.poll.findMany({
       orderBy: { createdAt: "desc" },
       include: { options: true },
     });
@@ -32,24 +32,21 @@ export async function POST(req: NextRequest) {
       return apiError(validation.error, 400);
     }
 
-    const { questionNp, options } = validation.data;
+    const { questionNp, options, expiresAt } = validation.data;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = prisma as any;
-
-    // Set other active polls to CLOSED
-    await db.poll.updateMany({
-      where: { status: "ACTIVE" },
-      data: { status: "CLOSED" },
+    await prisma.poll.updateMany({
+      where: { status: PollStatus.ACTIVE },
+      data: { status: PollStatus.CLOSED },
     });
 
-    const newPoll = await db.poll.create({
+    const newPoll = await prisma.poll.create({
       data: {
         question: questionNp,
-        questionNp: questionNp,
-        status: "ACTIVE",
+        questionNp,
+        status: PollStatus.ACTIVE,
+        expiresAt: expiresAt ?? null,
         options: {
-          create: options.map((optStr: string) => ({
+          create: options.map((optStr) => ({
             option: optStr,
             optionNp: optStr,
           })),

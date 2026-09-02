@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { Mail, Phone, MapPin, ShieldCheck } from "lucide-react";
-import { FacebookIcon, TwitterIcon, YoutubeIcon } from "./SocialIcons";
+import { NewsletterSignup } from "./NewsletterSignup";
+import { PushOptIn } from "./PushOptIn";
 
 export function PublicFooter() {
   return (
@@ -69,27 +70,13 @@ export function PublicFooter() {
           </ul>
         </div>
 
-        {/* Editorial Team & Social Links */}
-        <div className="space-y-3">
+        {/* Newsletter & Push alerts */}
+        <div className="space-y-4">
           <h4 className="text-sm font-bold uppercase tracking-wider text-white border-b border-slate-800 pb-2">
-            सम्पादकीय टोली
+            समाचार सदस्यता
           </h4>
-          <div className="space-y-1 text-xs text-slate-400">
-            <p><span className="text-slate-300 font-semibold">प्रधान सम्पादक:</span> निषाद राकेश</p>
-            <p><span className="text-slate-300 font-semibold">प्रबन्ध निर्देशक:</span> नेपाल मिडिया हाउस</p>
-          </div>
-
-          <div className="pt-3 flex items-center space-x-3">
-            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="h-8 w-8 rounded-none bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-[#027081] hover:text-white transition-colors">
-              <FacebookIcon className="h-4 w-4" />
-            </a>
-            <a href="https://twitter.com" target="_blank" rel="noreferrer" className="h-8 w-8 rounded-none bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-[#027081] hover:text-white transition-colors">
-              <TwitterIcon className="h-4 w-4" />
-            </a>
-            <a href="https://youtube.com" target="_blank" rel="noreferrer" className="h-8 w-8 rounded-none bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-[#027081] hover:text-white transition-colors">
-              <YoutubeIcon className="h-4 w-4" />
-            </a>
-          </div>
+          <NewsletterSignup source="footer" />
+          <PushOptIn />
         </div>
       </div>
 

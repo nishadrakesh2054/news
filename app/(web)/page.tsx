@@ -12,6 +12,7 @@ import { CategoryGridSection } from "@/components/portal/CategoryGridSection";
 import { PhotoVideoFeature } from "@/components/portal/PhotoVideoFeature";
 import { NepaliUtilityWidget } from "@/components/portal/NepaliUtilityWidget";
 import { OpinionPollWidget } from "@/components/portal/OpinionPollWidget";
+import { AdUnit } from "@/components/portal/AdUnit";
 
 interface HomeArticleItem {
   id: string;
@@ -176,7 +177,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
     // 6. Ads
     prisma.ad.findMany({
       where: { isActive: true },
-      select: { id: true, title: true, slot: true, imageUrl: true, targetUrl: true },
+      select: { id: true, title: true, slot: true, imageUrl: true, targetUrl: true, scriptCode: true },
     }),
   ]);
 
@@ -464,23 +465,12 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
           {/* Right Sidebar: Trending & Monetization Banner */}
           <div className="space-y-8">
             {/* Sidebar Ad Placement */}
-            {sidebarAd && sidebarAd.imageUrl ? (
-              <a
-                href={sidebarAd.targetUrl || "#"}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full h-62.5 border border-border overflow-hidden block relative group rounded-none"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={sidebarAd.imageUrl}
-                  alt={sidebarAd.title}
-                  className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-200 rounded-none"
-                />
-                <span className="absolute top-2 right-2 bg-black text-white text-[9px] px-1.5 py-0.5 font-mono rounded-none">
-                  विज्ञापन
-                </span>
-              </a>
+            {sidebarAd ? (
+              <AdUnit
+                ad={sidebarAd}
+                path="/"
+                className="w-full h-62.5 border border-border rounded-none"
+              />
             ) : (
               <div className="w-full h-62.5 border border-dashed border-border/80 bg-muted/20 flex items-center justify-center text-xs text-muted-foreground font-medium rounded-none">
                 विज्ञापन स्थान (Sidebar Ad - 300x250)

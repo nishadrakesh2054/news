@@ -1,12 +1,14 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Role, ArticleType } from "@prisma/client";
+import { ArticleType } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
+import { requireStaff } from "@/lib/admin-auth";
 
 export async function GET() {
   try {
+    const auth = await requireStaff();
+    if (auth.error) return auth.error;
+
     const liveArticles = await prisma.article.findMany({
       where: { type: ArticleType.LIVE },
       select: {
@@ -21,7 +23,6 @@ export async function GET() {
         },
         liveUpdates: {
           orderBy: { createdAt: "desc" },
-          take: 5,
         },
       },
       orderBy: { updatedAt: "desc" },
@@ -35,11 +36,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !([Role.ADMIN, Role.EDITOR, Role.AUTHOR] as Role[]).includes(session.user.role)) {
-      return apiError("Unauthorized: Staff permissions required", 403);
-    }
+    const auth = await requireStaff();
+    if (auth.error) return auth.error;
 
     const { articleId, title, content } = await request.json();
 
@@ -55,7 +53,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Touch article updatedAt timestamp so live readers get instant cache invalidation
     await prisma.article.update({
       where: { id: articleId },
       data: { updatedAt: new Date() },

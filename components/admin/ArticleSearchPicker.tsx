@@ -29,10 +29,7 @@ export function ArticleSearchPicker({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
+    if (!query.trim()) return;
 
     const timer = setTimeout(async () => {
       setLoading(true);
@@ -60,6 +57,8 @@ export function ArticleSearchPicker({
 
     return () => clearTimeout(timer);
   }, [query, excludeIds]);
+
+  const visibleResults = query.trim() ? results : [];
 
   return (
     <div className="relative w-full max-w-xl">
@@ -90,11 +89,11 @@ export function ArticleSearchPicker({
         <div className="absolute z-20 mt-1 w-full rounded-sm border border-border/70 bg-card shadow-md">
           {loading ? (
             <p className="px-3 py-2 text-xs text-muted-foreground">Searching…</p>
-          ) : results.length === 0 ? (
+          ) : visibleResults.length === 0 ? (
             <p className="px-3 py-2 text-xs text-muted-foreground">No published articles found.</p>
           ) : (
             <ul className="max-h-56 overflow-y-auto py-1">
-              {results.map((article) => (
+              {visibleResults.map((article) => (
                 <li key={article.id}>
                   <button
                     type="button"

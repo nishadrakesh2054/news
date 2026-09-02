@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Search, Send } from "lucide-react";
 import { NotificationStatus, NotificationType } from "@prisma/client";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
@@ -36,6 +36,11 @@ interface NotificationItem {
   type: NotificationType;
   status: NotificationStatus;
   linkUrl: string | null;
+  scheduledAt: string | null;
+  sendPush: boolean;
+  sendEmail: boolean;
+  pushDelivered: number;
+  emailDelivered: number;
   sentAt: string | null;
   createdAt: string;
 }
@@ -67,6 +72,9 @@ export default function AdminNotificationsPage() {
   const [type, setType] = useState<NotificationType>(NotificationType.SYSTEM);
   const [status, setStatus] = useState<NotificationStatus>(NotificationStatus.DRAFT);
   const [linkUrl, setLinkUrl] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [sendPush, setSendPush] = useState(true);
+  const [sendEmail, setSendEmail] = useState(false);
 
   const { data: notifications = [], isLoading, isError, refetch, isFetching } = useQuery<
     NotificationItem[]
@@ -80,6 +88,20 @@ export default function AdminNotificationsPage() {
     },
   });
 
+  const sendMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/admin/notifications/${id}/send`, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to send");
+      return json.data;
+    },
+    onSuccess: () => {
+      toast.success("Notification sent");
+      queryClient.invalidateQueries({ queryKey: ["admin-notifications"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const createMutation = useMutation({
     mutationFn: async (payload: {
       title: string;
@@ -88,6 +110,9 @@ export default function AdminNotificationsPage() {
       type: NotificationType;
       status: NotificationStatus;
       linkUrl?: string;
+      scheduledAt?: string;
+      sendPush: boolean;
+      sendEmail: boolean;
     }) => {
       const res = await fetch("/api/admin/notifications", {
         method: "POST",
@@ -117,6 +142,9 @@ export default function AdminNotificationsPage() {
         body: string;
         status: NotificationStatus;
         linkUrl?: string;
+        scheduledAt?: string | null;
+        sendPush?: boolean;
+        sendEmail?: boolean;
       };
     }) => {
       const res = await fetch(`/api/admin/notifications/${id}`, {
@@ -158,6 +186,9 @@ export default function AdminNotificationsPage() {
     setType(NotificationType.SYSTEM);
     setStatus(NotificationStatus.DRAFT);
     setLinkUrl("");
+    setScheduledAt("");
+    setSendPush(true);
+    setSendEmail(false);
     setIsModalOpen(true);
   };
 
@@ -169,6 +200,9 @@ export default function AdminNotificationsPage() {
     setType(item.type);
     setStatus(item.status);
     setLinkUrl(item.linkUrl || "");
+    setScheduledAt(item.scheduledAt ? item.scheduledAt.slice(0, 16) : "");
+    setSendPush(item.sendPush);
+    setSendEmail(item.sendEmail);
     setIsModalOpen(true);
   };
 
@@ -192,6 +226,9 @@ export default function AdminNotificationsPage() {
           body: body.trim(),
           status,
           linkUrl: linkUrl.trim() || undefined,
+          scheduledAt: scheduledAt || undefined,
+          sendPush,
+          sendEmail,
         },
       });
     } else {
@@ -202,6 +239,9 @@ export default function AdminNotificationsPage() {
         type,
         status,
         linkUrl: linkUrl.trim() || undefined,
+        scheduledAt: scheduledAt || undefined,
+        sendPush,
+        sendEmail,
       });
     }
   };
@@ -329,6 +369,7 @@ export default function AdminNotificationsPage() {
                   <th className={adminTableHeadCell}>Title</th>
                   <th className={adminTableHeadCell}>Type</th>
                   <th className={adminTableHeadCell}>Status</th>
+                  <th className={adminTableHeadCell}>Delivery</th>
                   <th className={adminTableHeadCell}>Created</th>
                   <th className={`${adminTableHeadCell} text-right`}>Actions</th>
                 </tr>
@@ -348,11 +389,29 @@ export default function AdminNotificationsPage() {
                     <td className={adminTableCell}>
                       <span className={statusBadge(item.status)}>{STATUS_LABELS[item.status]}</span>
                     </td>
+                    <td className={`${adminTableCell} font-mono text-[11px] text-muted-foreground`}>
+                      {item.status === "SENT"
+                        ? `${item.pushDelivered} push / ${item.emailDelivered} email`
+                        : item.scheduledAt
+                          ? new Date(item.scheduledAt).toLocaleString()
+                          : "—"}
+                    </td>
                     <td className={`${adminTableCell} text-muted-foreground`}>
                       {new Date(item.createdAt).toLocaleDateString()}
                     </td>
                     <td className={`${adminTableCell} text-right`}>
                       <div className="inline-flex items-center">
+                        {item.status !== "SENT" ? (
+                          <button
+                            type="button"
+                            onClick={() => sendMutation.mutate(item.id)}
+                            disabled={sendMutation.isPending}
+                            className={adminBtnGhost}
+                            title="Send now"
+                          >
+                            <Send className="h-3.5 w-3.5" />
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           onClick={() => openEditModal(item)}
@@ -484,6 +543,38 @@ export default function AdminNotificationsPage() {
                       onChange={(e) => setBody(e.target.value)}
                       className={`${adminInput} min-h-20 w-full resize-y py-2`}
                     />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label htmlFor="notif-scheduled" className="text-xs font-medium text-foreground">
+                      Schedule send (optional)
+                    </label>
+                    <input
+                      id="notif-scheduled"
+                      type="datetime-local"
+                      value={scheduledAt}
+                      onChange={(e) => setScheduledAt(e.target.value)}
+                      className={adminInput}
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap gap-4">
+                    <label className="flex items-center gap-2 text-xs text-foreground">
+                      <input
+                        type="checkbox"
+                        checked={sendPush}
+                        onChange={(e) => setSendPush(e.target.checked)}
+                      />
+                      Send web push
+                    </label>
+                    <label className="flex items-center gap-2 text-xs text-foreground">
+                      <input
+                        type="checkbox"
+                        checked={sendEmail}
+                        onChange={(e) => setSendEmail(e.target.checked)}
+                      />
+                      Send email to newsletter
+                    </label>
                   </div>
 
                   <div className="space-y-1">

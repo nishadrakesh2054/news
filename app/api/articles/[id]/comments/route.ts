@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { CommentStatus, Role, ArticleStatus } from "@prisma/client";
 import { validateCommentCreate } from "@/lib/validations/comment";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { looksLikeSpam } from "@/lib/comment-moderation";
 
 export async function GET(
   request: NextRequest,
@@ -67,15 +69,32 @@ export async function POST(
 
     const { content, authorName, authorEmail } = validation.data;
 
+    if (!session?.user || !([Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {
+      const ip = getClientIp(request);
+      const rate = checkRateLimit(`comment:${ip}:${articleId}`, 5, 15 * 60 * 1000);
+      if (!rate.allowed) {
+        return apiError(
+          `धेरै प्रयास। ${rate.retryAfterSec ?? 60} सेकेन्ड पछि प्रयास गर्नुहोस्।`,
+          429
+        );
+      }
+    }
+
     let isAutoApproved = false;
     let authorId: string | null = null;
     let finalAuthorName = authorName?.trim() || null;
+    let commentStatus: CommentStatus = CommentStatus.PENDING;
+
+    if (looksLikeSpam(content)) {
+      commentStatus = CommentStatus.SPAM;
+    }
 
     if (session?.user) {
       authorId = session.user.id;
       finalAuthorName = session.user.name || finalAuthorName;
       if (([Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {
         isAutoApproved = true;
+        commentStatus = CommentStatus.APPROVED;
       }
     }
 
@@ -90,7 +109,7 @@ export async function POST(
         authorId,
         authorName: finalAuthorName,
         authorEmail: authorEmail?.trim() || session?.user?.email || null,
-        status: isAutoApproved ? CommentStatus.APPROVED : CommentStatus.PENDING,
+        status: commentStatus,
       },
     });
 
@@ -98,7 +117,9 @@ export async function POST(
       comment,
       isAutoApproved
         ? "प्रतिक्रिया प्रकाशित भयो (Comment published)"
-        : "तपाईंको प्रतिक्रिया स्वीकृतिका लागि पठाइयो (Comment submitted for moderation)",
+        : commentStatus === CommentStatus.SPAM
+          ? "Comment flagged as spam"
+          : "तपाईंको प्रतिक्रिया स्वीकृतिका लागि पठाइयो (Comment submitted for moderation)",
       201
     );
   } catch (error) {

@@ -9,6 +9,8 @@ import { FacebookIcon, TwitterIcon } from "@/components/portal/SocialIcons";
 import { ArticleBodyClient } from "@/components/web/ArticleBodyClient";
 import { CommentsSection } from "@/components/web/CommentsSection";
 import { AudioNewsPlayer } from "@/components/portal/AudioNewsPlayer";
+import { ArticleViewTracker } from "@/components/portal/ArticleViewTracker";
+import { AdUnit } from "@/components/portal/AdUnit";
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -80,17 +82,10 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
     return notFound();
   }
 
-  // Increment views asynchronously without blocking response
-  prisma.article.update({
-    where: { id: article.id },
-    data: { views: { increment: 1 } },
-  }).catch(() => { });
-
-  // Fetch In-Article Ad & Related News simultaneously in parallel
   const [inArticleAd, relatedArticles] = await Promise.all([
     prisma.ad.findFirst({
       where: { slot: AdSlot.IN_ARTICLE, isActive: true },
-      select: { id: true, title: true, imageUrl: true, targetUrl: true },
+      select: { id: true, title: true, imageUrl: true, targetUrl: true, scriptCode: true },
     }),
     prisma.article.findMany({
       where: {
@@ -139,6 +134,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
 
   return (
     <>
+      <ArticleViewTracker articleId={article.id} path={`/article/${article.slug}`} />
       {/* 2. Injected Google NewsArticle JSON-LD Schema */}
       <script
         type="application/ld+json"
@@ -189,7 +185,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               <div className="flex items-center space-x-3">
                 <span className="flex items-center gap-1">
                   <Eye className="h-3.5 w-3.5 text-[#027081]" />
-                  <span>{article.views + 1} पढिएको</span>
+                  <span>{article.views.toLocaleString()} पढिएको</span>
                 </span>
               </div>
             </div>
@@ -288,24 +284,13 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
           )}
 
           {/* In-Article Monetization Banner */}
-          {inArticleAd && inArticleAd.imageUrl && (
-            <a
-              href={inArticleAd.targetUrl || "#"}
-              target="_blank"
-              rel="noreferrer"
-              className="w-full h-30 border border-border overflow-hidden block relative group rounded-none"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={inArticleAd.imageUrl}
-                alt={inArticleAd.title}
-                className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-200 rounded-none"
-              />
-              <span className="absolute top-2 right-2 bg-black text-white text-[9px] px-1.5 py-0.5 font-mono rounded-none">
-                विज्ञापन
-              </span>
-            </a>
-          )}
+          {inArticleAd ? (
+            <AdUnit
+              ad={inArticleAd}
+              path={`/article/${article.slug}`}
+              className="w-full h-30 border border-border rounded-none"
+            />
+          ) : null}
 
           {/* Interactive Article Content with Font Resizer & Audio Reader */}
           <ArticleBodyClient

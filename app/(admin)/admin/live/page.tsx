@@ -4,17 +4,17 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Send, X } from "lucide-react";
+import { Plus, Send, X, Pencil, Trash2, Square } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
 import {
   adminBadgeMuted,
+  adminBtnGhost,
   adminBtnPrimary,
   adminBtnSecondary,
   adminInput,
   adminPanel,
   adminPanelHeader,
-  adminPanelTitle,
 } from "@/constants/admin-layout";
 
 interface LiveUpdateItem {
@@ -43,6 +43,7 @@ export default function AdminLivePage() {
   const [selectedArticle, setSelectedArticle] = useState<LiveArticleItem | null>(null);
   const [updateTitle, setUpdateTitle] = useState("");
   const [updateContent, setUpdateContent] = useState("");
+  const [editingUpdate, setEditingUpdate] = useState<LiveUpdateItem | null>(null);
 
   const { data: liveArticles = [], isLoading, isError, refetch, isFetching } = useQuery<LiveArticleItem[]>({
     queryKey: ["admin-live"],
@@ -71,6 +72,63 @@ export default function AdminLivePage() {
       setUpdateTitle("");
       setUpdateContent("");
       setSelectedArticle(null);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const editUpdateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      title,
+      content,
+    }: {
+      id: string;
+      title: string;
+      content: string;
+    }) => {
+      const res = await fetch(`/api/admin/live/updates/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, content }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to edit update");
+      return json.data;
+    },
+    onSuccess: () => {
+      toast.success("Update saved");
+      queryClient.invalidateQueries({ queryKey: ["admin-live"] });
+      setEditingUpdate(null);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const deleteUpdateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/admin/live/updates/${id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to delete update");
+    },
+    onSuccess: () => {
+      toast.success("Update deleted");
+      queryClient.invalidateQueries({ queryKey: ["admin-live"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const endLiveMutation = useMutation({
+    mutationFn: async (articleId: string) => {
+      const res = await fetch("/api/admin/live/end", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ articleId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to end live coverage");
+    },
+    onSuccess: () => {
+      toast.success("Live coverage ended");
+      queryClient.invalidateQueries({ queryKey: ["admin-live"] });
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -150,18 +208,37 @@ export default function AdminLivePage() {
                     {art.titleNp || art.title}
                   </h2>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedArticle(art);
-                    setUpdateTitle("");
-                    setUpdateContent("");
-                  }}
-                  className={adminBtnPrimary}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Post update
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Link href={`/admin/articles/${art.id}/edit`} className={adminBtnSecondary}>
+                    Edit story
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm("End live coverage for this story?")) {
+                        endLiveMutation.mutate(art.id);
+                      }
+                    }}
+                    disabled={endLiveMutation.isPending}
+                    className={adminBtnSecondary}
+                    title="End live"
+                  >
+                    <Square className="h-3.5 w-3.5" />
+                    End live
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedArticle(art);
+                      setUpdateTitle("");
+                      setUpdateContent("");
+                    }}
+                    className={adminBtnPrimary}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Post update
+                  </button>
+                </div>
               </div>
 
               <div className="p-3">
@@ -173,17 +250,39 @@ export default function AdminLivePage() {
                 ) : (
                   <div className="divide-y divide-border border border-border">
                     {art.liveUpdates.map((upd) => (
-                      <div key={upd.id} className="px-3 py-2">
-                        <div className="flex items-baseline gap-2">
-                          <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
-                            {new Date(upd.createdAt).toLocaleTimeString("en-US", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                          <span className="text-xs font-medium text-foreground">{upd.title}</span>
+                      <div key={upd.id} className="flex items-start justify-between gap-2 px-3 py-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline gap-2">
+                            <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+                              {new Date(upd.createdAt).toLocaleTimeString("en-US", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                            <span className="text-xs font-medium text-foreground">{upd.title}</span>
+                          </div>
+                          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{upd.content}</p>
                         </div>
-                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{upd.content}</p>
+                        <div className="inline-flex shrink-0 items-center">
+                          <button
+                            type="button"
+                            onClick={() => setEditingUpdate(upd)}
+                            className={adminBtnGhost}
+                            title="Edit"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm("Delete this update?")) deleteUpdateMutation.mutate(upd.id);
+                            }}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#C3272E] hover:bg-muted"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -193,6 +292,67 @@ export default function AdminLivePage() {
           ))}
         </div>
       )}
+
+      {editingUpdate ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className={`${adminPanel} w-full max-w-lg`}>
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <h2 className="text-sm font-semibold text-foreground">Edit live update</h2>
+              <button
+                type="button"
+                onClick={() => setEditingUpdate(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                editUpdateMutation.mutate({
+                  id: editingUpdate.id,
+                  title: editingUpdate.title,
+                  content: editingUpdate.content,
+                });
+              }}
+              className="space-y-3 p-4"
+            >
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">Headline</label>
+                <input
+                  type="text"
+                  required
+                  value={editingUpdate.title}
+                  onChange={(e) =>
+                    setEditingUpdate({ ...editingUpdate, title: e.target.value })
+                  }
+                  className={adminInput}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">Content</label>
+                <textarea
+                  rows={4}
+                  required
+                  value={editingUpdate.content}
+                  onChange={(e) =>
+                    setEditingUpdate({ ...editingUpdate, content: e.target.value })
+                  }
+                  className={`${adminInput} h-auto min-h-[88px] py-2`}
+                />
+              </div>
+              <div className="flex justify-end gap-2 border-t border-border pt-3">
+                <button type="button" onClick={() => setEditingUpdate(null)} className={adminBtnSecondary}>
+                  Cancel
+                </button>
+                <button type="submit" className={adminBtnPrimary} disabled={editUpdateMutation.isPending}>
+                  {editUpdateMutation.isPending ? "Saving…" : "Save"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       {selectedArticle ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
