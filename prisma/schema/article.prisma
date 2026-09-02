@@ -33,6 +33,7 @@ model Article {
   type            ArticleType     @default(STANDARD)
   languageEdition LanguageEdition @default(BOTH)
   isFeatured      Boolean         @default(false)
+  featuredOrder   Int?
   isBreaking      Boolean         @default(false)
   views           Int             @default(0)
   metaTitle       String?

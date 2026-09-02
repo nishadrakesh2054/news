@@ -17,4 +17,6 @@ model User {
   articles  Article[]
   comments  Comment[]
   media     Media[]
+  auditLogs AuditLog[]
+  apiKeys   ApiKey[]
 }

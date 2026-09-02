@@ -1,0 +1,115 @@
+enum NotificationType {
+  BREAKING
+  ARTICLE
+  SYSTEM
+  PROMO
+}
+
+enum NotificationStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+}
+
+model Gallery {
+  id          String        @id @default(cuid())
+  title       String
+  titleNp     String?
+  slug        String        @unique
+  description String?       @db.Text
+  coverUrl    String?
+  isPublished Boolean       @default(false)
+  items       GalleryItem[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model GalleryItem {
+  id        String   @id @default(cuid())
+  galleryId String
+  gallery   Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  caption   String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([galleryId, order])
+}
+
+model Notification {
+  id        String             @id @default(cuid())
+  title     String
+  titleNp   String?
+  body      String             @db.Text
+  type      NotificationType   @default(SYSTEM)
+  status    NotificationStatus @default(DRAFT)
+  linkUrl   String?
+  sentAt    DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
+
+model Menu {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  label     String
+  items     MenuItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model MenuItem {
+  id        String     @id @default(cuid())
+  menuId    String
+  menu      Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    MenuItem?  @relation("MenuItemChildren", fields: [parentId], references: [id], onDelete: SetNull)
+  children  MenuItem[] @relation("MenuItemChildren")
+  label     String
+  labelNp   String?
+  url       String
+  order     Int        @default(0)
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([menuId, order])
+}
+
+model Redirect {
+  id        String   @id @default(cuid())
+  fromPath  String   @unique
+  toPath    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  details   String?  @db.Text
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([entity, entityId])
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String
+  keyPrefix  String
+  keyHash    String
+  isActive   Boolean   @default(true)
+  lastUsedAt DateTime?
+  createdBy  String?
+  creator    User?     @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}

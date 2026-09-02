@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Settings,
@@ -46,9 +46,51 @@ export default function AdminSettingsPage() {
   // 5. Emergency Banner & Maintenance State
   const [emergencyAlertText, setEmergencyAlertText] = useState("");
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetch("/api/admin/settings")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!json.success || !json.data) return;
+        const d = json.data;
+        if (d.site_name) setSiteName(d.site_name);
+        if (d.site_name_np) setSiteNameNp(d.site_name_np);
+        if (d.site_tagline) setTagline(d.site_tagline);
+        if (d.press_council_reg) setPressCouncilReg(d.press_council_reg);
+        if (d.dept_info_reg) setDeptInfoReg(d.dept_info_reg);
+        if (d.site_logo_url) setLogoUrl(d.site_logo_url);
+        if (d.contact_email) setContactEmail(d.contact_email);
+        if (d.contact_phone) setContactPhone(d.contact_phone);
+        if (d.comment_mode) setCommentMode(d.comment_mode as "everyone" | "registered" | "disabled");
+        if (d.default_author_status) setDefaultAuthorArticleStatus(d.default_author_status as "DRAFT" | "PUBLISHED");
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Portal settings saved successfully!");
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          site_name: siteName,
+          site_name_np: siteNameNp,
+          site_tagline: tagline,
+          press_council_reg: pressCouncilReg,
+          dept_info_reg: deptInfoReg,
+          site_logo_url: logoUrl,
+          contact_email: contactEmail,
+          contact_phone: contactPhone,
+          comment_mode: commentMode,
+          default_author_status: defaultAuthorArticleStatus,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      toast.success("Portal settings saved successfully!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Save failed");
+    }
   };
 
   return (

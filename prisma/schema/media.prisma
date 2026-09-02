@@ -12,6 +12,7 @@ model Media {
   folder      String   @default("articles")
   uploaderId  String?
   uploader    User?    @relation(fields: [uploaderId], references: [id], onDelete: SetNull)
+  galleryItems GalleryItem[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

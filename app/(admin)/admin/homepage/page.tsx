@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -43,8 +43,41 @@ export default function AdminHomepageLayoutPage() {
     },
   });
 
-  const handleSaveLayout = () => {
-    toast.success("Homepage layout configuration saved successfully!");
+  useEffect(() => {
+    fetch("/api/admin/homepage")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          const d = json.data;
+          if (d.showBreakingTicker !== undefined) setShowBreakingTicker(d.showBreakingTicker);
+          if (d.tickerSpeedSec !== undefined) setTickerSpeedSec(d.tickerSpeedSec);
+          if (d.showHeroFeatured !== undefined) setShowHeroFeatured(d.showHeroFeatured);
+          if (d.heroLayoutMode) setHeroLayoutMode(d.heroLayoutMode);
+          if (d.showLiveBar !== undefined) setShowLiveBar(d.showLiveBar);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveLayout = async () => {
+    try {
+      const res = await fetch("/api/admin/homepage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          showBreakingTicker,
+          tickerSpeedSec,
+          showHeroFeatured,
+          heroLayoutMode,
+          showLiveBar,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      toast.success("Homepage layout saved successfully!");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Save failed");
+    }
   };
 
   return (
