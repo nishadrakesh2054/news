@@ -52,6 +52,7 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
   const pathname = usePathname();
   const { data: session } = useSession();
   const navSections = filterNavSectionsForRole(ADMIN_NAV_SECTIONS, session?.user?.role);
+  const allNavHrefs = navSections.flatMap((section) => section.items.map((item) => item.href));
 
   return (
     <aside
@@ -86,7 +87,12 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
               <nav className="flex flex-col gap-0.5">
                 {section.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive = isAdminNavItemActive(pathname, item.href, item.exactMatch);
+                  const isActive = isAdminNavItemActive(
+                    pathname,
+                    item.href,
+                    item.exactMatch,
+                    allNavHrefs
+                  );
                   return (
                     <Link
                       key={item.href}

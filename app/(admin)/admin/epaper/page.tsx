@@ -173,64 +173,111 @@ export default function AdminEPaperPage() {
         ]}
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <section className={adminPanel}>
-          <div className={adminPanelHeader}>
+      <section className={adminPanel}>
+        <div className={adminPanelHeader}>
+          <div>
             <h2 className={adminPanelTitle}>Upload edition</h2>
+            <p className="mt-0.5 text-[10px] text-muted-foreground">
+              Add a new PDF edition · max 20 MB · stored on Cloudinary
+            </p>
           </div>
-          <form onSubmit={handleSubmit} className="space-y-3 p-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-foreground">
-                Edition title <span className="text-[#C3272E]">*</span>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5 p-4 sm:p-5">
+          <div className="space-y-1.5">
+            <label htmlFor="epaper-title" className="text-xs font-medium text-foreground">
+              Edition title <span className="text-[#C3272E]">*</span>
+            </label>
+            <input
+              id="epaper-title"
+              type="text"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Daily edition — 2 Sep 2026"
+              className={`${adminInput} w-full`}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="epaper-pdf" className="text-xs font-medium text-foreground">
+              PDF file <span className="text-[#C3272E]">*</span>
+            </label>
+            <label
+              htmlFor="epaper-pdf"
+              className="flex min-h-[88px] cursor-pointer flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-border/80 bg-muted/20 px-4 py-5 text-center transition-colors hover:border-[#0C4EA0]/40 hover:bg-muted/35"
+            >
+              <Upload className="h-5 w-5 text-[#0C4EA0]" />
+              {pdfFile ? (
+                <span className="max-w-full truncate text-xs font-medium text-foreground">
+                  {pdfFile.name}
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  Click to choose PDF or drag file here
+                </span>
+              )}
+              {pdfFile ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setPdfFile(null);
+                  }}
+                  className="text-[10px] font-medium text-[#C3272E] hover:underline"
+                >
+                  Remove file
+                </button>
+              ) : null}
+            </label>
+            <input
+              id="epaper-pdf"
+              type="file"
+              accept="application/pdf"
+              onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
+              className="sr-only"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label htmlFor="epaper-cover" className="text-xs font-medium text-foreground">
+                Cover image URL
+                <span className="ml-1 font-normal text-muted-foreground">(optional)</span>
               </label>
               <input
-                type="text"
-                required
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Daily edition — 2 Sep 2026"
-                className={adminInput}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-foreground">
-                PDF file <span className="text-[#C3272E]">*</span>
-              </label>
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
-                className={`${adminInput} file:mr-2 file:border-0 file:bg-muted file:px-2 file:py-1 file:text-xs`}
-              />
-              <p className="text-[10px] text-muted-foreground">Max 20 MB · uploaded to Cloudinary</p>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-foreground">Cover image URL</label>
-              <input
+                id="epaper-cover"
                 type="url"
                 value={coverImage}
                 onChange={(e) => setCoverImage(e.target.value)}
-                placeholder="Optional thumbnail"
-                className={`${adminInput} font-mono`}
+                placeholder="https://…"
+                className={`${adminInput} w-full font-mono text-[11px]`}
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-foreground">Publication date</label>
+            <div className="space-y-1.5">
+              <label htmlFor="epaper-date" className="text-xs font-medium text-foreground">
+                Publication date
+                <span className="ml-1 font-normal text-muted-foreground">(optional)</span>
+              </label>
               <input
+                id="epaper-date"
                 type="date"
                 value={publishDate}
                 onChange={(e) => setPublishDate(e.target.value)}
-                className={adminInput}
+                className={`${adminInput} w-full`}
               />
             </div>
+          </div>
 
+          <div className="flex flex-col-reverse gap-2 border-t border-border/60 pt-4 sm:flex-row sm:items-center sm:justify-end">
+            <p className="text-center text-[10px] text-muted-foreground sm:mr-auto sm:text-left">
+              Title and PDF are required. Date defaults to today if empty.
+            </p>
             <button
               type="submit"
               disabled={uploadMutation.isPending}
-              className={`${adminBtnPrimary} w-full justify-center`}
+              className={`${adminBtnPrimary} h-8 min-w-[140px] justify-center px-4`}
             >
               {uploadMutation.isPending ? (
                 "Uploading…"
@@ -241,10 +288,11 @@ export default function AdminEPaperPage() {
                 </>
               )}
             </button>
-          </form>
-        </section>
+          </div>
+        </form>
+      </section>
 
-        <section className={`${adminPanel} lg:col-span-2`}>
+      <section className={adminPanel}>
           <div className={adminPanelHeader}>
             <h2 className={adminPanelTitle}>Published editions</h2>
           </div>
@@ -345,7 +393,6 @@ export default function AdminEPaperPage() {
             </div>
           )}
         </section>
-      </div>
 
       {editing ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -356,27 +403,36 @@ export default function AdminEPaperPage() {
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="space-y-3 p-4">
-              <input
-                type="text"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                className={adminInput}
-              />
-              <input
-                type="url"
-                placeholder="Cover image URL"
-                value={editCover}
-                onChange={(e) => setEditCover(e.target.value)}
-                className={`${adminInput} font-mono`}
-              />
-              <input
-                type="date"
-                value={editDate}
-                onChange={(e) => setEditDate(e.target.value)}
-                className={adminInput}
-              />
-              <div className="flex justify-end gap-2 border-t border-border/70 pt-3">
+            <div className="space-y-4 p-4 sm:p-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Edition title</label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className={`${adminInput} w-full`}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Cover image URL</label>
+                <input
+                  type="url"
+                  placeholder="https://…"
+                  value={editCover}
+                  onChange={(e) => setEditCover(e.target.value)}
+                  className={`${adminInput} w-full font-mono text-[11px]`}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Publication date</label>
+                <input
+                  type="date"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  className={`${adminInput} w-full`}
+                />
+              </div>
+              <div className="flex justify-end gap-2 border-t border-border/70 pt-4">
                 <button type="button" onClick={() => setEditing(null)} className={adminBtnGhost}>
                   Cancel
                 </button>

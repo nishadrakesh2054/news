@@ -353,12 +353,33 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   },
 ];
 
-export function isAdminNavItemActive(pathname: string, href: string, exactMatch = false): boolean {
+export function isAdminNavItemActive(
+  pathname: string,
+  href: string,
+  exactMatch = false,
+  allHrefs: string[] = []
+): boolean {
   if (exactMatch || href === "/admin") {
     return pathname === href;
   }
 
-  return pathname === href || pathname.startsWith(`${href}/`);
+  if (pathname === href) {
+    return true;
+  }
+
+  if (!pathname.startsWith(`${href}/`)) {
+    return false;
+  }
+
+  // Prefer a more specific nav route (e.g. Review Queue over Articles).
+  const hasMoreSpecificNavMatch = allHrefs.some(
+    (other) =>
+      other !== href &&
+      other.startsWith(`${href}/`) &&
+      (pathname === other || pathname.startsWith(`${other}/`))
+  );
+
+  return !hasMoreSpecificNavMatch;
 }
 
 export function filterNavSectionsForRole(
