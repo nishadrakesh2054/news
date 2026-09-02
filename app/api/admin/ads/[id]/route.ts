@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role, AdSlot } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
+import { invalidatePublicAds } from "@/lib/cache-invalidation";
 
 export async function PATCH(
   request: NextRequest,
@@ -39,6 +40,8 @@ export async function PATCH(
       },
     });
 
+    invalidatePublicAds();
+
     return apiSuccess(updatedAd, "Ad slot updated successfully");
   } catch (error) {
     return handleServerError(error, "Failed to update ad slot");
@@ -69,6 +72,8 @@ export async function DELETE(
     await prisma.ad.delete({
       where: { id },
     });
+
+    invalidatePublicAds();
 
     return apiSuccess(null, "Ad slot deleted successfully");
   } catch (error) {

@@ -4,6 +4,7 @@ import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireEditor } from "@/lib/admin-auth";
 import { slugify } from "@/lib/slug";
 import { writeAuditLog } from "@/lib/audit-log";
+import { invalidatePublicTags } from "@/lib/cache-invalidation";
 
 export async function GET() {
   try {
@@ -37,6 +38,8 @@ export async function POST(request: NextRequest) {
       entityId: tag.id,
       details: tag.name,
     });
+
+    invalidatePublicTags();
 
     return apiSuccess(tag, "Tag created", 201);
   } catch (error) {

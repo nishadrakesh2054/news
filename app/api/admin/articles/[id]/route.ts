@@ -1,10 +1,17 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
+import { ArticleStatus, Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireStaff } from "@/lib/admin-auth";
 import { validateArticleUpdate } from "@/lib/validations/article";
 import { normalizeStatusForSchedule, resolvePublishedAt } from "@/lib/article-scheduling";
+import { sanitizeArticleHtml } from "@/lib/sanitize-html";
+import {
+  assertArticleStatusPermission,
+  assertBreakingPermission,
+  assertFeaturedPermission,
+} from "@/lib/article-permissions";
+import { writeAuditLog } from "@/lib/audit-log";
 
 export async function GET(
   request: NextRequest,
@@ -71,6 +78,18 @@ export async function PATCH(
       return apiError("Unauthorized: You can only edit your own articles", 403);
     }
 
+    const newStatus = data.status ?? existingArticle.status;
+    const statusDenied = assertArticleStatusPermission(session.user.role, newStatus);
+    if (statusDenied) return statusDenied;
+
+    const breakingValue = data.isBreaking ?? existingArticle.isBreaking;
+    const breakingDenied = assertBreakingPermission(session.user.role, breakingValue);
+    if (breakingDenied) return breakingDenied;
+
+    const featuredValue = data.isFeatured ?? existingArticle.isFeatured;
+    const featuredDenied = assertFeaturedPermission(session.user.role, featuredValue);
+    if (featuredDenied) return featuredDenied;
+
     if (data.slug && data.slug !== existingArticle.slug) {
       const slugConflict = await prisma.article.findUnique({
         where: { slug: data.slug },
@@ -89,7 +108,6 @@ export async function PATCH(
       }
     }
 
-    const newStatus = data.status ?? existingArticle.status;
     const scheduledAt =
       data.scheduledAt !== undefined ? data.scheduledAt : existingArticle.scheduledAt;
     const normalizedStatus = normalizeStatusForSchedule(newStatus, scheduledAt);
@@ -106,8 +124,10 @@ export async function PATCH(
         ...(data.title && { title: data.title }),
         ...(data.titleNp !== undefined && { titleNp: data.titleNp }),
         ...(data.slug && { slug: data.slug }),
-        ...(data.content && { content: data.content }),
-        ...(data.contentNp !== undefined && { contentNp: data.contentNp }),
+        ...(data.content && { content: sanitizeArticleHtml(data.content) }),
+        ...(data.contentNp !== undefined && {
+          contentNp: data.contentNp ? sanitizeArticleHtml(data.contentNp) : null,
+        }),
         ...(data.excerpt !== undefined && { excerpt: data.excerpt }),
         ...(data.coverImage !== undefined && { coverImage: data.coverImage }),
         ...(data.caption !== undefined && { caption: data.caption }),
@@ -132,6 +152,21 @@ export async function PATCH(
       include: {
         tags: { select: { id: true, name: true, slug: true } },
       },
+    });
+
+    const auditAction =
+      normalizedStatus === ArticleStatus.PUBLISHED && existingArticle.status !== ArticleStatus.PUBLISHED
+        ? "PUBLISH"
+        : normalizedStatus === ArticleStatus.ARCHIVED && existingArticle.status !== ArticleStatus.ARCHIVED
+          ? "ARCHIVE"
+          : "UPDATE";
+
+    await writeAuditLog({
+      userId: session.user.id,
+      action: auditAction,
+      entity: "Article",
+      entityId: id,
+      details: `${normalizedStatus}: ${updatedArticle.title}`,
     });
 
     return apiSuccess(updatedArticle, "Article updated successfully");
@@ -165,6 +200,14 @@ export async function DELETE(
 
     await prisma.article.delete({
       where: { id },
+    });
+
+    await writeAuditLog({
+      userId: session.user.id,
+      action: "DELETE",
+      entity: "Article",
+      entityId: id,
+      details: existingArticle.title,
     });
 
     return apiSuccess(null, "Article deleted successfully");

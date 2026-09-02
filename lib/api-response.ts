@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { MESSAGES } from "@/constants/messages";
+import { logger } from "@/lib/logger";
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -26,7 +27,10 @@ export function handleServerError(
   error: unknown,
   fallbackMessage: string = MESSAGES.SYSTEM.SERVER_ERROR
 ) {
-  console.error("API Server Error:", error);
+  logger.error("API server error", {
+    error,
+    fallbackMessage,
+  });
   const errorMessage = error instanceof Error ? error.message : fallbackMessage;
   return apiError(errorMessage, 500);
 }

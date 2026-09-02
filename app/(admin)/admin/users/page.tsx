@@ -39,10 +39,10 @@ export default function AdminUsersPage() {
   const { data: users = [], isLoading, isError, error, refetch, isFetching } = useQuery<UserItem[]>({
     queryKey: ["admin-users"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/users");
+      const res = await fetch("/api/admin/users?limit=100");
       const json = await res.json();
       if (!res.ok || !json.data) throw new Error(json.error || "Failed to load users");
-      return json.data;
+      return json.data.users ?? json.data;
     },
   });
 

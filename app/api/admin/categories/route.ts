@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
+import { invalidatePublicCategories } from "@/lib/cache-invalidation";
 
 export async function GET() {
   try {
@@ -65,6 +66,8 @@ export async function POST(request: NextRequest) {
         order: typeof order === "number" ? order : 0,
       },
     });
+
+    invalidatePublicCategories();
 
     return apiSuccess(category, "Category created successfully", 201);
   } catch (error) {

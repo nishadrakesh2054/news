@@ -20,5 +20,7 @@ model Comment {
 
   @@index([articleId])
   @@index([status])
+  @@index([articleId, status, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
 }
 

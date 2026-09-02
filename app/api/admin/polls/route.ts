@@ -5,17 +5,29 @@ import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireEditor } from "@/lib/admin-auth";
 import { validatePollCreate } from "@/lib/validations/poll";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const auth = await requireEditor();
     if (auth.error) return auth.error;
 
-    const polls = await prisma.poll.findMany({
-      orderBy: { createdAt: "desc" },
-      include: { options: true },
-    });
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get("limit") || "20", 10) || 20), 100);
 
-    return apiSuccess(polls);
+    const [total, polls] = await Promise.all([
+      prisma.poll.count(),
+      prisma.poll.findMany({
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { options: true },
+      }),
+    ]);
+
+    return apiSuccess({
+      polls,
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     return handleServerError(error, "Failed to fetch polls");
   }

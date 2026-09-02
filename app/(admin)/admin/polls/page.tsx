@@ -64,10 +64,10 @@ export default function AdminPollsPage() {
   const { data: polls = [], isLoading, isError, refetch, isFetching } = useQuery<PollItem[]>({
     queryKey: ["admin-polls"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/polls");
+      const res = await fetch("/api/admin/polls?limit=50");
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || "Failed to load polls");
-      return json.data;
+      return json.data?.polls ?? json.data;
     },
   });
 

@@ -1,7 +1,7 @@
 import { AnalyticsEventType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { DEVICE_LABELS, type DeviceCategory } from "@/lib/device-type";
-import { countByMonth, getRecentMonthBuckets, startOfMonthsAgo } from "@/lib/analytics-time-series";
+import { getRecentMonthBuckets, startOfMonthsAgo } from "@/lib/analytics-time-series";
 
 const PEAK_WINDOWS = [
   { key: "morning", time: "06:00 AM - 10:00 AM", label: "Morning News Rush", hours: [6, 7, 8, 9, 10] },
@@ -54,16 +54,17 @@ export async function getDeviceBreakdown(since?: Date) {
 }
 
 export async function getPeakHours(since?: Date) {
-  const events = await prisma.analyticsEvent.findMany({
+  const hourly = await prisma.analyticsEvent.groupBy({
+    by: ["hourOfDay"],
     where: {
       type: AnalyticsEventType.PAGE_VIEW,
       hourOfDay: { not: null },
       ...(since ? { createdAt: { gte: since } } : {}),
     },
-    select: { hourOfDay: true },
+    _count: { id: true },
   });
 
-  if (events.length === 0) {
+  if (hourly.length === 0) {
     return PEAK_WINDOWS.map((window) => ({
       time: window.time,
       label: window.label,
@@ -72,9 +73,15 @@ export async function getPeakHours(since?: Date) {
     }));
   }
 
+  const hourMap = new Map(
+    hourly
+      .filter((row) => row.hourOfDay !== null)
+      .map((row) => [row.hourOfDay as number, row._count.id])
+  );
+
   const counts = PEAK_WINDOWS.map((window) => ({
     ...window,
-    views: events.filter((e) => e.hourOfDay !== null && window.hours.includes(e.hourOfDay)).length,
+    views: window.hours.reduce((sum, hour) => sum + (hourMap.get(hour) ?? 0), 0),
   }));
 
   const max = Math.max(...counts.map((c) => c.views), 1);
@@ -87,23 +94,76 @@ export async function getPeakHours(since?: Date) {
   }));
 }
 
+type MonthCountRow = { month_key: string; count: bigint };
+
 export async function getPageViewsByMonth(months = 12) {
   const monthBuckets = getRecentMonthBuckets(months);
   const rangeStart = startOfMonthsAgo(months);
 
-  const events = await prisma.analyticsEvent.findMany({
-    where: {
-      type: AnalyticsEventType.PAGE_VIEW,
-      createdAt: { gte: rangeStart },
-    },
-    select: { createdAt: true },
-  });
+  const rows = await prisma.$queryRaw<MonthCountRow[]>`
+    SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM') AS month_key,
+           COUNT(*)::bigint AS count
+    FROM "AnalyticsEvent"
+    WHERE type = ${AnalyticsEventType.PAGE_VIEW}::"AnalyticsEventType"
+      AND "createdAt" >= ${rangeStart}
+    GROUP BY 1
+    ORDER BY 1
+  `;
 
-  const byMonth = countByMonth(events, (event) => event.createdAt, monthBuckets);
+  const byMonth = Object.fromEntries(
+    rows.map((row) => [row.month_key, Number(row.count)])
+  ) as Record<string, number>;
 
   return monthBuckets.map((bucket) => ({
     month: bucket.label,
-    views: byMonth[bucket.key],
+    views: byMonth[bucket.key] ?? 0,
+  }));
+}
+
+type UserMonthRow = { month_key: string; count: bigint };
+
+export async function getUserGrowthByMonth(rangeStart: Date, monthBuckets: { key: string; label: string }[]) {
+  const rows = await prisma.$queryRaw<UserMonthRow[]>`
+    SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM') AS month_key,
+           COUNT(*)::bigint AS count
+    FROM "User"
+    WHERE "createdAt" >= ${rangeStart}
+    GROUP BY 1
+    ORDER BY 1
+  `;
+
+  const byMonth = Object.fromEntries(rows.map((row) => [row.month_key, Number(row.count)]));
+
+  return monthBuckets.map((bucket) => ({
+    month: bucket.label,
+    users: byMonth[bucket.key] ?? 0,
+  }));
+}
+
+type ArticleMonthRow = { month_key: string; count: bigint };
+
+export async function getArticlesPublishedByMonth(
+  rangeStart: Date,
+  monthBuckets: { key: string; label: string }[]
+) {
+  const rows = await prisma.$queryRaw<ArticleMonthRow[]>`
+    SELECT to_char(date_trunc('month', COALESCE("publishedAt", "createdAt")), 'YYYY-MM') AS month_key,
+           COUNT(*)::bigint AS count
+    FROM "Article"
+    WHERE status = ${"PUBLISHED"}::"ArticleStatus"
+      AND (
+        "publishedAt" >= ${rangeStart}
+        OR ("publishedAt" IS NULL AND "createdAt" >= ${rangeStart})
+      )
+    GROUP BY 1
+    ORDER BY 1
+  `;
+
+  const byMonth = Object.fromEntries(rows.map((row) => [row.month_key, Number(row.count)]));
+
+  return monthBuckets.map((bucket) => ({
+    month: bucket.label,
+    articles: byMonth[bucket.key] ?? 0,
   }));
 }
 

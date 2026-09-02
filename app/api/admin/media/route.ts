@@ -43,29 +43,39 @@ export async function GET(request: NextRequest) {
       where.mimeType = { startsWith: type };
     }
 
-    const total = await prisma.media.count({ where });
-
-    const mediaList = await prisma.media.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit,
-      include: {
-        uploader: {
-          select: { name: true, email: true },
+    const [total, mediaList, aggregate, imageCount] = await Promise.all([
+      prisma.media.count({ where }),
+      prisma.media.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          filename: true,
+          url: true,
+          publicId: true,
+          mimeType: true,
+          size: true,
+          width: true,
+          height: true,
+          altText: true,
+          caption: true,
+          folder: true,
+          createdAt: true,
+          uploader: {
+            select: { name: true, email: true },
+          },
         },
-      },
-    });
-
-    // Summary Metrics
-    const aggregate = await prisma.media.aggregate({
-      _sum: { size: true },
-      _count: { id: true },
-    });
-
-    const imageCount = await prisma.media.count({
-      where: { mimeType: { startsWith: "image" } },
-    });
+      }),
+      prisma.media.aggregate({
+        _sum: { size: true },
+        _count: { id: true },
+      }),
+      prisma.media.count({
+        where: { mimeType: { startsWith: "image" } },
+      }),
+    ]);
 
     const metrics = {
       totalFiles: aggregate._count.id || 0,
@@ -130,7 +140,10 @@ export async function POST(request: NextRequest) {
       try {
         const uploadResult: CloudinaryUploadResult = await new Promise((resolve, reject) => {
           cloudinary.uploader.upload_stream(
-            { folder: `news_${folder}` },
+            {
+              folder: `news_${folder}`,
+              transformation: [{ quality: "auto:good", fetch_format: "auto" }],
+            },
             (error, result) => {
               if (error) reject(error);
               else if (!result) reject(new Error("Cloudinary upload failed: no result"));

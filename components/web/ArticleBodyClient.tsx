@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArticleReaderControls } from "./ArticleReaderControls";
 import { AudioNewsPlayer } from "./AudioNewsPlayer";
+import { sanitizeArticleHtml } from "@/lib/sanitize-html";
 
 interface ArticleBodyClientProps {
   title: string;
@@ -12,9 +13,10 @@ interface ArticleBodyClientProps {
 
 export function ArticleBodyClient({ title, content, shareUrl }: ArticleBodyClientProps) {
   const [fontSizeClass, setFontSizeClass] = useState("text-base sm:text-lg");
+  const safeContent = useMemo(() => sanitizeArticleHtml(content), [content]);
 
   // Calculate approximate word count
-  const cleanText = content.replace(/<[^>]*>?/gm, "");
+  const cleanText = safeContent.replace(/<[^>]*>?/gm, "");
   const wordCount = cleanText.trim().split(/\s+/).filter(Boolean).length;
 
   const handleFontSizeChange = (size: "normal" | "medium" | "large") => {
@@ -39,7 +41,7 @@ export function ArticleBodyClient({ title, content, shareUrl }: ArticleBodyClien
       {/* Dynamic HTML Content Render */}
       <article
         className={`prose dark:prose-invert max-w-none text-foreground font-sans leading-relaxed space-y-4 font-normal ${fontSizeClass}`}
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: safeContent }}
       />
     </div>
   );

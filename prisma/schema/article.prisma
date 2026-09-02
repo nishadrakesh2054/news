@@ -56,11 +56,15 @@ model Article {
   updatedAt       DateTime        @updatedAt
 
   @@index([status, createdAt(sort: Desc)])
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([status, scheduledAt])
   @@index([status, views(sort: Desc)])
   @@index([status, categoryId])
-  @@index([status, isFeatured])
+  @@index([status, isFeatured, featuredOrder])
+  @@index([status, isBreaking, updatedAt(sort: Desc)])
   @@index([status, isBreaking])
   @@index([status, languageEdition])
+  @@index([status, type])
   @@index([province])
   @@index([authorId])
 }

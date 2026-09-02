@@ -7,13 +7,41 @@ import { validateNotificationCreate } from "@/lib/validations/notification";
 import { writeAuditLog } from "@/lib/audit-log";
 import { dispatchNotification } from "@/lib/notification-dispatch";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const auth = await requireEditor();
     if (auth.error) return auth.error;
 
-    const notifications = await prisma.notification.findMany({ orderBy: { createdAt: "desc" } });
-    return apiSuccess(notifications);
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get("limit") || "20", 10) || 20), 100);
+
+    const [total, notifications] = await Promise.all([
+      prisma.notification.count(),
+      prisma.notification.findMany({
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          body: true,
+          type: true,
+          status: true,
+          scheduledAt: true,
+          sendPush: true,
+          sendEmail: true,
+          pushDelivered: true,
+          emailDelivered: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    return apiSuccess({
+      notifications,
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     return handleServerError(error, "Failed to fetch notifications");
   }

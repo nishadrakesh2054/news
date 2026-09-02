@@ -8,6 +8,9 @@ import { validateCommentCreate } from "@/lib/validations/comment";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { looksLikeSpam } from "@/lib/comment-moderation";
 
+const DEFAULT_COMMENT_LIMIT = 50;
+const MAX_COMMENT_LIMIT = 100;
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -19,12 +22,21 @@ export async function GET(
       return apiError("Article ID is required", 400);
     }
 
+    const { searchParams } = new URL(request.url);
+    const cursor = searchParams.get("cursor") || "";
+    const limit = Math.min(
+      Math.max(1, parseInt(searchParams.get("limit") || String(DEFAULT_COMMENT_LIMIT), 10) || DEFAULT_COMMENT_LIMIT),
+      MAX_COMMENT_LIMIT
+    );
+
     const comments = await prisma.comment.findMany({
       where: {
         articleId,
         status: CommentStatus.APPROVED,
       },
       orderBy: { createdAt: "desc" },
+      take: cursor ? limit + 1 : limit,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       select: {
         id: true,
         content: true,
@@ -39,7 +51,18 @@ export async function GET(
       },
     });
 
-    return apiSuccess(comments, "Comments fetched successfully");
+    const hasMore = cursor ? comments.length > limit : false;
+    const pageComments = hasMore ? comments.slice(0, limit) : comments;
+    const nextCursor = hasMore ? pageComments[pageComments.length - 1]?.id ?? null : null;
+
+    const res = apiSuccess({
+      comments: pageComments,
+      pagination: cursor
+        ? { limit, nextCursor, hasMore }
+        : { limit, count: pageComments.length },
+    });
+    res.headers.set("Cache-Control", "public, s-maxage=30, stale-while-revalidate=120");
+    return res;
   } catch (error) {
     return handleServerError(error, "Failed to fetch comments");
   }
@@ -56,6 +79,7 @@ export async function POST(
 
     const article = await prisma.article.findUnique({
       where: { id: articleId },
+      select: { id: true, status: true },
     });
 
     if (!article || article.status !== ArticleStatus.PUBLISHED) {
@@ -110,6 +134,13 @@ export async function POST(
         authorName: finalAuthorName,
         authorEmail: authorEmail?.trim() || session?.user?.email || null,
         status: commentStatus,
+      },
+      select: {
+        id: true,
+        content: true,
+        authorName: true,
+        createdAt: true,
+        status: true,
       },
     });
 

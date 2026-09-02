@@ -13,6 +13,7 @@ import { PhotoVideoFeature } from "@/components/portal/PhotoVideoFeature";
 import { NepaliUtilityWidget } from "@/components/portal/NepaliUtilityWidget";
 import { OpinionPollWidget } from "@/components/portal/OpinionPollWidget";
 import { AdUnit } from "@/components/portal/AdUnit";
+import { getCachedActiveAds } from "@/lib/public-cache";
 
 interface HomeArticleItem {
   id: string;
@@ -86,7 +87,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
           select: { name: true, image: true },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { publishedAt: "desc" },
       take: 24,
     }),
     // 2. Opinion Articles ("opinion" category or OPINION type)
@@ -109,7 +110,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
           select: { name: true, image: true },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { publishedAt: "desc" },
       take: 3,
     }),
     // 3. Economy Articles ("economy" or "arthatantra" category)
@@ -130,7 +131,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
           select: { name: true },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { publishedAt: "desc" },
       take: 4,
     }),
     // 4. Sports & Entertainment Articles
@@ -151,7 +152,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
           select: { name: true },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { publishedAt: "desc" },
       take: 4,
     }),
     // 5. Multimedia Photo Features
@@ -174,11 +175,8 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
       orderBy: { views: "desc" },
       take: 4,
     }),
-    // 6. Ads
-    prisma.ad.findMany({
-      where: { isActive: true },
-      select: { id: true, title: true, slot: true, imageUrl: true, targetUrl: true, scriptCode: true },
-    }),
+    // 6. Ads (cached)
+    getCachedActiveAds(),
   ]);
 
   const sidebarAd = activeAds.find((a: { slot: string }) => a.slot === AdSlot.SIDEBAR_TOP);

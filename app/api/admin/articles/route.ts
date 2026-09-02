@@ -1,10 +1,17 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ArticleStatus, ArticleType, Prisma } from "@prisma/client";
+import { ArticleStatus, ArticleType, Prisma, Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireStaff } from "@/lib/admin-auth";
 import { validateArticleCreate } from "@/lib/validations/article";
 import { resolvePublishedAt } from "@/lib/article-scheduling";
+import { sanitizeArticleHtml } from "@/lib/sanitize-html";
+import {
+  assertArticleStatusPermission,
+  assertBreakingPermission,
+  assertFeaturedPermission,
+} from "@/lib/article-permissions";
+import { writeAuditLog } from "@/lib/audit-log";
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,6 +31,10 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
 
     const where: Prisma.ArticleWhereInput = {};
+
+    if (auth.session!.user.role === Role.AUTHOR) {
+      where.authorId = auth.session!.user.id;
+    }
 
     if (search) {
       where.OR = [
@@ -172,6 +183,14 @@ export async function POST(request: NextRequest) {
     }
 
     const data = validation.data;
+    const role = auth.session!.user.role;
+
+    const statusDenied = assertArticleStatusPermission(role, data.status ?? ArticleStatus.DRAFT);
+    if (statusDenied) return statusDenied;
+    const breakingDenied = assertBreakingPermission(role, Boolean(data.isBreaking));
+    if (breakingDenied) return breakingDenied;
+    const featuredDenied = assertFeaturedPermission(role, Boolean(data.isFeatured));
+    if (featuredDenied) return featuredDenied;
 
     const existingSlug = await prisma.article.findUnique({
       where: { slug: data.slug! },
@@ -198,8 +217,8 @@ export async function POST(request: NextRequest) {
         title: data.title!,
         titleNp: data.titleNp ?? null,
         slug: data.slug!,
-        content: data.content!,
-        contentNp: data.contentNp ?? null,
+        content: sanitizeArticleHtml(data.content!),
+        contentNp: data.contentNp ? sanitizeArticleHtml(data.contentNp) : null,
         excerpt: data.excerpt ?? null,
         coverImage: data.coverImage ?? null,
         caption: data.caption ?? null,
@@ -225,6 +244,14 @@ export async function POST(request: NextRequest) {
       include: {
         tags: { select: { id: true, name: true, slug: true } },
       },
+    });
+
+    await writeAuditLog({
+      userId: auth.session!.user.id,
+      action: "CREATE",
+      entity: "Article",
+      entityId: article.id,
+      details: `${article.status}: ${article.title}`,
     });
 
     return apiSuccess(article, "Article created successfully", 201);

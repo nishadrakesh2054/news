@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { AdminDashboardShell } from "@/components/admin/AdminDashboardShell";
 import { SITE_CONFIG } from "@/constants/site";
+import { SkipToContent } from "@/components/a11y/SkipToContent";
 import Link from "next/link";
 import { Role } from "@prisma/client";
 
@@ -37,5 +38,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     );
   }
 
-  return <AdminDashboardShell>{children}</AdminDashboardShell>;
+  return (
+    <>
+      <SkipToContent />
+      <AdminDashboardShell>{children}</AdminDashboardShell>
+    </>
+  );
 }

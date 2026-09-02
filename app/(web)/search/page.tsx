@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
-import { ArticleStatus, Prisma } from "@prisma/client";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
 import { Search as SearchIcon, Newspaper, ArrowLeft } from "lucide-react";
+import { getCachedCategories } from "@/lib/public-cache";
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
+import { searchPublishedArticles } from "@/lib/article-search";
 
 interface SearchPageProps {
   searchParams: Promise<{
@@ -13,57 +14,34 @@ interface SearchPageProps {
   }>;
 }
 
+export const revalidate = 30;
+
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const query = params.q || "";
   const categorySlug = params.category || "";
-  const currentPage = parseInt(params.page || "1");
+  const currentPage = Math.max(1, parseInt(params.page || "1", 10) || 1);
   const sort = params.sort || "recent";
   const limit = 12;
 
-  const where: Prisma.ArticleWhereInput = {
-    status: ArticleStatus.PUBLISHED,
-  };
+  const sortParam = params.sort === "views" ? "views" : "recent";
 
-  if (query.trim()) {
-    const q = query.trim();
-    where.OR = [
-      { title: { contains: q, mode: "insensitive" } },
-      { titleNp: { contains: q, mode: "insensitive" } },
-      { content: { contains: q, mode: "insensitive" } },
-      { excerpt: { contains: q, mode: "insensitive" } },
-      { keywords: { contains: q, mode: "insensitive" } },
-    ];
-  }
+  const [searchResult, categories] = await Promise.all([
+    searchPublishedArticles({
+      query,
+      categorySlug,
+      sort: sortParam,
+      page: currentPage,
+      limit,
+    }),
+    getCachedCategories(),
+  ]);
 
-  if (categorySlug) {
-    where.category = {
-      slug: categorySlug,
-    };
-  }
-
-  const total = await prisma.article.count({ where });
+  const { articles, total } = searchResult;
   const totalPages = Math.ceil(total / limit);
 
-  const orderBy: Prisma.ArticleOrderByWithRelationInput = sort === "views" ? { views: "desc" } : { publishedAt: "desc" };
-
-  const articles = await prisma.article.findMany({
-    where,
-    orderBy,
-    skip: (currentPage - 1) * limit,
-    take: limit,
-    include: {
-      category: true,
-      author: { select: { name: true } },
-    },
-  });
-
-  const categories = await prisma.category.findMany({
-    orderBy: { order: "asc" },
-  });
-
   return (
-    <main className="w-full bg-background min-h-screen pb-20 pt-6">
+    <main id="main-content" className="w-full bg-background min-h-screen pb-20 pt-6">
       <div className="max-w-7xl mx-auto px-4 space-y-8">
         {/* Search Header Form */}
         <div className="bg-card rounded-2xl border border-border p-6 sm:p-8 shadow-xs space-y-6">
@@ -145,7 +123,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   <div className="h-48 w-full overflow-hidden bg-muted relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={art.coverImage}
+                      src={optimizeCloudinaryUrl(art.coverImage, "card") ?? art.coverImage}
                       alt={art.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -157,7 +135,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
                   <div className="space-y-2">
                     <span className="text-[11px] text-muted-foreground font-mono block">
-                      {formatTimeAgoNp(art.createdAt)}
+                      {formatTimeAgoNp(art.publishedAt ?? art.createdAt)}
                     </span>
                     <h2 className="text-base font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
                       <Link href={`/article/${art.slug}`}>

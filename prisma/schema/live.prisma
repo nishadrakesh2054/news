@@ -5,4 +5,6 @@ model LiveUpdate {
   title     String
   content   String   @db.Text
   createdAt DateTime @default(now())
+
+  @@index([articleId, createdAt(sort: Desc)])
 }

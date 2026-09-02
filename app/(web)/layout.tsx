@@ -5,10 +5,12 @@ import { CategoryNavbar } from "@/components/portal/CategoryNavbar";
 import { PublicFooter } from "@/components/portal/PublicFooter";
 import { StickyFooterAd } from "@/components/portal/StickyFooterAd";
 import { TrackingScripts } from "@/components/portal/TrackingScripts";
+import { SkipToContent } from "@/components/a11y/SkipToContent";
 
 export default function WebLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-background font-sans">
+      <SkipToContent />
       <TrackingScripts />
       <Suspense fallback={<div className="h-16 bg-[#027081]" />}>
         <PublicHeader />
@@ -17,7 +19,9 @@ export default function WebLayout({ children }: { children: React.ReactNode }) {
       <Suspense fallback={<div className="h-10 bg-background border-b-2 border-[#027081]" />}>
         <CategoryNavbar />
       </Suspense>
-      <div className="flex-1">{children}</div>
+      <div id="main-content" className="flex-1">
+        {children}
+      </div>
       <PublicFooter />
       <StickyFooterAd />
     </div>

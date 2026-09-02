@@ -40,6 +40,17 @@ export async function clearExpiredBreakingArticles() {
   return expiredIds;
 }
 
+let lastExpirySweepAt = 0;
+const EXPIRY_SWEEP_INTERVAL_MS = 60_000;
+
+/** Throttled wrapper — avoids settings read + updateMany on every breaking poll. */
+export async function clearExpiredBreakingArticlesIfDue() {
+  const now = Date.now();
+  if (now - lastExpirySweepAt < EXPIRY_SWEEP_INTERVAL_MS) return [];
+  lastExpirySweepAt = now;
+  return clearExpiredBreakingArticles();
+}
+
 export async function getBreakingExpiryForArticle(articleId: string): Promise<string | null> {
   const expiries = await getBreakingExpiries();
   return expiries[articleId] ?? null;

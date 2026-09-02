@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -119,6 +119,76 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       ? (initialData.tags as Array<{ id: string }>).map((tag) => tag.id)
       : []
   );
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  const formSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        title,
+        titleNp,
+        slug,
+        content,
+        contentNp,
+        excerpt,
+        coverImage,
+        caption,
+        status,
+        type,
+        languageEdition,
+        isFeatured,
+        isBreaking,
+        scheduledAt,
+        categoryId,
+        metaTitle,
+        metaDescription,
+        keywords,
+        ogImage,
+        province,
+        district,
+        tagIds,
+      }),
+    [
+      title,
+      titleNp,
+      slug,
+      content,
+      contentNp,
+      excerpt,
+      coverImage,
+      caption,
+      status,
+      type,
+      languageEdition,
+      isFeatured,
+      isBreaking,
+      scheduledAt,
+      categoryId,
+      metaTitle,
+      metaDescription,
+      keywords,
+      ogImage,
+      province,
+      district,
+      tagIds,
+    ]
+  );
+
+  const [savedSnapshot, setSavedSnapshot] = useState(formSnapshot);
+  const formSnapshotRef = useRef(formSnapshot);
+  useEffect(() => {
+    formSnapshotRef.current = formSnapshot;
+  }, [formSnapshot]);
+  const isDirty = formSnapshot !== savedSnapshot;
+
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!isDirty) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [isDirty]);
 
   const { data: categories = [] } = useQuery<CategoryItem[]>({
     queryKey: ["admin-categories"],
@@ -157,6 +227,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
 
   const saveMutation = useMutation({
     mutationFn: async (payload: ArticleData) => {
+      setSaveState("saving");
       const url = isEditing ? `/api/admin/articles/${initialData?.id}` : "/api/admin/articles";
       const method = isEditing ? "PATCH" : "POST";
 
@@ -171,12 +242,19 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       return json.data;
     },
     onSuccess: () => {
-      toast.success(isEditing ? "Article updated" : "Article created");
+      setSaveState("saved");
+      setSavedSnapshot(formSnapshotRef.current);
+      toast.success(isEditing ? "Article saved" : "Article created");
       queryClient.invalidateQueries({ queryKey: ["admin-articles"] });
-      router.push("/admin/articles");
+      if (isEditing) {
+        queryClient.invalidateQueries({ queryKey: ["admin-article", initialData?.id] });
+      } else {
+        router.push("/admin/articles");
+      }
     },
     onError: (err: Error) => {
-      toast.error(err.message);
+      setSaveState("error");
+      toast.error(err.message || "Failed to save");
     },
   });
 
@@ -262,6 +340,13 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
           >
             {statusLabel}
           </span>
+          {saveState === "saving" ? (
+            <span className="text-[10px] font-medium text-muted-foreground">Saving…</span>
+          ) : saveState === "saved" && !isDirty ? (
+            <span className="text-[10px] font-medium text-emerald-600">Saved</span>
+          ) : isDirty ? (
+            <span className="text-[10px] font-medium text-amber-600">Unsaved changes</span>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

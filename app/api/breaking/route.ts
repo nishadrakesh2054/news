@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
-import { clearExpiredBreakingArticles } from "@/lib/breaking-expiry";
+import { clearExpiredBreakingArticlesIfDue } from "@/lib/breaking-expiry";
 
 export async function GET() {
   try {
-    await clearExpiredBreakingArticles();
+    await clearExpiredBreakingArticlesIfDue();
 
     const breakingArticles = await prisma.article.findMany({
       where: {

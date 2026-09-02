@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ArticleStatus, ArticleType, Prisma } from "@prisma/client";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
 import { MESSAGES } from "@/constants/messages";
+import { articleListSelect, mapArticleListItem } from "@/lib/article-selects";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,9 @@ export async function GET(request: NextRequest) {
     const province = searchParams.get("province") || "";
     const district = searchParams.get("district") || "";
     const type = searchParams.get("type") || "";
-    const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 50);
+    const cursor = searchParams.get("cursor") || "";
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get("limit") || "10", 10) || 10), 50);
 
     const where: Prisma.ArticleWhereInput = {
       status: ArticleStatus.PUBLISHED,
@@ -41,33 +44,37 @@ export async function GET(request: NextRequest) {
       where.type = type as ArticleType;
     }
 
-    const articles = await prisma.article.findMany({
-      where,
-      take: limit,
-      orderBy: { publishedAt: "desc" },
-      select: {
-        id: true,
-        title: true,
-        titleNp: true,
-        slug: true,
-        excerpt: true,
-        coverImage: true,
-        type: true,
-        province: true,
-        district: true,
-        publishedAt: true,
-        createdAt: true,
-        category: {
-          select: { id: true, name: true, nameNp: true, slug: true },
-        },
-        author: { select: { name: true, image: true } },
-        tags: {
-          select: { id: true, name: true, slug: true },
-        },
-      },
-    });
+    const useCursor = Boolean(cursor);
+    const skip = useCursor ? undefined : (page - 1) * limit;
 
-    const res = apiSuccess(articles);
+    const [total, articles] = await Promise.all([
+      useCursor ? Promise.resolve(null) : prisma.article.count({ where }),
+      prisma.article.findMany({
+        where,
+        take: limit + (useCursor ? 1 : 0),
+        ...(useCursor
+          ? { cursor: { id: cursor }, skip: 1 }
+          : { skip }),
+        orderBy: { publishedAt: "desc" },
+        select: articleListSelect,
+      }),
+    ]);
+
+    const hasMore = useCursor && articles.length > limit;
+    const pageArticles = hasMore ? articles.slice(0, limit) : articles;
+    const nextCursor = hasMore ? pageArticles[pageArticles.length - 1]?.id ?? null : null;
+
+    const res = apiSuccess({
+      articles: pageArticles.map((a) => mapArticleListItem(a)),
+      pagination: useCursor
+        ? { limit, nextCursor, hasMore }
+        : {
+            total,
+            page,
+            limit,
+            totalPages: total !== null ? Math.ceil(total / limit) : 0,
+          },
+    });
     res.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
     return res;
   } catch (error) {

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
+import { invalidatePublicCategories } from "@/lib/cache-invalidation";
 
 export async function PATCH(
   request: NextRequest,
@@ -47,6 +48,8 @@ export async function PATCH(
       },
     });
 
+    invalidatePublicCategories();
+
     return apiSuccess(updatedCategory, "Category updated successfully");
   } catch (error) {
     return handleServerError(error, "Failed to update category");
@@ -89,6 +92,8 @@ export async function DELETE(
     await prisma.category.delete({
       where: { id },
     });
+
+    invalidatePublicCategories();
 
     return apiSuccess(null, "Category deleted successfully");
   } catch (error) {

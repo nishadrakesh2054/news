@@ -67,7 +67,7 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
           isFeatured: true,
           author: { select: { name: true } },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { publishedAt: "desc" },
         take: 30,
       },
     },

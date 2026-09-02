@@ -17,6 +17,7 @@ export function AdminDashboardShell({ children }: { children: React.ReactNode })
           onToggle={() => setCollapsed((prev) => !prev)}
         />
         <main
+          id="main-content"
           className="relative z-10 flex-1 min-w-0 h-full overflow-y-auto overflow-x-hidden"
           style={{ backgroundColor: ADMIN_BRAND.surface }}
         >

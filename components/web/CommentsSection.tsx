@@ -33,7 +33,8 @@ export function CommentsSection({ articleId }: CommentsSectionProps) {
       const res = await fetch(`/api/articles/${articleId}/comments`);
       const data = await res.json();
       if (data.success) {
-        setComments(data.data || []);
+        const payload = data.data;
+        setComments(Array.isArray(payload) ? payload : payload?.comments || []);
       }
     } catch (err) {
       console.error("Failed to load comments", err);
@@ -48,7 +49,8 @@ export function CommentsSection({ articleId }: CommentsSectionProps) {
       .then((res) => res.json())
       .then((data) => {
         if (!ignore && data.success) {
-          setComments(data.data || []);
+          const payload = data.data;
+          setComments(Array.isArray(payload) ? payload : payload?.comments || []);
         }
       })
       .catch((err) => {

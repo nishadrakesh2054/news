@@ -47,48 +47,58 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-12">
-      <div className="w-full max-w-md space-y-6 rounded-2xl border bg-card p-8 shadow-sm">
+      <main id="main-content" className="w-full max-w-md space-y-6 rounded-2xl border bg-card p-8 shadow-sm">
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-bold tracking-tight">Login to News Portal</h1>
           <p className="text-sm text-muted-foreground">Enter your credentials to access your account</p>
         </div>
 
-        {error && (
-          <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive font-medium">
+        {error ? (
+          <div
+            role="alert"
+            aria-live="polite"
+            className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive font-medium"
+          >
             {error}
           </div>
-        )}
+        ) : null}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <label htmlFor="login-email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Email Address
             </label>
             <input
+              id="login-email"
+              name="email"
               type="email"
+              autoComplete="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@example.com"
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <label htmlFor="login-password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Password
             </label>
             <input
+              id="login-password"
+              name="password"
               type="password"
+              autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading} aria-busy={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
@@ -99,7 +109,7 @@ export default function LoginPage() {
             Register here
           </Link>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

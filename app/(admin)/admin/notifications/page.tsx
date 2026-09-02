@@ -81,10 +81,10 @@ export default function AdminNotificationsPage() {
   >({
     queryKey: ["admin-notifications"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/notifications");
+      const res = await fetch("/api/admin/notifications?limit=50");
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to fetch notifications");
-      return json.data;
+      return json.data?.notifications ?? json.data;
     },
   });
 
