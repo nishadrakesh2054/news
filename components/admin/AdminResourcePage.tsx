@@ -22,7 +22,7 @@ type Column<T> = {
 
 type AdminResourcePageProps<T extends { id: string }> = {
   title: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
   description?: string;
   queryKey: string;
   apiPath: string;
@@ -30,6 +30,7 @@ type AdminResourcePageProps<T extends { id: string }> = {
   emptyMessage?: string;
   createFields?: { name: string; label: string; placeholder?: string }[];
   buildCreatePayload: (values: Record<string, string>) => object;
+  headerSlot?: React.ReactNode;
 };
 
 export function AdminResourcePage<T extends { id: string }>({
@@ -41,6 +42,7 @@ export function AdminResourcePage<T extends { id: string }>({
   emptyMessage = "No records found.",
   createFields = [],
   buildCreatePayload,
+  headerSlot,
 }: AdminResourcePageProps<T>) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -108,6 +110,8 @@ export function AdminResourcePage<T extends { id: string }>({
         ) : undefined
       }
     >
+      {headerSlot}
+
       {showForm && createFields.length > 0 ? (
         <div className={`${adminPanel} grid gap-3 p-3 sm:grid-cols-2`}>
           {createFields.map((f) => (

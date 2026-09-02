@@ -1,380 +1,293 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  Settings,
-  Save,
-  Globe,
-  Share2,
-  Shield,
-  MessageSquare,
-  FileText,
-  AlertTriangle,
-  Award,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { RotateCcw, Save } from "lucide-react";
+import { AdminPageShell } from "@/components/admin/AdminPageShell";
+import { WebsiteSectionNav } from "@/components/admin/WebsiteSectionNav";
+import { AdminPanel } from "@/components/admin/content";
 import { DualImagePicker } from "@/components/admin/DualImagePicker";
+import {
+  adminBtnPrimary,
+  adminBtnSecondary,
+  adminInput,
+  adminSelect,
+} from "@/constants/admin-layout";
+
+type SettingsForm = {
+  site_name: string;
+  site_name_np: string;
+  site_tagline: string;
+  press_council_reg: string;
+  dept_info_reg: string;
+  site_logo_url: string;
+  contact_email: string;
+  contact_phone: string;
+  comment_mode: "everyone" | "registered" | "disabled";
+  default_author_status: "DRAFT" | "PUBLISHED";
+};
+
+const EMPTY_FORM: SettingsForm = {
+  site_name: "",
+  site_name_np: "",
+  site_tagline: "",
+  press_council_reg: "",
+  dept_info_reg: "",
+  site_logo_url: "",
+  contact_email: "",
+  contact_phone: "",
+  comment_mode: "registered",
+  default_author_status: "DRAFT",
+};
+
+const fieldLabel =
+  "text-[10px] font-medium uppercase tracking-wide text-muted-foreground";
 
 export default function AdminSettingsPage() {
-  // 1. Identification & Press Registration State
-  const [siteName, setSiteName] = useState("Nepal Editorial News Portal");
-  const [siteNameNp, setSiteNameNp] = useState("नेपाल सम्पादकीय न्युज पोर्टल");
-  const [tagline, setTagline] = useState("सत्य, निष्पक्ष र भरपर्दो समाचार कोसेढुङ्गा");
-  const [pressCouncilReg, setPressCouncilReg] = useState("५६७/०८०-८१");
-  const [deptInfoReg, setDeptInfoReg] = useState("१२३४/०८०-८१");
-  const [logoUrl, setLogoUrl] = useState("");
+  const [form, setForm] = useState<SettingsForm>(EMPTY_FORM);
+  const [initial, setInitial] = useState<SettingsForm>(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
 
-  // 2. Editorial & Commenting System State
-  const [commentMode, setCommentMode] = useState<"everyone" | "registered" | "disabled">("registered");
-  const [autoModerateComments, setAutoModerateComments] = useState(true);
-  const [defaultAuthorArticleStatus, setDefaultAuthorArticleStatus] = useState<"DRAFT" | "PUBLISHED">("DRAFT");
+  const { isLoading, refetch, isFetching } = useQuery({
+    queryKey: ["admin-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings");
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || "Failed to load settings");
+      const next = { ...EMPTY_FORM, ...json.data };
+      setForm(next);
+      setInitial(next);
+      return next;
+    },
+  });
 
-  // 3. Global SEO & Social Sharing Defaults
-  const [defaultMetaTitle, setDefaultMetaTitle] = useState("Nepal News Portal - Latest Politics, Economy, Sports & Breaking Updates");
-  const [defaultMetaDesc, setDefaultMetaDesc] = useState("Nepal's premier digital news destination delivering real-time breaking news, political analysis, economic reports, and cultural features.");
-  const [canonicalUrl, setCanonicalUrl] = useState("https://nepalnews.com.np");
-  const [ogImageUrl, setOgImageUrl] = useState("");
+  const hasChanges = JSON.stringify(form) !== JSON.stringify(initial);
 
-  // 4. Contact & Social Channels State
-  const [contactEmail, setContactEmail] = useState("newsroom@nepalnews.com.np");
-  const [contactPhone, setContactPhone] = useState("+977 1 4234567 / 4234568");
-  const [address, setAddress] = useState("New Baneshwor, Kathmandu, Nepal");
-  const [facebookUrl, setFacebookUrl] = useState("https://facebook.com/nepalnewsportal");
-  const [twitterUrl, setTwitterUrl] = useState("https://x.com/nepalnewsportal");
+  const resetForm = () => setForm(initial);
 
-  // 5. Emergency Banner & Maintenance State
-  const [emergencyAlertText, setEmergencyAlertText] = useState("");
-
-  useEffect(() => {
-    fetch("/api/admin/settings")
-      .then((r) => r.json())
-      .then((json) => {
-        if (!json.success || !json.data) return;
-        const d = json.data;
-        if (d.site_name) setSiteName(d.site_name);
-        if (d.site_name_np) setSiteNameNp(d.site_name_np);
-        if (d.site_tagline) setTagline(d.site_tagline);
-        if (d.press_council_reg) setPressCouncilReg(d.press_council_reg);
-        if (d.dept_info_reg) setDeptInfoReg(d.dept_info_reg);
-        if (d.site_logo_url) setLogoUrl(d.site_logo_url);
-        if (d.contact_email) setContactEmail(d.contact_email);
-        if (d.contact_phone) setContactPhone(d.contact_phone);
-        if (d.comment_mode) setCommentMode(d.comment_mode as "everyone" | "registered" | "disabled");
-        if (d.default_author_status) setDefaultAuthorArticleStatus(d.default_author_status as "DRAFT" | "PUBLISHED");
-      })
-      .catch(() => {});
-  }, []);
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async () => {
+    setSaving(true);
     try {
       const res = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          site_name: siteName,
-          site_name_np: siteNameNp,
-          site_tagline: tagline,
-          press_council_reg: pressCouncilReg,
-          dept_info_reg: deptInfoReg,
-          site_logo_url: logoUrl,
-          contact_email: contactEmail,
-          contact_phone: contactPhone,
-          comment_mode: commentMode,
-          default_author_status: defaultAuthorArticleStatus,
-        }),
+        body: JSON.stringify(form),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      toast.success("Portal settings saved successfully!");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Save failed");
+      toast.success("Settings saved");
+      setInitial(form);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setSaving(false);
     }
   };
 
+  const update = <K extends keyof SettingsForm>(key: K, value: SettingsForm[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
   return (
-    <div className="w-full space-y-3 px-4 py-3 pb-5">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
-        <div>
-          <h1 className="text-base font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
-            <Settings className="h-5 w-5 text-[#027081]" />
-            <span>Portal Global Settings & System Config</span>
-          </h1>
-        </div>
+    <AdminPageShell
+      title="Site settings"
+      description="Portal identity, contact details, and editorial defaults"
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+      actions={
+        <>
+          <button
+            type="button"
+            onClick={resetForm}
+            disabled={isLoading || !hasChanges}
+            className={adminBtnSecondary}
+          >
+            <RotateCcw className="h-3 w-3" />
+            Reset
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || isLoading || !hasChanges}
+            className={adminBtnPrimary}
+          >
+            <Save className="h-3 w-3" />
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+        </>
+      }
+    >
+      <WebsiteSectionNav />
 
-        <Button
-          onClick={handleSave}
-          className="h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center gap-1.5 transition-all duration-200"
-        >
-          <Save className="h-3.5 w-3.5" />
-          <span>Save Settings</span>
-        </Button>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <AdminPanel title="Portal identity">
+          {isLoading ? (
+            <p className="px-3 py-6 text-xs text-muted-foreground">Loading…</p>
+          ) : (
+            <div className="space-y-3 p-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <label htmlFor="site-name" className={fieldLabel}>
+                    English site name
+                  </label>
+                  <input
+                    id="site-name"
+                    type="text"
+                    value={form.site_name}
+                    onChange={(e) => update("site_name", e.target.value)}
+                    className={`${adminInput} w-full`}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="site-name-np" className={fieldLabel}>
+                    Nepali site name
+                  </label>
+                  <input
+                    id="site-name-np"
+                    type="text"
+                    value={form.site_name_np}
+                    onChange={(e) => update("site_name_np", e.target.value)}
+                    className={`${adminInput} w-full`}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="site-tagline" className={fieldLabel}>
+                  Tagline
+                </label>
+                <input
+                  id="site-tagline"
+                  type="text"
+                  value={form.site_tagline}
+                  onChange={(e) => update("site_tagline", e.target.value)}
+                  className={`${adminInput} w-full`}
+                />
+              </div>
+
+              <DualImagePicker
+                value={form.site_logo_url}
+                onChange={(value) => update("site_logo_url", value)}
+                folder="general"
+                label="Site logo"
+              />
+            </div>
+          )}
+        </AdminPanel>
+
+        <AdminPanel title="Press registration">
+          {isLoading ? (
+            <p className="px-3 py-6 text-xs text-muted-foreground">Loading…</p>
+          ) : (
+            <div className="space-y-3 p-3">
+              <div className="space-y-1">
+                <label htmlFor="dept-reg" className={fieldLabel}>
+                  Dept. of Information reg. no.
+                </label>
+                <input
+                  id="dept-reg"
+                  type="text"
+                  value={form.dept_info_reg}
+                  onChange={(e) => update("dept_info_reg", e.target.value)}
+                  className={`${adminInput} w-full font-mono`}
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="press-reg" className={fieldLabel}>
+                  Press Council reg. no.
+                </label>
+                <input
+                  id="press-reg"
+                  type="text"
+                  value={form.press_council_reg}
+                  onChange={(e) => update("press_council_reg", e.target.value)}
+                  className={`${adminInput} w-full font-mono`}
+                />
+              </div>
+            </div>
+          )}
+        </AdminPanel>
+
+        <AdminPanel title="Contact">
+          {isLoading ? (
+            <p className="px-3 py-6 text-xs text-muted-foreground">Loading…</p>
+          ) : (
+            <div className="space-y-3 p-3">
+              <div className="space-y-1">
+                <label htmlFor="contact-email" className={fieldLabel}>
+                  Newsroom email
+                </label>
+                <input
+                  id="contact-email"
+                  type="email"
+                  value={form.contact_email}
+                  onChange={(e) => update("contact_email", e.target.value)}
+                  className={`${adminInput} w-full font-mono`}
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="contact-phone" className={fieldLabel}>
+                  Phone
+                </label>
+                <input
+                  id="contact-phone"
+                  type="text"
+                  value={form.contact_phone}
+                  onChange={(e) => update("contact_phone", e.target.value)}
+                  className={`${adminInput} w-full font-mono`}
+                />
+              </div>
+            </div>
+          )}
+        </AdminPanel>
+
+        <AdminPanel title="Editorial defaults">
+          {isLoading ? (
+            <p className="px-3 py-6 text-xs text-muted-foreground">Loading…</p>
+          ) : (
+            <div className="space-y-3 p-3">
+              <div className="space-y-1">
+                <label htmlFor="comment-mode" className={fieldLabel}>
+                  Comment permissions
+                </label>
+                <select
+                  id="comment-mode"
+                  value={form.comment_mode}
+                  onChange={(e) =>
+                    update("comment_mode", e.target.value as SettingsForm["comment_mode"])
+                  }
+                  className={`${adminSelect} w-full`}
+                >
+                  <option value="registered">Registered users only</option>
+                  <option value="everyone">Everyone</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="author-status" className={fieldLabel}>
+                  Default author article status
+                </label>
+                <select
+                  id="author-status"
+                  value={form.default_author_status}
+                  onChange={(e) =>
+                    update(
+                      "default_author_status",
+                      e.target.value as SettingsForm["default_author_status"]
+                    )
+                  }
+                  className={`${adminSelect} w-full`}
+                >
+                  <option value="DRAFT">Draft (requires approval)</option>
+                  <option value="PUBLISHED">Published immediately</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </AdminPanel>
       </div>
-
-      {/* Main Settings Form */}
-      <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs">
-        {/* SECTION 1: Portal Identification & Press Registration */}
-        <div className="bg-card rounded-xl border border-border p-5 shadow-2xs space-y-4">
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-2 border-b border-border/60 pb-3">
-            <Globe className="h-4 w-4 text-[#027081]" />
-            <span>Portal Identification & Government Press Registration</span>
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="font-semibold text-muted-foreground uppercase">English Portal Title *</label>
-              <input
-                type="text"
-                required
-                value={siteName}
-                onChange={(e) => setSiteName(e.target.value)}
-                className="w-full bg-background border rounded-lg px-3 py-2 text-xs font-bold text-foreground outline-none focus:border-[#027081]"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="font-semibold text-muted-foreground uppercase">Nepali Title *</label>
-              <input
-                type="text"
-                required
-                value={siteNameNp}
-                onChange={(e) => setSiteNameNp(e.target.value)}
-                className="w-full bg-background border rounded-lg px-3 py-2 text-xs font-bold text-foreground outline-none focus:border-[#027081]"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="font-semibold text-muted-foreground uppercase">Slogan / Tagline *</label>
-            <input
-              type="text"
-              required
-              value={tagline}
-              onChange={(e) => setTagline(e.target.value)}
-              className="w-full bg-background border rounded-lg px-3 py-2 text-xs font-bold text-foreground outline-none focus:border-[#027081]"
-            />
-          </div>
-
-          {/* Press Registrations */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            <div className="space-y-1.5">
-              <label className="font-semibold text-muted-foreground uppercase flex items-center gap-1">
-                <Award className="h-3 w-3 text-[#027081]" />
-                <span>Dept. of Information Reg. No.</span>
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 1234/080-81"
-                value={deptInfoReg}
-                onChange={(e) => setDeptInfoReg(e.target.value)}
-                className="w-full bg-background border rounded-lg px-3 py-1.5 text-xs font-mono outline-none focus:border-[#027081]"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="font-semibold text-muted-foreground uppercase flex items-center gap-1">
-                <Award className="h-3 w-3 text-[#027081]" />
-                <span>Press Council Reg. No.</span>
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 567/080-81"
-                value={pressCouncilReg}
-                onChange={(e) => setPressCouncilReg(e.target.value)}
-                className="w-full bg-background border rounded-lg px-3 py-1.5 text-xs font-mono outline-none focus:border-[#027081]"
-              />
-            </div>
-          </div>
-
-          {/* Logos */}
-          <div className="space-y-3 pt-2">
-            <DualImagePicker
-              value={logoUrl}
-              onChange={setLogoUrl}
-              folder="general"
-              label="Header Portal Logo"
-            />
-          </div>
-        </div>
-
-        {/* SECTION 2: Editorial & Comment Moderation Controls */}
-        <div className="bg-card rounded-xl border border-border p-5 shadow-2xs space-y-4">
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-2 border-b border-border/60 pb-3">
-            <Shield className="h-4 w-4 text-[#027081]" />
-            <span>Editorial Moderation & Commenting Controls</span>
-          </h2>
-
-          <div className="space-y-1.5">
-            <label className="font-semibold text-muted-foreground uppercase flex items-center gap-1">
-              <MessageSquare className="h-3 w-3 text-[#027081]" />
-              <span>Public Comments Permission</span>
-            </label>
-            <select
-              value={commentMode}
-              onChange={(e) => setCommentMode(e.target.value as "everyone" | "registered" | "disabled")}
-              className="w-full bg-background border rounded-lg px-3 py-2 text-xs font-semibold outline-none focus:border-[#027081] cursor-pointer"
-            >
-              <option value="registered">Registered Signed-In Readers Only</option>
-              <option value="everyone">Allow Everyone (Public)</option>
-              <option value="disabled">Disable Reader Comments Completely</option>
-            </select>
-          </div>
-
-          <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
-            <div>
-              <p className="font-bold text-foreground">Require Admin Comment Moderation</p>
-              <p className="text-[10px] text-muted-foreground">Comments must be reviewed before appearing under news articles</p>
-            </div>
-            <input
-              type="checkbox"
-              checked={autoModerateComments}
-              onChange={(e) => setAutoModerateComments(e.target.checked)}
-              className="h-4 w-4 rounded border-border text-[#027081] focus:ring-[#027081]"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="font-semibold text-muted-foreground uppercase flex items-center gap-1">
-              <FileText className="h-3 w-3 text-[#027081]" />
-              <span>Default Article Status for Author Submissions</span>
-            </label>
-            <select
-              value={defaultAuthorArticleStatus}
-              onChange={(e) => setDefaultAuthorArticleStatus(e.target.value as "DRAFT" | "PUBLISHED")}
-              className="w-full bg-background border rounded-lg px-3 py-2 text-xs font-semibold outline-none focus:border-[#027081] cursor-pointer"
-            >
-              <option value="DRAFT">Draft (Requires Senior Editor Approval)</option>
-              <option value="PUBLISHED">Direct Publish (Instant Release)</option>
-            </select>
-          </div>
-        </div>
-
-        {/* SECTION 3: Global SEO & OpenGraph Social Sharing */}
-        <div className="bg-card rounded-xl border border-border p-5 shadow-2xs space-y-4">
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-2 border-b border-border/60 pb-3">
-            <Globe className="h-4 w-4 text-[#027081]" />
-            <span>Global SEO Defaults & Social OpenGraph Share Card</span>
-          </h2>
-
-          <div className="space-y-1.5">
-            <label className="font-semibold text-muted-foreground uppercase">Default Index Meta Title</label>
-            <input
-              type="text"
-              value={defaultMetaTitle}
-              onChange={(e) => setDefaultMetaTitle(e.target.value)}
-              className="w-full bg-background border rounded-lg px-3 py-2 text-xs outline-none focus:border-[#027081]"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="font-semibold text-muted-foreground uppercase">Default Meta Search Description</label>
-            <textarea
-              rows={2}
-              value={defaultMetaDesc}
-              onChange={(e) => setDefaultMetaDesc(e.target.value)}
-              className="w-full bg-background border rounded-lg px-3 py-2 text-xs outline-none focus:border-[#027081]"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="font-semibold text-muted-foreground uppercase">Canonical Domain URL</label>
-            <input
-              type="url"
-              value={canonicalUrl}
-              onChange={(e) => setCanonicalUrl(e.target.value)}
-              className="w-full bg-background border rounded-lg px-3 py-1.5 text-xs font-mono outline-none focus:border-[#027081]"
-            />
-          </div>
-
-          <DualImagePicker
-            value={ogImageUrl}
-            onChange={setOgImageUrl}
-            folder="general"
-            label="Default Facebook / Viber OpenGraph Share Image"
-          />
-        </div>
-
-        {/* SECTION 4: Contact Info & Emergency Banner */}
-        <div className="bg-card rounded-xl border border-border p-5 shadow-2xs space-y-4">
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-2 border-b border-border/60 pb-3">
-            <Share2 className="h-4 w-4 text-[#027081]" />
-            <span>Contact Details, Social Channels & Emergency Alert</span>
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="font-semibold text-muted-foreground uppercase">Newsroom Email</label>
-              <input
-                type="email"
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-                className="w-full bg-background border rounded-lg px-3 py-1.5 text-xs font-mono outline-none focus:border-[#027081]"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="font-semibold text-muted-foreground uppercase">Hotline Phone</label>
-              <input
-                type="text"
-                value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
-                className="w-full bg-background border rounded-lg px-3 py-1.5 text-xs font-mono outline-none focus:border-[#027081]"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="font-semibold text-muted-foreground uppercase">Physical Office Address</label>
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="w-full bg-background border rounded-lg px-3 py-1.5 text-xs outline-none focus:border-[#027081]"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="font-semibold text-muted-foreground uppercase">Facebook Page URL</label>
-              <input
-                type="url"
-                value={facebookUrl}
-                onChange={(e) => setFacebookUrl(e.target.value)}
-                className="w-full bg-background border rounded-lg px-3 py-1.5 text-xs font-mono outline-none focus:border-[#027081]"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="font-semibold text-muted-foreground uppercase">Twitter / X URL</label>
-              <input
-                type="url"
-                value={twitterUrl}
-                onChange={(e) => setTwitterUrl(e.target.value)}
-                className="w-full bg-background border rounded-lg px-3 py-1.5 text-xs font-mono outline-none focus:border-[#027081]"
-              />
-            </div>
-          </div>
-
-          {/* Emergency Alert Banner */}
-          <div className="space-y-2 pt-2 border-t border-border/60">
-            <div className="flex items-center justify-between">
-              <label className="font-bold text-rose-600 flex items-center gap-1.5 uppercase">
-                <AlertTriangle className="h-4 w-4 text-rose-600 animate-pulse" />
-                <span>Top Header Emergency Announcement Banner</span>
-              </label>
-            </div>
-            <input
-              type="text"
-              placeholder="e.g. ⚠️ SPECIAL BROADCAST: National Security Alert in Effect"
-              value={emergencyAlertText}
-              onChange={(e) => setEmergencyAlertText(e.target.value)}
-              className="w-full bg-background border border-rose-300 dark:border-rose-900 rounded-lg px-3 py-2 text-xs text-rose-600 font-semibold outline-none focus:border-rose-500"
-            />
-          </div>
-        </div>
-      </form>
-    </div>
+    </AdminPageShell>
   );
 }

@@ -3,9 +3,17 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plug, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
+import { SystemSectionNav } from "@/components/admin/SystemSectionNav";
+import { AdminDataTable, AdminPanel, AdminStatsStrip } from "@/components/admin/content";
+import {
+  adminBadgeMuted,
+  adminBadgeSuccess,
+  adminBtnPrimary,
+  adminInput,
+  adminPanel,
+} from "@/constants/admin-layout";
 
 type ApiKeyRow = {
   id: string;
@@ -35,14 +43,14 @@ export default function AdminApiManagementPage() {
       const res = await fetch("/api/admin/system/api-keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name: name.trim() }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       return json.data;
     },
-    onSuccess: (data) => {
-      setRawKey(data.rawKey);
+    onSuccess: (created) => {
+      setRawKey(created.rawKey);
       setName("");
       queryClient.invalidateQueries({ queryKey: ["admin-api-keys"] });
       toast.success("API key created — copy it now");
@@ -50,55 +58,96 @@ export default function AdminApiManagementPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const activeCount = data.filter((key) => key.isActive).length;
+
   return (
-    <AdminPageShell title="API Management" icon={Plug} onRefresh={() => refetch()} isRefreshing={isFetching}>
-      <div className="rounded-xl border bg-card p-4 flex gap-2">
+    <AdminPageShell
+      title="API keys"
+      description="Create and manage programmatic access keys"
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+    >
+      <AdminStatsStrip
+        loading={isLoading}
+        stats={[
+          { label: "Total keys", value: data.length },
+          { label: "Active", value: activeCount },
+          { label: "Disabled", value: data.length - activeCount },
+          {
+            label: "Latest",
+            value: data[0] ? new Date(data[0].createdAt).toLocaleDateString() : "—",
+          },
+        ]}
+      />
+
+      <SystemSectionNav />
+
+      <div className={`${adminPanel} flex flex-wrap items-center gap-2 p-3`}>
         <input
-          className="flex-1 h-9 rounded-md border px-3 text-sm"
+          className={`${adminInput} min-w-[200px] flex-1`}
           placeholder="Key name (e.g. Cron job)"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        <Button size="sm" onClick={() => createMutation.mutate()} disabled={!name}>
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          Create Key
-        </Button>
+        <button
+          type="button"
+          className={adminBtnPrimary}
+          onClick={() => createMutation.mutate()}
+          disabled={!name.trim() || createMutation.isPending}
+        >
+          <Plus className="h-3 w-3" />
+          Create key
+        </button>
       </div>
 
       {rawKey ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-mono break-all">
-          New key (copy now): {rawKey}
+        <div className="border border-amber-200 bg-amber-50 px-3 py-2 text-xs dark:border-amber-900 dark:bg-amber-950/30">
+          <p className="font-medium text-amber-900 dark:text-amber-200">
+            New key — copy now, it will not be shown again
+          </p>
+          <p className="mt-1 break-all font-mono text-amber-800 dark:text-amber-300">{rawKey}</p>
         </div>
       ) : null}
 
-      <div className="rounded-xl border bg-card overflow-hidden">
-        {isLoading ? (
-          <p className="p-6 text-sm text-muted-foreground">Loading...</p>
-        ) : isError ? (
-          <p className="p-6 text-sm text-destructive">{error?.message ?? "Failed to load API keys. Admin access required."}</p>
+      <AdminPanel title="API keys">
+        {isError ? (
+          <p className="px-3 py-6 text-xs text-destructive">
+            {error?.message ?? "Failed to load API keys."}
+          </p>
         ) : (
-          <table className="w-full text-xs">
-            <thead className="bg-muted/50 text-[10px] uppercase">
-              <tr>
-                <th className="px-4 py-3 text-left">Name</th>
-                <th className="px-4 py-3 text-left">Prefix</th>
-                <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-left">Created</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {data.map((k) => (
-                <tr key={k.id}>
-                  <td className="px-4 py-3">{k.name}</td>
-                  <td className="px-4 py-3 font-mono">{k.keyPrefix}...</td>
-                  <td className="px-4 py-3">{k.isActive ? "Active" : "Disabled"}</td>
-                  <td className="px-4 py-3">{new Date(k.createdAt).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <AdminDataTable
+            loading={isLoading}
+            rows={data}
+            rowKey={(row) => row.id}
+            emptyMessage="No API keys yet."
+            columns={[
+              { key: "name", label: "Name" },
+              {
+                key: "keyPrefix",
+                label: "Prefix",
+                render: (row) => (
+                  <span className="font-mono text-muted-foreground">{row.keyPrefix}…</span>
+                ),
+              },
+              {
+                key: "isActive",
+                label: "Status",
+                render: (row) => (
+                  <span className={row.isActive ? adminBadgeSuccess : adminBadgeMuted}>
+                    {row.isActive ? "Active" : "Disabled"}
+                  </span>
+                ),
+              },
+              {
+                key: "createdAt",
+                label: "Created",
+                cellClassName: "whitespace-nowrap text-muted-foreground",
+                render: (row) => new Date(row.createdAt).toLocaleDateString(),
+              },
+            ]}
+          />
         )}
-      </div>
+      </AdminPanel>
     </AdminPageShell>
   );
 }
