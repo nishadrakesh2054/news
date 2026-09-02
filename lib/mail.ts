@@ -11,7 +11,7 @@ const MAIL_SETTINGS_KEY = "mail_config";
 export const DEFAULT_MAIL_CONFIG: MailConfig = {
   resendApiKey: "",
   fromEmail: "",
-  fromName: "Nepal Khabar",
+  fromName: "Echo Manch",
 };
 
 export async function getMailConfig(): Promise<MailConfig> {

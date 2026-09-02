@@ -1,0 +1,10 @@
+const MIN_PASSWORD_LENGTH = 8;
+
+export function validatePassword(password: string): string | null {
+  if (!password || password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+  }
+  return null;
+}
+
+export const PASSWORD_MIN_LENGTH = MIN_PASSWORD_LENGTH;

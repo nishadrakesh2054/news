@@ -4,17 +4,30 @@ import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { MESSAGES } from "@/constants/messages";
+import { validatePassword } from "@/lib/password-policy";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const rate = checkRateLimit(`register:${ip}`, 10, 60 * 60 * 1000);
+    if (!rate.allowed) {
+      return apiError("Too many registration attempts. Please try again later.", 429);
+    }
+
     const { name, email, password } = await request.json();
 
     if (!name || !email || !password) {
       return apiError(MESSAGES.SYSTEM.VALIDATION_ERROR, 400);
     }
 
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return apiError(passwordError, 400);
+    }
+
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: email.trim().toLowerCase() },
     });
 
     if (existingUser) {
@@ -22,18 +35,15 @@ export async function POST(request: NextRequest) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // Security RBAC logic:
-    // 1. If registering the designated admin email or if DB has 0 users -> assign ADMIN
-    // 2. All other public registrations default strictly to READER
+
     const userCount = await prisma.user.count();
     const isAdminEmail = email.trim().toLowerCase() === "nishadrakesh2054@gmail.com";
-    const userRole: Role = (userCount === 0 || isAdminEmail) ? Role.ADMIN : Role.READER;
+    const userRole: Role = userCount === 0 || isAdminEmail ? Role.ADMIN : Role.READER;
 
     const user = await prisma.user.create({
       data: {
-        name,
-        email,
+        name: String(name).trim(),
+        email: email.trim().toLowerCase(),
         password: hashedPassword,
         role: userRole,
       },

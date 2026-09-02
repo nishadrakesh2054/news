@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
 import { FolderTree, ChevronRight } from "lucide-react";
+import { absoluteUrl } from "@/lib/site-url";
+import { SITE_CONFIG } from "@/constants/site";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -30,7 +32,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
     openGraph: {
       title: `${name} समाचार | नेपाल खबर`,
       description: `${name} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | नेपाल खबर`,
-      url: `https://nepalkhabar.com/category/${category.slug}`,
+      url: absoluteUrl(`/category/${category.slug}`),
       type: "website",
     },
     twitter: {
@@ -86,8 +88,8 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "गृहपृष्ठ", item: "https://nepalkhabar.com/" },
-      { "@type": "ListItem", position: 2, name: categoryName, item: `https://nepalkhabar.com/category/${category.slug}` },
+      { "@type": "ListItem", position: 1, name: "गृहपृष्ठ", item: absoluteUrl("/") },
+      { "@type": "ListItem", position: 2, name: categoryName, item: absoluteUrl(`/category/${category.slug}`) },
     ],
   };
 
@@ -96,8 +98,8 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
     "@type": "CollectionPage",
     name: `${categoryName} समाचार`,
     description: `${categoryName} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | नेपाल खबर`,
-    url: `https://nepalkhabar.com/category/${category.slug}`,
-    isPartOf: { "@type": "WebSite", name: "नेपाल खबर", url: "https://nepalkhabar.com" },
+    url: absoluteUrl(`/category/${category.slug}`),
+    isPartOf: { "@type": "WebSite", name: SITE_CONFIG.name, url: absoluteUrl("/") },
   };
 
   return (

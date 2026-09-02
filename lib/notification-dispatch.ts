@@ -2,6 +2,7 @@ import { Notification, NotificationType, SubscriberStatus } from "@prisma/client
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/mail";
 import { sendWebPush } from "@/lib/web-push";
+import { getSiteUrl } from "@/lib/site-url";
 
 function displayTitle(notification: Notification) {
   return notification.titleNp || notification.title;
@@ -71,7 +72,7 @@ export async function dispatchNotification(notificationId: string) {
       select: { email: true, unsubscribeToken: true },
     });
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nepalkhabar.com";
+    const siteUrl = getSiteUrl();
 
     for (const subscriber of subscribers) {
       const unsubscribeUrl = `${siteUrl}/newsletter/unsubscribe?token=${subscriber.unsubscribeToken}`;

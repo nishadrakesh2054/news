@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
 import { ArrowLeft, Mail, Newspaper, UserRound } from "lucide-react";
+import { absoluteUrl } from "@/lib/site-url";
 
 interface AuthorProfilePageProps {
   params: Promise<{ id: string }>;
@@ -30,7 +31,7 @@ export async function generateMetadata({ params }: AuthorProfilePageProps): Prom
     openGraph: {
       title: `${name} | लेखक प्रोफाइल`,
       description: `${name} द्वारा लेखिएका समाचार, रिपोर्ट, विश्लेषण र विशेष सामग्री | नेपाल खबर`,
-      url: `https://nepalkhabar.com/author/${id}`,
+      url: absoluteUrl(`/author/${id}`),
       type: "profile",
       images: author.image ? [{ url: author.image, width: 640, height: 640, alt: name }] : undefined,
     },
@@ -81,7 +82,7 @@ export default async function AuthorProfilePage({ params }: AuthorProfilePagePro
     name: author.name,
     image: author.image || undefined,
     sameAs: author.email ? `mailto:${author.email}` : undefined,
-    url: `https://nepalkhabar.com/author/${author.id}`,
+    url: absoluteUrl(`/author/${author.id}`),
   };
 
   return (

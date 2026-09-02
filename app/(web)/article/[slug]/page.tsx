@@ -11,6 +11,8 @@ import { CommentsSection } from "@/components/web/CommentsSection";
 import { AudioNewsPlayer } from "@/components/portal/AudioNewsPlayer";
 import { ArticleViewTracker } from "@/components/portal/ArticleViewTracker";
 import { AdUnit } from "@/components/portal/AdUnit";
+import { absoluteUrl } from "@/lib/site-url";
+import { SITE_CONFIG } from "@/constants/site";
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -41,8 +43,8 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     openGraph: {
       title,
       description,
-      url: `https://nepalkhabar.com/article/${article.slug}`,
-      siteName: "नेपाल खबर",
+      url: absoluteUrl(`/article/${article.slug}`),
+      siteName: SITE_CONFIG.name,
       images: [
         {
           url: image,
@@ -120,17 +122,17 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
     },
     publisher: {
       "@type": "Organization",
-      name: "नेपाल खबर",
+      name: SITE_CONFIG.name,
       logo: {
         "@type": "ImageObject",
-        url: "https://nepalkhabar.com/logo.png",
+        url: absoluteUrl("/logo.png"),
       },
     },
     description: article.excerpt || article.metaDescription || "",
   };
 
   const articleTitle = article.titleNp || article.title;
-  const shareUrl = `https://nepalkhabar.com/article/${article.slug}`;
+  const shareUrl = absoluteUrl(`/article/${article.slug}`);
 
   return (
     <>

@@ -1,19 +1,4 @@
-// This file configures the initialization of Sentry on the server.
-// The config you add here will be used whenever the server handles a request.
-// https://docs.sentry.io/platforms/javascript/guides/nextjs/
-
 import * as Sentry from "@sentry/nextjs";
+import { getBaseSentryOptions } from "@/lib/sentry-options";
 
-Sentry.init({
-  dsn: "https://4f68f5fab6961008b92f563c8908a1a9@o4512016392847360.ingest.us.sentry.io/4512016453795840",
-
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
-
-  dataCollection: {
-    // To disable sending user data and HTTP bodies, uncomment the lines below. For more info visit:
-    // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#dataCollection
-    // userInfo: false,
-    // httpBodies: [],
-  },
-});
+Sentry.init(getBaseSentryOptions());

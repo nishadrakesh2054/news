@@ -5,6 +5,7 @@ import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { validateNewsletterSubscribe } from "@/lib/validations/newsletter";
 import { sendEmail } from "@/lib/mail";
+import { getSiteUrl } from "@/lib/site-url";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, name, locale, source } = validation.data;
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nepalkhabar.com";
+    const siteUrl = getSiteUrl();
 
     const existing = await prisma.newsletterSubscriber.findUnique({ where: { email } });
 
