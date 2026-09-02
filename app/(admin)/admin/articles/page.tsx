@@ -17,17 +17,29 @@ import {
   ArrowDown,
   ChevronLeft,
   ChevronRight,
-  RefreshCw,
-  FileText,
-  CheckCircle2,
-  Clock,
-  Eye,
-  Sparkles,
-  Zap,
-  Radio,
-  MessageSquare,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AdminPageShell } from "@/components/admin/AdminPageShell";
+import { AdminStatsStrip } from "@/components/admin/content";
+import {
+  adminBadge,
+  adminBadgeMuted,
+  adminBtnGhost,
+  adminBtnPrimary,
+  adminBtnSecondary,
+  adminInput,
+  adminPanel,
+  adminSelect,
+  adminTable,
+  adminTableCell,
+  adminTableHead,
+  adminTableHeadCell,
+  adminTableRow,
+  adminToolbarRow,
+  adminToolbarSearch,
+  adminToolbarSelectMd,
+  adminToolbarSelectSm,
+  adminToolbarSelectStatus,
+} from "@/constants/admin-layout";
 import { ArticleStatus, ArticleType } from "@prisma/client";
 
 interface ArticleItem {
@@ -190,154 +202,80 @@ export default function AdminArticlesPage() {
   const draftCount = sortedArticles.filter((a) => a.status === ArticleStatus.DRAFT).length;
   const totalViews = sortedArticles.reduce((acc, curr) => acc + (curr.views || 0), 0);
 
-  const getTypeBadge = (type: ArticleType) => {
+  const formatTypeLabel = (type: ArticleType) => {
     switch (type) {
       case ArticleType.BREAKING:
-        return {
-          icon: <Zap className="h-3 w-3 text-rose-500" />,
-          label: "Breaking",
-          style: "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:bg-rose-950/30 dark:text-rose-400",
-        };
+        return "Breaking";
       case ArticleType.LIVE:
-        return {
-          icon: <Radio className="h-3 w-3 text-emerald-500 animate-pulse" />,
-          label: "Live",
-          style: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-950/30 dark:text-emerald-400",
-        };
+        return "Live";
       case ArticleType.OPINION:
-        return {
-          icon: <MessageSquare className="h-3 w-3 text-purple-500" />,
-          label: "Opinion",
-          style: "bg-purple-500/10 text-purple-600 border-purple-500/20 dark:bg-purple-950/30 dark:text-purple-400",
-        };
+        return "Opinion";
       case ArticleType.FEATURE:
-        return {
-          icon: <Sparkles className="h-3 w-3 text-amber-500" />,
-          label: "Feature",
-          style: "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-950/30 dark:text-amber-400",
-        };
+        return "Feature";
       default:
-        return {
-          icon: <FileText className="h-3 w-3 text-slate-500" />,
-          label: "Standard",
-          style: "bg-slate-500/10 text-slate-600 border-slate-500/20 dark:bg-slate-800 dark:text-slate-300",
-        };
+        return "Standard";
     }
   };
 
+  const statusOptions = [
+    { value: "ALL", label: "All statuses" },
+    { value: "PUBLISHED", label: "Published" },
+    { value: "PENDING", label: "Review queue" },
+    { value: "DRAFT", label: "Draft" },
+    { value: "ARCHIVED", label: "Archived" },
+  ];
+
   return (
-    <div className="w-full space-y-3 px-6 py-2 pb-6">
-      {/* Top Header & New Story Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
-        <div>
-          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif">
-            Article Library
-          </h1>
-        </div>
+    <AdminPageShell
+      title="Articles"
+      description="Manage stories, drafts, and published content"
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+      actions={
+        <Link href="/admin/articles/new" className={adminBtnPrimary}>
+          <Plus className="h-3.5 w-3.5" />
+          New article
+        </Link>
+      }
+    >
+      <AdminStatsStrip
+        stats={[
+          { label: "Total", value: totalCount },
+          { label: "Published", value: publishedCount },
+          { label: "Drafts", value: draftCount },
+          { label: "Views (page)", value: totalViews.toLocaleString() },
+        ]}
+      />
 
-        <div className="flex items-center space-x-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="h-8 px-2.5 text-xs rounded-lg border-border font-medium hover:bg-muted"
-            title="Refresh list"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? "animate-spin text-[#027081]" : ""}`} />
-            <span>Refresh</span>
-          </Button>
+      <div className={adminToolbarRow}>
+        <select
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
+          className={adminToolbarSelectStatus}
+        >
+          {statusOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
 
-          <Link href="/admin/articles/new">
-            <Button className="h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center gap-1.5 transition-all duration-200">
-              <Plus className="h-3.5 w-3.5" />
-              <span>Create Story</span>
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Sleek Compact Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Stories</p>
-            <p className="text-xl font-extrabold text-foreground mt-0.5">{totalCount}</p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
-            <FileText className="h-4 w-4" />
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Published</p>
-            <p className="text-xl font-extrabold text-emerald-600 mt-0.5">{publishedCount}</p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-            <CheckCircle2 className="h-4 w-4" />
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Drafts</p>
-            <p className="text-xl font-extrabold text-amber-600 mt-0.5">{draftCount}</p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center">
-            <Clock className="h-4 w-4" />
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Readership Views</p>
-            <p className="text-xl font-extrabold text-[#027081] mt-0.5">{totalViews.toLocaleString()}</p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-[#027081]/10 text-[#027081] flex items-center justify-center">
-            <Eye className="h-4 w-4" />
-          </div>
-        </div>
-      </div>
-
-      {/* Filter Toolbar without outer background & border box */}
-      <div className="flex flex-wrap items-center justify-between gap-3 py-1">
-        {/* Left Filter Controls */}
-        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
-          {/* Status Pills */}
-          <div className="flex items-center gap-1 bg-card p-1 rounded-sm border border-border shadow-2xs">
-            {["ALL", "PUBLISHED", "PENDING", "DRAFT", "ARCHIVED"].map((st) => (
-              <button
-                key={st}
-                onClick={() => {
-                  setStatusFilter(st);
-                  setPage(1);
-                }}
-                className={`rounded-xs px-2.5 py-0.5 text-xs font-bold transition-all ${
-                  statusFilter === st
-                    ? "bg-[#027081] text-white shadow-2xs"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                {st === "PENDING" ? "REVIEW QUEUE" : st}
-              </button>
-            ))}
-          </div>
-
-          {/* Search Box */}
-          <div className="relative min-w-[200px] flex-1 max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <div className={adminToolbarSearch}>
+            <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search story..."
+              placeholder="Search articles…"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-full bg-card border border-border rounded-sm pl-8 pr-7 py-1.5 text-xs text-foreground outline-none focus:border-[#027081] shadow-2xs transition-colors"
+              className={`${adminInput} w-full pl-7 pr-7`}
             />
-            {search && (
+            {search ? (
               <button
                 type="button"
                 onClick={() => setSearch("")}
@@ -345,19 +283,18 @@ export default function AdminArticlesPage() {
               >
                 <X className="h-3.5 w-3.5" />
               </button>
-            )}
+            ) : null}
           </div>
 
-          {/* Category Dropdown */}
           <select
             value={categoryFilter}
             onChange={(e) => {
               setCategoryFilter(e.target.value);
               setPage(1);
             }}
-            className="bg-card border border-border rounded-sm px-3 py-1.5 text-xs font-semibold text-foreground outline-none focus:border-[#027081] shadow-2xs cursor-pointer"
+            className={adminToolbarSelectMd}
           >
-            <option value="ALL">All Categories</option>
+            <option value="ALL">All categories</option>
             {categoriesData.map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.nameNp || cat.name}
@@ -365,16 +302,15 @@ export default function AdminArticlesPage() {
             ))}
           </select>
 
-          {/* Format Dropdown */}
           <select
             value={typeFilter}
             onChange={(e) => {
               setTypeFilter(e.target.value);
               setPage(1);
             }}
-            className="bg-card border border-border rounded-sm px-3 py-1.5 text-xs font-semibold text-foreground outline-none focus:border-[#027081] shadow-2xs cursor-pointer"
+            className={adminToolbarSelectMd}
           >
-            <option value="ALL">All Formats</option>
+            <option value="ALL">All formats</option>
             <option value="STANDARD">Standard</option>
             <option value="BREAKING">Breaking</option>
             <option value="LIVE">Live</option>
@@ -382,294 +318,230 @@ export default function AdminArticlesPage() {
             <option value="FEATURE">Feature</option>
           </select>
 
-          {isFiltered && (
+          {isFiltered ? (
             <button
               type="button"
               onClick={resetFilters}
-              className="text-xs text-rose-600 hover:underline font-bold px-1"
+              className="inline-flex h-8 shrink-0 items-center px-2 text-xs font-medium text-[#C3272E] hover:underline"
             >
               Reset
             </button>
-          )}
+          ) : null}
+
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 pl-2 text-xs text-muted-foreground">
+            <span>Rows</span>
+            <select
+              value={limit}
+              onChange={(e) => {
+                setLimit(Number(e.target.value));
+                setPage(1);
+              }}
+              className={adminToolbarSelectSm}
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
         </div>
 
-        {/* Right Controls: Rows per page */}
-        <div className="flex items-center space-x-1.5 text-xs text-muted-foreground font-medium">
-          <span>Rows:</span>
-          <select
-            value={limit}
-            onChange={(e) => {
-              setLimit(Number(e.target.value));
-              setPage(1);
-            }}
-            className="bg-card border border-border rounded-sm px-2 py-1 text-xs font-bold text-foreground outline-none focus:border-[#027081] shadow-2xs cursor-pointer"
-          >
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Professional Data Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
+      <div className={adminPanel}>
         {isLoading ? (
-          <div className="p-12 text-center text-xs text-muted-foreground flex flex-col items-center justify-center space-y-2">
-            <div className="h-5 w-5 border-2 border-[#027081] border-t-transparent rounded-full animate-spin" />
-            <span>Loading stories...</span>
-          </div>
+          <p className="px-3 py-8 text-center text-xs text-muted-foreground">Loading articles…</p>
         ) : isError ? (
-          <div className="p-12 text-center text-xs text-rose-500 font-semibold">
-            Failed to load articles.
-          </div>
+          <p className="px-3 py-8 text-center text-xs text-destructive">Failed to load articles.</p>
         ) : sortedArticles.length === 0 ? (
-          <div className="p-12 text-center text-xs text-muted-foreground space-y-2">
-            <p className="font-semibold">No stories found matching your criteria.</p>
-            {isFiltered && (
-              <Button variant="link" onClick={resetFilters} className="text-[#027081] text-xs">
-                Clear filters to show all
-              </Button>
-            )}
+          <div className="px-3 py-8 text-center text-xs text-muted-foreground">
+            <p>No articles match your filters.</p>
+            {isFiltered ? (
+              <button type="button" onClick={resetFilters} className={`${adminBtnGhost} mt-2`}>
+                Clear filters
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-border bg-slate-50/80 dark:bg-slate-900/60 uppercase text-[10px] tracking-wider text-muted-foreground font-bold">
+            <table className={adminTable}>
+              <thead className={adminTableHead}>
                 <tr>
                   <th
-                    className="px-4 py-3 cursor-pointer hover:text-foreground select-none"
+                    className={`${adminTableHeadCell} cursor-pointer select-none`}
                     onClick={() => handleSort("title")}
                   >
-                    <div className="flex items-center space-x-1">
-                      <span>Story Title</span>
+                    <span className="inline-flex items-center gap-1">
+                      Title
                       {sortField === "title" ? (
-                        sortOrder === "asc" ? <ArrowUp className="h-3 w-3 text-[#027081]" /> : <ArrowDown className="h-3 w-3 text-[#027081]" />
+                        sortOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
                       ) : (
-                        <ArrowUpDown className="h-3 w-3 opacity-30" />
+                        <ArrowUpDown className="h-3 w-3 opacity-40" />
                       )}
-                    </div>
+                    </span>
                   </th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3">Format</th>
+                  <th className={adminTableHeadCell}>Category</th>
+                  <th className={adminTableHeadCell}>Format</th>
                   <th
-                    className="px-4 py-3 cursor-pointer hover:text-foreground select-none"
+                    className={`${adminTableHeadCell} cursor-pointer select-none`}
                     onClick={() => handleSort("status")}
                   >
-                    <div className="flex items-center space-x-1">
-                      <span>Status</span>
+                    <span className="inline-flex items-center gap-1">
+                      Status
                       {sortField === "status" ? (
-                        sortOrder === "asc" ? <ArrowUp className="h-3 w-3 text-[#027081]" /> : <ArrowDown className="h-3 w-3 text-[#027081]" />
+                        sortOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
                       ) : (
-                        <ArrowUpDown className="h-3 w-3 opacity-30" />
+                        <ArrowUpDown className="h-3 w-3 opacity-40" />
                       )}
-                    </div>
+                    </span>
                   </th>
                   <th
-                    className="px-4 py-3 cursor-pointer hover:text-foreground select-none"
+                    className={`${adminTableHeadCell} cursor-pointer select-none`}
                     onClick={() => handleSort("views")}
                   >
-                    <div className="flex items-center space-x-1">
-                      <span>Views</span>
+                    <span className="inline-flex items-center gap-1">
+                      Views
                       {sortField === "views" ? (
-                        sortOrder === "asc" ? <ArrowUp className="h-3 w-3 text-[#027081]" /> : <ArrowDown className="h-3 w-3 text-[#027081]" />
+                        sortOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
                       ) : (
-                        <ArrowUpDown className="h-3 w-3 opacity-30" />
+                        <ArrowUpDown className="h-3 w-3 opacity-40" />
                       )}
-                    </div>
+                    </span>
                   </th>
-                  <th className="px-4 py-3">Author</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className={adminTableHeadCell}>Author</th>
+                  <th className={`${adminTableHeadCell} text-right`}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/60">
-                {sortedArticles.map((art) => {
-                  const typeInfo = getTypeBadge(art.type);
-                  return (
-                    <tr key={art.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
-                      {/* Title & Cover Thumbnail */}
-                      <td className="px-4 py-3 max-w-md">
-                        <div className="flex items-center space-x-3">
-                          {art.coverImage ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                              src={art.coverImage}
-                              alt={art.title}
-                              className="h-10 w-10 object-cover rounded-xl border border-border shrink-0 shadow-2xs"
-                            />
-                          ) : (
-                            <div className="h-10 w-10 rounded-xl border border-dashed border-border bg-muted/30 flex items-center justify-center text-muted-foreground shrink-0">
-                              <ImageIcon className="h-4 w-4" />
-                            </div>
-                          )}
-
-                          <div className="min-w-0 space-y-0.5">
-                            <div className="flex items-center space-x-1.5">
-                              {art.isFeatured && (
-                                <span className="text-[9px] font-extrabold text-amber-600 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
-                                  LEAD
-                                </span>
-                              )}
-                              {art.isBreaking && (
-                                <span className="text-[9px] font-extrabold text-rose-600 bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded animate-pulse">
-                                  BREAKING
-                                </span>
-                              )}
-                            </div>
-                            <p className="font-bold text-xs text-foreground truncate">
-                              {art.titleNp || art.title}
-                            </p>
-                            {art.titleNp && (
-                              <p className="text-[11px] text-muted-foreground truncate font-mono">
-                                {art.title}
-                              </p>
-                            )}
+              <tbody>
+                {sortedArticles.map((art) => (
+                  <tr key={art.id} className={adminTableRow}>
+                    <td className={`${adminTableCell} max-w-md`}>
+                      <div className="flex items-center gap-2.5">
+                        {art.coverImage ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={art.coverImage}
+                            alt=""
+                            className="h-8 w-8 shrink-0 border border-border object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-dashed border-border bg-muted/20 text-muted-foreground">
+                            <ImageIcon className="h-3.5 w-3.5" />
                           </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="mb-0.5 flex flex-wrap gap-1">
+                            {art.isFeatured ? <span className={adminBadgeMuted}>Lead</span> : null}
+                            {art.isBreaking ? (
+                              <span className="inline-flex items-center rounded-sm border border-[#C3272E]/30 bg-[#C3272E]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#C3272E]">
+                                Breaking
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="truncate font-medium text-foreground">
+                            {art.titleNp || art.title}
+                          </p>
+                          {art.titleNp ? (
+                            <p className="truncate text-[11px] text-muted-foreground">{art.title}</p>
+                          ) : null}
                         </div>
-                      </td>
-
-                      {/* Category */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="font-semibold text-xs text-foreground bg-muted/40 px-2.5 py-1 rounded-lg border border-border/50">
-                          {art.category.nameNp || art.category.name}
-                        </span>
-                      </td>
-
-                      {/* Format */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${typeInfo.style}`}>
-                          {typeInfo.icon}
-                          <span>{typeInfo.label}</span>
-                        </span>
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <select
-                          value={art.status}
-                          onChange={(e) =>
-                            statusMutation.mutate({
-                              id: art.id,
-                              status: e.target.value as ArticleStatus,
-                            })
-                          }
-                          className={`rounded-lg border px-2.5 py-1 text-[11px] font-extrabold outline-none cursor-pointer ${
-                            art.status === ArticleStatus.PUBLISHED
-                              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border-emerald-200 dark:border-emerald-800"
-                              : art.status === ArticleStatus.DRAFT
-                              ? "bg-amber-50 dark:bg-amber-950/40 text-amber-600 border-amber-200 dark:border-amber-800"
-                              : "bg-slate-50 dark:bg-slate-900 text-slate-500 border-slate-200"
-                          }`}
-                        >
-                          <option value="DRAFT">DRAFT</option>
-                          <option value="PUBLISHED">PUBLISHED</option>
-                          <option value="ARCHIVED">ARCHIVED</option>
-                        </select>
-                      </td>
-
-                      {/* Views */}
-                      <td className="px-4 py-3 whitespace-nowrap font-mono text-xs font-semibold text-muted-foreground">
-                        {art.views.toLocaleString()}
-                      </td>
-
-                      {/* Author */}
-                      <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground font-medium">
-                        {art.author.name}
-                      </td>
-
-                      {/* Action Buttons */}
-                      <td className="px-4 py-3 text-right whitespace-nowrap space-x-1">
+                      </div>
+                    </td>
+                    <td className={`${adminTableCell} whitespace-nowrap`}>
+                      <span className={adminBadgeMuted}>
+                        {art.category.nameNp || art.category.name}
+                      </span>
+                    </td>
+                    <td className={`${adminTableCell} whitespace-nowrap`}>
+                      <span className={adminBadgeMuted}>{formatTypeLabel(art.type)}</span>
+                    </td>
+                    <td className={`${adminTableCell} whitespace-nowrap`}>
+                      <select
+                        value={art.status}
+                        onChange={(e) =>
+                          statusMutation.mutate({
+                            id: art.id,
+                            status: e.target.value as ArticleStatus,
+                          })
+                        }
+                        className={`${adminSelect} h-7 w-auto min-w-[108px]`}
+                      >
+                        <option value="DRAFT">Draft</option>
+                        <option value="PUBLISHED">Published</option>
+                        <option value="ARCHIVED">Archived</option>
+                      </select>
+                    </td>
+                    <td className={`${adminTableCell} whitespace-nowrap font-mono tabular-nums text-muted-foreground`}>
+                      {art.views.toLocaleString()}
+                    </td>
+                    <td className={`${adminTableCell} whitespace-nowrap text-muted-foreground`}>
+                      {art.author.name}
+                    </td>
+                    <td className={`${adminTableCell} whitespace-nowrap text-right`}>
+                      <div className="inline-flex items-center">
                         <a
                           href={`/article/${art.slug}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex"
+                          className={adminBtnGhost}
+                          title="View public page"
                         >
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-[#027081] hover:bg-[#027081]/10"
-                            title="View Public Page"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </Button>
+                          <ExternalLink className="h-3.5 w-3.5" />
                         </a>
-
-                        <Link href={`/admin/articles/${art.id}/edit`}>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-[#027081] hover:bg-[#027081]/10"
-                            title="Edit Story"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
+                        <Link href={`/admin/articles/${art.id}/edit`} className={adminBtnGhost} title="Edit">
+                          <Pencil className="h-3.5 w-3.5" />
                         </Link>
-
-                        <Button
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="sm"
                           disabled={deleteMutation.isPending}
                           onClick={() => {
                             if (confirm(`Delete article "${art.title}"?`)) {
                               deleteMutation.mutate(art.id);
                             }
                           }}
-                          className="h-8 w-8 p-0 rounded-lg text-rose-500 hover:bg-rose-500/10"
-                          title="Delete Story"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-destructive hover:bg-muted"
+                          title="Delete"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Pagination Footer */}
-      {pagination && pagination.totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground pt-1 gap-3">
+      {pagination && pagination.totalPages > 1 ? (
+        <div className="flex flex-col items-center justify-between gap-3 pt-1 text-xs text-muted-foreground sm:flex-row">
           <div>
-            Showing <strong className="text-foreground">{(page - 1) * limit + 1}</strong>–
-            <strong className="text-foreground">{Math.min(page * limit, pagination.total)}</strong> of{" "}
-            <strong className="text-foreground">{pagination.total}</strong> stories
+            Showing {(page - 1) * limit + 1}–{Math.min(page * limit, pagination.total)} of{" "}
+            {pagination.total}
           </div>
-
-          <div className="flex items-center space-x-1.5">
-            <Button
-              variant="outline"
-              size="sm"
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="h-8 text-xs px-3 rounded-lg border-border"
+              className={adminBtnSecondary}
             >
-              <ChevronLeft className="h-3.5 w-3.5 mr-1" />
-              <span>Previous</span>
-            </Button>
-
-            <span className="px-2 font-bold text-foreground">
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Previous
+            </button>
+            <span className="font-medium text-foreground">
               {page} / {pagination.totalPages}
             </span>
-
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              type="button"
               disabled={page >= pagination.totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="h-8 text-xs px-3 rounded-lg border-border"
+              className={adminBtnSecondary}
             >
-              <span>Next</span>
-              <ChevronRight className="h-3.5 w-3.5 ml-1" />
-            </Button>
+              Next
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
-      )}
-    </div>
+      ) : null}
+    </AdminPageShell>
   );
 }

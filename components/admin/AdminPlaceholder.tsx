@@ -35,7 +35,7 @@ export function AdminPlaceholder({
   backLabel = "Back to dashboard",
 }: AdminPlaceholderProps) {
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-6 py-8">
+    <div className="mx-auto max-w-3xl space-y-6 px-4 py-6">
       <Link href={backHref}>
         <Button variant="ghost" className="h-8 gap-2 px-2 text-xs text-muted-foreground">
           <ArrowLeft className="h-3.5 w-3.5" />

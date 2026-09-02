@@ -1,26 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  X,
-  ExternalLink,
-  Megaphone,
-  RefreshCw,
-  Search,
-  Eye,
-  MousePointerClick,
-  BarChart3,
-  Code,
-  ImageIcon,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Code, ExternalLink, ImageIcon, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { AdSlot } from "@prisma/client";
+import { AdminPageShell } from "@/components/admin/AdminPageShell";
+import { AdminStatsStrip } from "@/components/admin/content";
 import { DualImagePicker } from "@/components/admin/DualImagePicker";
+import {
+  adminBadge,
+  adminBadgeMuted,
+  adminBtnGhost,
+  adminBtnPrimary,
+  adminBtnSecondary,
+  adminInput,
+  adminPanel,
+  adminSelect,
+  adminTable,
+  adminTableCell,
+  adminTableHead,
+  adminTableHeadCell,
+  adminTableRow,
+  adminToolbarRow,
+  adminToolbarSearch,
+  adminToolbarSelectMd,
+  adminToolbarSelectStatus,
+} from "@/constants/admin-layout";
 
 interface AdItem {
   id: string;
@@ -35,6 +41,13 @@ interface AdItem {
   createdAt: string;
 }
 
+const SLOT_LABELS: Record<AdSlot, string> = {
+  HEADER_LEADERBOARD: "Header leaderboard",
+  SIDEBAR_TOP: "Sidebar top",
+  IN_ARTICLE: "In-article",
+  STICKY_FOOTER: "Sticky footer",
+};
+
 export default function AdminAdsPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,7 +56,6 @@ export default function AdminAdsPage() {
   const [slotFilter, setSlotFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
-  // Form state
   const [title, setTitle] = useState("");
   const [slot, setSlot] = useState<AdSlot>(AdSlot.HEADER_LEADERBOARD);
   const [imageUrl, setImageUrl] = useState("");
@@ -51,7 +63,6 @@ export default function AdminAdsPage() {
   const [scriptCode, setScriptCode] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  // Fetch Ads with TanStack Query
   const { data: ads = [], isLoading, isError, refetch, isFetching } = useQuery<AdItem[]>({
     queryKey: ["admin-ads"],
     queryFn: async () => {
@@ -62,7 +73,6 @@ export default function AdminAdsPage() {
     },
   });
 
-  // Create Ad Mutation
   const createMutation = useMutation({
     mutationFn: async (payload: Partial<AdItem>) => {
       const res = await fetch("/api/admin/ads", {
@@ -71,20 +81,17 @@ export default function AdminAdsPage() {
         body: JSON.stringify(payload),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to create ad slot");
+      if (!res.ok) throw new Error(json.error || "Failed to create ad");
       return json.data;
     },
     onSuccess: () => {
-      toast.success("Ad slot created successfully");
+      toast.success("Ad unit created");
       queryClient.invalidateQueries({ queryKey: ["admin-ads"] });
       closeModal();
     },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
-  // Update Ad Mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: Partial<AdItem> }) => {
       const res = await fetch(`/api/admin/ads/${id}`, {
@@ -93,36 +100,29 @@ export default function AdminAdsPage() {
         body: JSON.stringify(payload),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to update ad slot");
+      if (!res.ok) throw new Error(json.error || "Failed to update ad");
       return json.data;
     },
     onSuccess: () => {
-      toast.success("Ad slot updated successfully");
+      toast.success("Ad unit updated");
       queryClient.invalidateQueries({ queryKey: ["admin-ads"] });
       closeModal();
     },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
-  // Delete Ad Mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/ads/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/admin/ads/${id}`, { method: "DELETE" });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to delete ad slot");
+      if (!res.ok) throw new Error(json.error || "Failed to delete ad");
       return json.data;
     },
     onSuccess: () => {
-      toast.success("Ad slot deleted successfully");
+      toast.success("Ad unit deleted");
       queryClient.invalidateQueries({ queryKey: ["admin-ads"] });
     },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const openCreateModal = () => {
@@ -155,7 +155,7 @@ export default function AdminAdsPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !slot) {
-      toast.error("Title and Ad slot position are required");
+      toast.error("Title and placement are required");
       return;
     }
 
@@ -175,266 +175,175 @@ export default function AdminAdsPage() {
     }
   };
 
-  // Filter Ads
-  const filteredAds = ads.filter((ad) => {
-    const matchesSearch =
-      search.trim() === "" ||
-      ad.title.toLowerCase().includes(search.toLowerCase()) ||
-      (ad.targetUrl && ad.targetUrl.toLowerCase().includes(search.toLowerCase()));
-    const matchesSlot = slotFilter === "ALL" || ad.slot === slotFilter;
-    const matchesStatus =
-      statusFilter === "ALL" ||
-      (statusFilter === "ACTIVE" && ad.isActive) ||
-      (statusFilter === "PAUSED" && !ad.isActive);
-    return matchesSearch && matchesSlot && matchesStatus;
-  });
+  const filteredAds = useMemo(() => {
+    return ads.filter((ad) => {
+      const matchesSearch =
+        search.trim() === "" ||
+        ad.title.toLowerCase().includes(search.toLowerCase()) ||
+        (ad.targetUrl && ad.targetUrl.toLowerCase().includes(search.toLowerCase()));
+      const matchesSlot = slotFilter === "ALL" || ad.slot === slotFilter;
+      const matchesStatus =
+        statusFilter === "ALL" ||
+        (statusFilter === "ACTIVE" && ad.isActive) ||
+        (statusFilter === "PAUSED" && !ad.isActive);
+      return matchesSearch && matchesSlot && matchesStatus;
+    });
+  }, [ads, search, slotFilter, statusFilter]);
 
   const totalImpressions = ads.reduce((sum, a) => sum + (a.impressions || 0), 0);
   const totalClicks = ads.reduce((sum, a) => sum + (a.clicks || 0), 0);
   const avgCtr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : "0.00";
   const activeCount = ads.filter((a) => a.isActive).length;
-
-  const getSlotBadge = (s: AdSlot) => {
-    switch (s) {
-      case AdSlot.HEADER_LEADERBOARD:
-        return { label: "Header Leaderboard", style: "bg-blue-500/10 text-blue-600 border-blue-500/20" };
-      case AdSlot.SIDEBAR_TOP:
-        return { label: "Sidebar Top", style: "bg-[#027081]/10 text-[#027081] border-[#027081]/20" };
-      case AdSlot.IN_ARTICLE:
-        return { label: "In-Article Inline", style: "bg-purple-500/10 text-purple-600 border-purple-500/20" };
-      case AdSlot.STICKY_FOOTER:
-        return { label: "Sticky Footer", style: "bg-amber-500/10 text-amber-600 border-amber-500/20" };
-      default:
-        return { label: s, style: "bg-slate-500/10 text-slate-600 border-slate-500/20" };
-    }
-  };
+  const isFiltered = search.trim() !== "" || slotFilter !== "ALL" || statusFilter !== "ALL";
 
   return (
-    <div className="w-full space-y-3 px-6 py-2 pb-6">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
-        <div>
-          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
-            <Megaphone className="h-5 w-5 text-[#027081]" />
-            <span>Advertisements & Banners</span>
-          </h1>
-        </div>
+    <AdminPageShell
+      title="Advertisements"
+      description="Manage banner units, placements, and ad scripts"
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+      actions={
+        <button type="button" onClick={openCreateModal} className={adminBtnPrimary}>
+          <Plus className="h-3.5 w-3.5" />
+          New ad unit
+        </button>
+      }
+    >
+      <AdminStatsStrip
+        stats={[
+          { label: "Total units", value: ads.length },
+          { label: "Active", value: activeCount },
+          { label: "Impressions", value: totalImpressions.toLocaleString() },
+          { label: "Avg CTR", value: `${avgCtr}%` },
+        ]}
+      />
 
-        <div className="flex items-center space-x-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="h-8 px-2.5 text-xs rounded-lg border-border font-medium hover:bg-muted"
-            title="Refresh list"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? "animate-spin text-[#027081]" : ""}`} />
-            <span>Refresh</span>
-          </Button>
+      <div className={adminToolbarRow}>
+        <select
+          value={slotFilter}
+          onChange={(e) => setSlotFilter(e.target.value)}
+          className={adminToolbarSelectMd}
+        >
+          <option value="ALL">All placements</option>
+          <option value="HEADER_LEADERBOARD">Header leaderboard</option>
+          <option value="SIDEBAR_TOP">Sidebar top</option>
+          <option value="IN_ARTICLE">In-article</option>
+          <option value="STICKY_FOOTER">Sticky footer</option>
+        </select>
 
-          <Button
-            onClick={openCreateModal}
-            className="h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center gap-1.5 transition-all duration-200"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span>Create New Ad Unit</span>
-          </Button>
-        </div>
-      </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className={adminToolbarSelectStatus}
+        >
+          <option value="ALL">All statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="PAUSED">Paused</option>
+        </select>
 
-      {/* Metrics Summary Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Ad Units</p>
-            <p className="text-xl font-extrabold text-foreground mt-0.5">{ads.length} <span className="text-xs font-semibold text-emerald-600">({activeCount} Active)</span></p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
-            <Megaphone className="h-4 w-4" />
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Impressions</p>
-            <p className="text-xl font-extrabold text-emerald-600 mt-0.5">{totalImpressions.toLocaleString()}</p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-            <Eye className="h-4 w-4" />
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Clicks</p>
-            <p className="text-xl font-extrabold text-purple-600 mt-0.5">{totalClicks.toLocaleString()}</p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-purple-500/10 text-purple-600 flex items-center justify-center">
-            <MousePointerClick className="h-4 w-4" />
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Average CTR</p>
-            <p className="text-xl font-extrabold text-[#027081] mt-0.5">{avgCtr}%</p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-[#027081]/10 text-[#027081] flex items-center justify-center">
-            <BarChart3 className="h-4 w-4" />
-          </div>
-        </div>
-      </div>
-
-      {/* Filter Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 py-1">
-        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
-          {/* Search Input */}
-          <div className="relative min-w-[220px] flex-1 max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search ad title or link..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-card border border-border rounded-sm pl-8 pr-7 py-1.5 text-xs text-foreground outline-none focus:border-[#027081] shadow-2xs transition-colors"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Position Slot Filter */}
-          <select
-            value={slotFilter}
-            onChange={(e) => setSlotFilter(e.target.value)}
-            className="bg-card border border-border rounded-sm px-3 py-1.5 text-xs font-semibold text-foreground outline-none focus:border-[#027081] shadow-2xs cursor-pointer"
-          >
-            <option value="ALL">All Ad Positions</option>
-            <option value="HEADER_LEADERBOARD">Header Leaderboard</option>
-            <option value="SIDEBAR_TOP">Sidebar Top</option>
-            <option value="IN_ARTICLE">In-Article Inline</option>
-            <option value="STICKY_FOOTER">Sticky Footer</option>
-          </select>
-
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-card border border-border rounded-sm px-3 py-1.5 text-xs font-semibold text-foreground outline-none focus:border-[#027081] shadow-2xs cursor-pointer"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="ACTIVE">Active</option>
-            <option value="PAUSED">Paused</option>
-          </select>
-
-          {(search || slotFilter !== "ALL" || statusFilter !== "ALL") && (
+        <div className={adminToolbarSearch}>
+          <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search title or URL…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className={`${adminInput} w-full pl-7 pr-7`}
+          />
+          {search ? (
             <button
               type="button"
-              onClick={() => {
-                setSearch("");
-                setSlotFilter("ALL");
-                setStatusFilter("ALL");
-              }}
-              className="text-xs text-rose-600 hover:underline font-bold px-1"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              Reset
+              <X className="h-3.5 w-3.5" />
             </button>
-          )}
+          ) : null}
         </div>
+
+        {isFiltered ? (
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setSlotFilter("ALL");
+              setStatusFilter("ALL");
+            }}
+            className="inline-flex h-8 shrink-0 items-center px-2 text-xs font-medium text-[#C3272E] hover:underline"
+          >
+            Reset
+          </button>
+        ) : null}
       </div>
 
-      {/* Ad Units Data Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
+      <div className={adminPanel}>
         {isLoading ? (
-          <div className="p-12 text-center text-xs text-muted-foreground flex flex-col items-center justify-center space-y-2">
-            <div className="h-5 w-5 border-2 border-[#027081] border-t-transparent rounded-full animate-spin" />
-            <span>Loading advertisement units...</span>
-          </div>
+          <p className="px-3 py-8 text-center text-xs text-muted-foreground">Loading ad units…</p>
         ) : isError ? (
-          <div className="p-12 text-center text-xs text-rose-500 font-semibold">
-            Failed to load advertisements.
-          </div>
+          <p className="px-3 py-8 text-center text-xs text-destructive">Failed to load advertisements.</p>
         ) : filteredAds.length === 0 ? (
-          <div className="p-12 text-center text-xs text-muted-foreground space-y-2">
-            <p className="font-semibold">No ad units found matching your criteria.</p>
-          </div>
+          <p className="px-3 py-8 text-center text-xs text-muted-foreground">
+            No ad units match your filters.
+          </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-border bg-slate-50/80 dark:bg-slate-900/60 uppercase text-[10px] tracking-wider text-muted-foreground font-bold">
+            <table className={adminTable}>
+              <thead className={adminTableHead}>
                 <tr>
-                  <th className="px-4 py-3">Ad Unit Preview / Title</th>
-                  <th className="px-4 py-3">Placement Position</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Impressions</th>
-                  <th className="px-4 py-3">Clicks / CTR</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className={adminTableHeadCell}>Ad unit</th>
+                  <th className={adminTableHeadCell}>Placement</th>
+                  <th className={adminTableHeadCell}>Status</th>
+                  <th className={adminTableHeadCell}>Impressions</th>
+                  <th className={adminTableHeadCell}>Clicks / CTR</th>
+                  <th className={`${adminTableHeadCell} text-right`}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/60">
+              <tbody>
                 {filteredAds.map((ad) => {
-                  const slotBadge = getSlotBadge(ad.slot);
-                  const ctr = ad.impressions > 0 ? ((ad.clicks / ad.impressions) * 100).toFixed(2) : "0.00";
+                  const ctr =
+                    ad.impressions > 0 ? ((ad.clicks / ad.impressions) * 100).toFixed(2) : "0.00";
                   return (
-                    <tr key={ad.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
-                      {/* Title & Preview Thumbnail */}
-                      <td className="px-4 py-3 max-w-md">
-                        <div className="flex items-center space-x-3">
+                    <tr key={ad.id} className={adminTableRow}>
+                      <td className={`${adminTableCell} max-w-md`}>
+                        <div className="flex items-center gap-2.5">
                           {ad.imageUrl ? (
                             /* eslint-disable-next-line @next/next/no-img-element */
                             <img
                               src={ad.imageUrl}
-                              alt={ad.title}
-                              className="h-10 w-14 object-cover rounded-lg border border-border shrink-0 shadow-2xs"
+                              alt=""
+                              className="h-8 w-12 shrink-0 border border-border object-cover"
                             />
                           ) : ad.scriptCode ? (
-                            <div className="h-10 w-14 rounded-lg border border-border bg-purple-500/10 text-purple-600 flex items-center justify-center font-mono text-[9px] font-bold shrink-0">
-                              <Code className="h-4 w-4" />
+                            <div className="flex h-8 w-12 shrink-0 items-center justify-center border border-border bg-muted/30 text-muted-foreground">
+                              <Code className="h-3.5 w-3.5" />
                             </div>
                           ) : (
-                            <div className="h-10 w-14 rounded-lg border border-dashed border-border bg-muted/30 flex items-center justify-center text-muted-foreground shrink-0">
-                              <ImageIcon className="h-4 w-4" />
+                            <div className="flex h-8 w-12 shrink-0 items-center justify-center border border-dashed border-border bg-muted/20 text-muted-foreground">
+                              <ImageIcon className="h-3.5 w-3.5" />
                             </div>
                           )}
-
-                          <div className="min-w-0 space-y-0.5">
-                            <p className="font-bold text-xs text-foreground truncate">{ad.title}</p>
-                            {ad.targetUrl && (
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-foreground">{ad.title}</p>
+                            {ad.targetUrl ? (
                               <a
                                 href={ad.targetUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-[11px] text-muted-foreground hover:text-[#027081] truncate flex items-center gap-1 font-mono"
+                                className="flex items-center gap-1 truncate text-[11px] text-muted-foreground hover:text-[#0C4EA0]"
                               >
-                                <span>{ad.targetUrl}</span>
-                                <ExternalLink className="h-3 w-3 inline" />
+                                <span className="truncate">{ad.targetUrl}</span>
+                                <ExternalLink className="h-3 w-3 shrink-0" />
                               </a>
-                            )}
-                            {ad.scriptCode && (
-                              <span className="text-[10px] font-mono text-purple-600 font-semibold">
-                                Google AdSense / JS Code Unit
-                              </span>
-                            )}
+                            ) : ad.scriptCode ? (
+                              <span className="text-[11px] text-muted-foreground">Script unit</span>
+                            ) : null}
                           </div>
                         </div>
                       </td>
-
-                      {/* Placement Position */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-lg border ${slotBadge.style}`}>
-                          {slotBadge.label}
-                        </span>
+                      <td className={adminTableCell}>
+                        <span className={adminBadgeMuted}>{SLOT_LABELS[ad.slot] ?? ad.slot}</span>
                       </td>
-
-                      {/* Status */}
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className={adminTableCell}>
                         <button
                           type="button"
                           onClick={() =>
@@ -443,57 +352,46 @@ export default function AdminAdsPage() {
                               payload: { isActive: !ad.isActive },
                             })
                           }
-                          className={`rounded-lg border px-2.5 py-1 text-[11px] font-extrabold cursor-pointer transition-colors ${
+                          className={
                             ad.isActive
-                              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border-emerald-200 dark:border-emerald-800"
-                              : "bg-amber-50 dark:bg-amber-950/40 text-amber-600 border-amber-200 dark:border-amber-800"
-                          }`}
+                              ? adminBadge
+                              : "inline-flex items-center rounded-sm border border-border bg-muted/30 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                          }
                         >
-                          {ad.isActive ? "ACTIVE" : "PAUSED"}
+                          {ad.isActive ? "Active" : "Paused"}
                         </button>
                       </td>
-
-                      {/* Impressions */}
-                      <td className="px-4 py-3 whitespace-nowrap font-mono text-xs font-semibold text-muted-foreground">
+                      <td className={`${adminTableCell} font-mono tabular-nums text-muted-foreground`}>
                         {ad.impressions.toLocaleString()}
                       </td>
-
-                      {/* Clicks & CTR */}
-                      <td className="px-4 py-3 whitespace-nowrap font-mono text-xs font-semibold">
+                      <td className={`${adminTableCell} font-mono tabular-nums`}>
                         <span className="text-foreground">{ad.clicks.toLocaleString()}</span>
-                        <span className="ml-1.5 text-[10px] text-[#027081] bg-[#027081]/10 px-1.5 py-0.5 rounded font-bold">
-                          {ctr}% CTR
-                        </span>
+                        <span className="ml-1.5 text-[10px] text-muted-foreground">{ctr}%</span>
                       </td>
-
-                      {/* Icon-Only Action Buttons */}
-                      <td className="px-4 py-3 text-right whitespace-nowrap space-x-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditModal(ad)}
-                          className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-[#027081] hover:bg-[#027081]/10"
-                          title="Edit Ad Unit"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          disabled={deleteMutation.isPending}
-                          onClick={() => {
-                            if (confirm(`Delete advertisement "${ad.title}"?`)) {
-                              deleteMutation.mutate(ad.id);
-                            }
-                          }}
-                          className="h-8 w-8 p-0 rounded-lg text-rose-500 hover:bg-rose-500/10"
-                          title="Delete Ad Unit"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                      <td className={`${adminTableCell} text-right`}>
+                        <div className="inline-flex items-center">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(ad)}
+                            className={adminBtnGhost}
+                            title="Edit"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={deleteMutation.isPending}
+                            onClick={() => {
+                              if (confirm(`Delete ad "${ad.title}"?`)) {
+                                deleteMutation.mutate(ad.id);
+                              }
+                            }}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#C3272E] hover:bg-muted"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -504,52 +402,50 @@ export default function AdminAdsPage() {
         )}
       </div>
 
-      {/* Modal Dialog */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card w-full max-w-lg rounded-2xl border border-border shadow-2xl p-6 space-y-5 animate-in fade-in-50">
-            <div className="flex items-center justify-between border-b border-border/60 pb-3">
-              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-                <Megaphone className="h-4 w-4 text-[#027081]" />
-                <span>{editingAd ? "Edit Ad Unit" : "Create New Ad Unit"}</span>
+      {isModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto border border-border bg-card shadow-sm">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <h2 className="text-sm font-semibold text-foreground">
+                {editingAd ? "Edit ad unit" : "New ad unit"}
               </h2>
               <button
                 type="button"
                 onClick={closeModal}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-lg"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-semibold uppercase text-muted-foreground">
-                  Ad Title / Campaign Name *
+            <form onSubmit={handleSubmit} className="space-y-3 p-4">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">
+                  Title <span className="text-[#C3272E]">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Subisu Fiber Internet Banner"
+                  placeholder="Campaign name"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs outline-none focus:border-[#027081]"
+                  className={adminInput}
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-semibold uppercase text-muted-foreground">
-                  Ad Placement Position *
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">
+                  Placement <span className="text-[#C3272E]">*</span>
                 </label>
                 <select
                   value={slot}
                   onChange={(e) => setSlot(e.target.value as AdSlot)}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs font-semibold outline-none focus:border-[#027081] cursor-pointer"
+                  className={adminSelect}
                 >
-                  <option value="HEADER_LEADERBOARD">Header Leaderboard (970×250 / 728×90)</option>
-                  <option value="SIDEBAR_TOP">Sidebar Top (300×250 / 300×600)</option>
-                  <option value="IN_ARTICLE">In-Article Inline (728×90)</option>
-                  <option value="STICKY_FOOTER">Sticky Footer Banner (728×90 / 320×50)</option>
+                  <option value="HEADER_LEADERBOARD">Header leaderboard</option>
+                  <option value="SIDEBAR_TOP">Sidebar top</option>
+                  <option value="IN_ARTICLE">In-article inline</option>
+                  <option value="STICKY_FOOTER">Sticky footer</option>
                 </select>
               </div>
 
@@ -557,65 +453,57 @@ export default function AdminAdsPage() {
                 value={imageUrl}
                 onChange={setImageUrl}
                 folder="ads"
-                label="Banner Image"
+                label="Banner image"
               />
 
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-semibold uppercase text-muted-foreground">
-                  Target Click URL
-                </label>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">Target URL</label>
                 <input
                   type="url"
-                  placeholder="https://advertiser.com/landing-page"
+                  placeholder="https://advertiser.com"
                   value={targetUrl}
                   onChange={(e) => setTargetUrl(e.target.value)}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-[#027081]"
+                  className={`${adminInput} font-mono`}
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-semibold uppercase text-muted-foreground">
-                  Google AdSense / Custom Script Code (Optional)
-                </label>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground">Script code (optional)</label>
                 <textarea
                   rows={3}
-                  placeholder="<script async src='...'></script>"
+                  placeholder="<script>…</script>"
                   value={scriptCode}
                   onChange={(e) => setScriptCode(e.target.value)}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-[#027081]"
+                  className={`${adminInput} h-auto min-h-[72px] py-2 font-mono`}
                 />
               </div>
 
-              <div className="flex items-center space-x-2 pt-1">
+              <label className="flex items-center gap-2 text-xs text-foreground">
                 <input
                   type="checkbox"
-                  id="isActive"
                   checked={isActive}
                   onChange={(e) => setIsActive(e.target.checked)}
-                  className="rounded border-border text-[#027081] focus:ring-[#027081]"
+                  className="h-3.5 w-3.5 rounded-sm border-border"
                 />
-                <label htmlFor="isActive" className="text-xs font-semibold text-foreground cursor-pointer">
-                  Activate Ad Unit Immediately
-                </label>
-              </div>
+                Active immediately
+              </label>
 
-              <div className="flex items-center justify-end space-x-3 border-t border-border/60 pt-4">
-                <Button type="button" variant="ghost" size="sm" onClick={closeModal} className="text-xs">
+              <div className="flex justify-end gap-2 border-t border-border pt-3">
+                <button type="button" onClick={closeModal} className={adminBtnSecondary}>
                   Cancel
-                </Button>
-                <Button
+                </button>
+                <button
                   type="submit"
-                  size="sm"
-                  className="bg-[#027081] hover:bg-[#025c6a] text-white font-semibold text-xs px-4 h-8 rounded-lg"
+                  className={adminBtnPrimary}
                   disabled={createMutation.isPending || updateMutation.isPending}
                 >
-                  {editingAd ? "Save Changes" : "Create Ad Unit"}
-                </Button>
+                  {editingAd ? "Save changes" : "Create ad unit"}
+                </button>
               </div>
             </form>
           </div>
         </div>
-      )}
-    </div>
+      ) : null}
+    </AdminPageShell>
   );
 }

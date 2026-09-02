@@ -118,11 +118,11 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="w-full space-y-3 px-6 py-2 pb-6">
+    <div className="w-full space-y-3 px-4 py-3 pb-5">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
+          <h1 className="text-base font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
             <Users className="h-5 w-5 text-[#027081]" />
             <span>User Accounts & RBAC Permissions</span>
           </h1>

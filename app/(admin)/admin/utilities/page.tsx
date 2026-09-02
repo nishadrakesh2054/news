@@ -1,21 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  Coins,
-  Sparkles,
-  Save,
-  CheckCircle2,
-  Globe,
-  Award,
-  RotateCcw,
-  Heart,
-  Briefcase,
-  Activity,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp, RotateCcw, Save, Search, X } from "lucide-react";
+import { AdminPageShell } from "@/components/admin/AdminPageShell";
+import { AdminStatsStrip } from "@/components/admin/content";
 import { DEFAULT_DETAILED_RASHIFAL, DetailedRashi } from "@/lib/rashifal";
+import {
+  adminBadgeMuted,
+  adminBtnGhost,
+  adminBtnPrimary,
+  adminBtnSecondary,
+  adminInput,
+  adminPanel,
+  adminPanelHeader,
+  adminPanelTitle,
+  adminTable,
+  adminTableCell,
+  adminTableHead,
+  adminTableHeadCell,
+  adminTableRow,
+  adminToolbarRow,
+  adminToolbarSearch,
+} from "@/constants/admin-layout";
 
 interface ForexItem {
   code: string;
@@ -25,396 +33,434 @@ interface ForexItem {
   sell: string;
 }
 
+type UtilitySection = "gold" | "rashifal" | "forex";
+
+const SECTION_OPTIONS: { value: UtilitySection; label: string }[] = [
+  { value: "gold", label: "Gold & silver" },
+  { value: "rashifal", label: "Horoscope" },
+  { value: "forex", label: "Forex (NRB)" },
+];
+
+const GOLD_ROWS = [
+  { key: "fine" as const, label: "Fine gold (24K)" },
+  { key: "tejabi" as const, label: "Tejabi gold (22K)" },
+  { key: "silver" as const, label: "Silver" },
+];
+
 export default function AdminUtilitiesPage() {
+  const [section, setSection] = useState<UtilitySection>("gold");
+  const [search, setSearch] = useState("");
+  const [expandedRashi, setExpandedRashi] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+
   const [goldFine, setGoldFine] = useState("1,60,500");
   const [goldTejabi, setGoldTejabi] = useState("1,59,800");
   const [silver, setSilver] = useState("1,950");
   const [rashifal, setRashifal] = useState<DetailedRashi[]>(DEFAULT_DETAILED_RASHIFAL);
   const [forexData, setForexData] = useState<ForexItem[]>([]);
 
-  const [activeTab, setActiveTab] = useState<"gold" | "rashifal" | "forex">("gold");
-  const [saving, setSaving] = useState(false);
+  const { data, isFetching, refetch } = useQuery({
+    queryKey: ["admin-utilities-data"],
+    queryFn: async () => {
+      const res = await fetch("/api/utilities");
+      const json = await res.json();
+      if (!json.success || !json.data) throw new Error("Failed to load utilities");
+      return json.data as {
+        gold?: { fine?: string; tejabi?: string; silver?: string };
+        rashifal?: DetailedRashi[];
+        allForexRates?: ForexItem[];
+      };
+    },
+    staleTime: 60_000,
+  });
 
   useEffect(() => {
-    fetch("/api/utilities")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && json.data) {
-          if (json.data.gold?.fine) setGoldFine(json.data.gold.fine);
-          if (json.data.gold?.tejabi) setGoldTejabi(json.data.gold.tejabi);
-          if (json.data.gold?.silver) setSilver(json.data.gold.silver);
-          if (json.data.rashifal && Array.isArray(json.data.rashifal)) {
-            setRashifal(json.data.rashifal);
-          }
-          if (json.data.allForexRates) setForexData(json.data.allForexRates);
-        }
-      })
-      .catch((err) => console.error(err));
-  }, []);
+    if (!data) return;
+    if (data.gold?.fine) setGoldFine(data.gold.fine);
+    if (data.gold?.tejabi) setGoldTejabi(data.gold.tejabi);
+    if (data.gold?.silver) setSilver(data.gold.silver);
+    if (data.rashifal && Array.isArray(data.rashifal)) setRashifal(data.rashifal);
+    if (data.allForexRates) setForexData(data.allForexRates);
+  }, [data]);
 
-  const handleRashiChange = (index: number, field: keyof DetailedRashi, val: string | number) => {
-    const updated = [...rashifal];
-    updated[index] = { ...updated[index], [field]: val };
-    setRashifal(updated);
+  const goldValues = { fine: goldFine, tejabi: goldTejabi, silver };
+
+  const setGoldValue = (key: "fine" | "tejabi" | "silver", value: string) => {
+    if (key === "fine") setGoldFine(value);
+    if (key === "tejabi") setGoldTejabi(value);
+    if (key === "silver") setSilver(value);
   };
 
-  const handleSave = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleRashiChange = (index: number, field: keyof DetailedRashi, val: string | number) => {
+    setRashifal((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: val };
+      return updated;
+    });
+  };
+
+  const handleSave = async () => {
     setSaving(true);
     try {
       const res = await fetch("/api/admin/utilities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          goldFine,
-          goldTejabi,
-          silver,
-          rashifal,
-        }),
+        body: JSON.stringify({ goldFine, goldTejabi, silver, rashifal }),
       });
       const json = await res.json();
-      if (json.success) {
-        toast.success(json.message || "Updates saved successfully!");
-      } else {
-        toast.error(json.error || "Failed to save updates");
-      }
-    } catch {
-      toast.error("Server error");
+      if (!json.success) throw new Error(json.error || "Failed to save");
+      toast.success(json.message || "Saved successfully");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Save failed");
     } finally {
       setSaving(false);
     }
   };
 
+  const filteredRashifal = useMemo(() => {
+    if (!search.trim()) return rashifal.map((r, index) => ({ r, index }));
+    const term = search.toLowerCase();
+    return rashifal
+      .map((r, index) => ({ r, index }))
+      .filter(
+        ({ r }) =>
+          r.name.toLowerCase().includes(term) ||
+          r.enName.toLowerCase().includes(term)
+      );
+  }, [rashifal, search]);
+
+  const filteredForex = useMemo(() => {
+    if (!search.trim()) return forexData;
+    const term = search.toLowerCase();
+    return forexData.filter(
+      (f) => f.code.toLowerCase().includes(term) || f.nameNp.toLowerCase().includes(term)
+    );
+  }, [forexData, search]);
+
+  const searchPlaceholder =
+    section === "rashifal"
+      ? "Search rashi…"
+      : section === "forex"
+        ? "Search currency…"
+        : "Search metal…";
+
+  const showSearch = section !== "gold";
+  const canSave = section !== "forex";
+
   return (
-    <div className="w-full space-y-3 px-6 py-2 pb-6 select-none">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
-        <div>
-          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
-            <Coins className="h-5 w-5 text-[#027081]" />
-            <span>Market Rates & Daily Horoscope Management</span>
-          </h1>
-        </div>
+    <AdminPageShell
+      title="Market & horoscope"
+      description="Manage gold rates, daily rashifal, and NRB forex reference"
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+      actions={
+        canSave ? (
+          <button type="button" onClick={handleSave} disabled={saving} className={adminBtnPrimary}>
+            <Save className="h-3.5 w-3.5" />
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+        ) : undefined
+      }
+    >
+      <AdminStatsStrip
+        stats={[
+          { label: "Fine gold", value: goldFine },
+          { label: "Tejabi gold", value: goldTejabi },
+          { label: "Rashis", value: rashifal.length },
+          { label: "Forex pairs", value: forexData.length || "—" },
+        ]}
+      />
 
-        <Button
-          onClick={() => handleSave()}
-          disabled={saving}
-          className="h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center gap-1.5 transition-all duration-200 cursor-pointer disabled:opacity-50 shrink-0"
-        >
-          <Save className="h-3.5 w-3.5" />
-          <span>{saving ? "Saving..." : "Save All Updates"}</span>
-        </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        {SECTION_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => {
+              setSection(option.value);
+              setSearch("");
+              setExpandedRashi(null);
+            }}
+            className={
+              section === option.value
+                ? adminBtnPrimary
+                : adminBtnSecondary
+            }
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
-      {/* Control Tabs */}
-      <div className="flex items-center space-x-2 border-b border-border pb-3">
-        <button
-          onClick={() => setActiveTab("gold")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-            activeTab === "gold"
-              ? "bg-[#027081] text-white shadow-xs"
-              : "bg-card border border-border text-foreground hover:bg-muted"
-          }`}
-        >
-          <Coins className="h-4 w-4 text-amber-400" />
-          <span>1. Gold & Silver Rates</span>
-        </button>
+      {showSearch || section === "rashifal" ? (
+        <div className={adminToolbarRow}>
+          {showSearch ? (
+            <div className={adminToolbarSearch}>
+              <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder={searchPlaceholder}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className={`${adminInput} w-full pl-7 pr-7`}
+              />
+              {search ? (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : null}
+            </div>
+          ) : null}
 
-        <button
-          onClick={() => setActiveTab("rashifal")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-            activeTab === "rashifal"
-              ? "bg-[#027081] text-white shadow-xs"
-              : "bg-card border border-border text-foreground hover:bg-muted"
-          }`}
-        >
-          <Sparkles className="h-4 w-4 text-amber-400" />
-          <span>2. 12 Rashis Horoscope</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("forex")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-            activeTab === "forex"
-              ? "bg-[#027081] text-white shadow-xs"
-              : "bg-card border border-border text-foreground hover:bg-muted"
-          }`}
-        >
-          <Globe className="h-4 w-4 text-emerald-400" />
-          <span>3. Foreign Exchange Rates (NRB)</span>
-        </button>
-      </div>
-
-      {/* TAB 1: Gold & Silver Editor */}
-      {activeTab === "gold" && (
-        <div className="bg-card rounded-2xl border border-border p-6 shadow-2xs space-y-6 max-w-3xl">
-          <div className="flex items-center justify-between border-b border-border/60 pb-3">
-            <h2 className="text-base font-bold text-foreground flex items-center gap-2 font-serif">
-              <Coins className="h-5 w-5 text-amber-500" />
-              <span>Official Gold & Silver Market Prices</span>
-            </h2>
-            <Button
-              onClick={() => handleSave()}
-              className="h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center gap-1.5 transition-all duration-200 cursor-pointer"
+          {section === "rashifal" ? (
+            <button
+              type="button"
+              onClick={() => setRashifal(DEFAULT_DETAILED_RASHIFAL)}
+              className={`${adminBtnSecondary} ${showSearch ? "" : "ml-auto"} shrink-0`}
             >
-              <Save className="h-3.5 w-3.5" />
-              <span>Save Rates</span>
-            </Button>
-          </div>
+              <RotateCcw className="h-3 w-3" />
+              Reset all
+            </button>
+          ) : null}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 text-xs">
-            <div className="space-y-2 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5">
-              <label className="font-bold text-foreground flex items-center gap-1.5">
-                <Award className="h-4 w-4 text-amber-600" />
-                <span>Fine Gold (24K):</span>
-              </label>
-              <input
-                type="text"
-                value={goldFine}
-                onChange={(e) => setGoldFine(e.target.value)}
-                placeholder="e.g. 1,60,500"
-                className="w-full rounded-xl border border-input bg-background px-3.5 py-2 text-sm text-foreground focus:border-[#027081] outline-none font-bold"
-              />
-              <span className="text-[10px] text-muted-foreground block font-mono">per tola (Rs.)</span>
-            </div>
-
-            <div className="space-y-2 p-4 rounded-xl border border-amber-500/20 bg-amber-500/5">
-              <label className="font-bold text-foreground flex items-center gap-1.5">
-                <Award className="h-4 w-4 text-amber-500" />
-                <span>Tejabi Gold (22K):</span>
-              </label>
-              <input
-                type="text"
-                value={goldTejabi}
-                onChange={(e) => setGoldTejabi(e.target.value)}
-                placeholder="e.g. 1,59,800"
-                className="w-full rounded-xl border border-input bg-background px-3.5 py-2 text-sm text-foreground focus:border-[#027081] outline-none font-bold"
-              />
-              <span className="text-[10px] text-muted-foreground block font-mono">per tola (Rs.)</span>
-            </div>
-
-            <div className="space-y-2 p-4 rounded-xl border border-slate-400/30 bg-muted/20">
-              <label className="font-bold text-foreground flex items-center gap-1.5">
-                <Coins className="h-4 w-4 text-slate-500" />
-                <span>Silver:</span>
-              </label>
-              <input
-                type="text"
-                value={silver}
-                onChange={(e) => setSilver(e.target.value)}
-                placeholder="e.g. 1,950"
-                className="w-full rounded-xl border border-input bg-background px-3.5 py-2 text-sm text-foreground focus:border-[#027081] outline-none font-bold"
-              />
-              <span className="text-[10px] text-muted-foreground block font-mono">per tola (Rs.)</span>
-            </div>
-          </div>
+          {section === "forex" ? (
+            <span className={`${adminBadgeMuted} ml-auto shrink-0`}>Read-only · NRB sync</span>
+          ) : null}
         </div>
+      ) : null}
+
+      {section === "gold" && (
+        <section className={adminPanel}>
+          <div className={adminPanelHeader}>
+            <h2 className={adminPanelTitle}>Metal rates (per tola, Rs.)</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className={adminTable}>
+              <thead className={adminTableHead}>
+                <tr>
+                  <th className={adminTableHeadCell}>Metal</th>
+                  <th className={adminTableHeadCell}>Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {GOLD_ROWS.map((row) => (
+                  <tr key={row.key} className={adminTableRow}>
+                    <td className={`${adminTableCell} font-medium text-foreground`}>{row.label}</td>
+                    <td className={adminTableCell}>
+                      <input
+                        type="text"
+                        value={goldValues[row.key]}
+                        onChange={(e) => setGoldValue(row.key, e.target.value)}
+                        className={`${adminInput} max-w-xs`}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       )}
 
-      {/* TAB 2: Detailed 12 Rashis Rashifal Editor */}
-      {activeTab === "rashifal" && (
-        <div className="bg-card rounded-2xl border border-border p-6 shadow-2xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-3">
-            <div className="flex items-center space-x-2">
-              <Sparkles className="h-5 w-5 text-amber-500" />
-              <h2 className="text-base font-bold text-foreground font-serif">
-                12 Rashis Horoscope Predictions
-              </h2>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <button
-                type="button"
-                onClick={() => setRashifal(DEFAULT_DETAILED_RASHIFAL)}
-                className="text-xs font-bold text-muted-foreground hover:text-foreground flex items-center gap-1 border border-border px-3 py-1.5 rounded-lg bg-background"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                <span>Load Default Predictions</span>
-              </button>
-              <Button
-                onClick={() => handleSave()}
-                className="h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center gap-1.5 transition-all duration-200 cursor-pointer"
-              >
-                <Save className="h-3.5 w-3.5" />
-                <span>Save Horoscope</span>
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-xs">
-            {rashifal.map((rashi, idx) => (
-              <div
-                key={rashi.name ? `${rashi.name}-${idx}` : `rashi-${idx}`}
-                className="p-5 rounded-2xl border border-border bg-muted/20 space-y-3.5 shadow-2xs"
-              >
-                {/* Rashi Header */}
-                <div className="flex items-center justify-between border-b border-border/60 pb-2">
-                  <div className="flex items-center space-x-2 font-serif font-bold text-foreground text-sm">
-                    <span className="text-2xl bg-amber-400/20 text-amber-600 dark:text-amber-300 h-9 w-9 rounded-xl flex items-center justify-center border border-amber-400/30">
-                      {rashi.symbol}
-                    </span>
-                    <span>{rashi.enName || rashi.name} ({rashi.name})</span>
-                  </div>
-                </div>
-
-                {/* Metadata Fields Grid */}
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <label className="text-[10px] font-bold text-muted-foreground">Lucky No:</label>
-                    <input
-                      type="text"
-                      value={rashi.luckyNumber || "9"}
-                      onChange={(e) => handleRashiChange(idx, "luckyNumber", e.target.value)}
-                      className="w-full rounded-lg border border-input bg-background p-1.5 text-xs text-center font-bold"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-muted-foreground">Color:</label>
-                    <input
-                      type="text"
-                      value={rashi.luckyColor || "Red"}
-                      onChange={(e) => handleRashiChange(idx, "luckyColor", e.target.value)}
-                      className="w-full rounded-lg border border-input bg-background p-1.5 text-xs text-center font-bold text-[#027081]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-muted-foreground">Direction:</label>
-                    <input
-                      type="text"
-                      value={rashi.luckyDirection || "East"}
-                      onChange={(e) => handleRashiChange(idx, "luckyDirection", e.target.value)}
-                      className="w-full rounded-lg border border-input bg-background p-1.5 text-xs text-center font-bold"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-muted-foreground">Luck %:</label>
-                    <input
-                      type="number"
-                      value={rashi.luckyPercent || 85}
-                      onChange={(e) => handleRashiChange(idx, "luckyPercent", Number(e.target.value))}
-                      className="w-full rounded-lg border border-input bg-background p-1.5 text-xs text-center font-bold text-emerald-600"
-                    />
-                  </div>
-                </div>
-
-                {/* Overview */}
-                <div className="space-y-1">
-                  <label className="font-bold text-foreground">Overview:</label>
-                  <textarea
-                    rows={2}
-                    value={rashi.overview}
-                    onChange={(e) => handleRashiChange(idx, "overview", e.target.value)}
-                    className="w-full rounded-lg border border-input bg-background p-2 text-xs leading-relaxed"
-                  />
-                </div>
-
-                {/* Health */}
-                <div className="space-y-1">
-                  <label className="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
-                    <Activity className="h-3 w-3" />
-                    <span>Health:</span>
-                  </label>
-                  <textarea
-                    rows={1}
-                    value={rashi.health || ""}
-                    onChange={(e) => handleRashiChange(idx, "health", e.target.value)}
-                    className="w-full rounded-lg border border-input bg-background p-2 text-xs leading-relaxed"
-                  />
-                </div>
-
-                {/* Business */}
-                <div className="space-y-1">
-                  <label className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                    <Briefcase className="h-3 w-3" />
-                    <span>Business & Finance:</span>
-                  </label>
-                  <textarea
-                    rows={1}
-                    value={rashi.business || ""}
-                    onChange={(e) => handleRashiChange(idx, "business", e.target.value)}
-                    className="w-full rounded-lg border border-input bg-background p-2 text-xs leading-relaxed"
-                  />
-                </div>
-
-                {/* Love */}
-                <div className="space-y-1">
-                  <label className="font-bold text-pink-600 dark:text-pink-400 flex items-center gap-1">
-                    <Heart className="h-3 w-3" />
-                    <span>Love & Relationships:</span>
-                  </label>
-                  <textarea
-                    rows={1}
-                    value={rashi.love || ""}
-                    onChange={(e) => handleRashiChange(idx, "love", e.target.value)}
-                    className="w-full rounded-lg border border-input bg-background p-2 text-xs leading-relaxed"
-                  />
-                </div>
-
-                {/* Astrological Remedy */}
-                <div className="space-y-1">
-                  <label className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    <span>Astrological Remedy:</span>
-                  </label>
-                  <textarea
-                    rows={1}
-                    value={rashi.remedy || ""}
-                    onChange={(e) => handleRashiChange(idx, "remedy", e.target.value)}
-                    className="w-full rounded-lg border border-input bg-background p-2 text-xs leading-relaxed"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: NRB Forex Table View */}
-      {activeTab === "forex" && (
-        <div className="bg-card rounded-2xl border border-border p-6 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-border/60 pb-3">
-            <span className="text-base font-bold text-foreground flex items-center gap-2 font-serif">
-              <Globe className="h-5 w-5 text-[#027081]" />
-              <span>Nepal Rastra Bank (NRB) Exchange Rates</span>
-            </span>
-            <span className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              <span>NRB Live API Synced</span>
+      {section === "rashifal" && (
+        <section className={adminPanel}>
+          <div className={adminPanelHeader}>
+            <h2 className={adminPanelTitle}>Daily horoscope — 12 rashis</h2>
+            <span className="text-[11px] text-muted-foreground">
+              Expand a row to edit predictions
             </span>
           </div>
 
-          {forexData && Array.isArray(forexData) ? (
-            <div className="overflow-x-auto rounded-xl border border-border/60">
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="bg-[#027081] text-white uppercase text-[11px] font-bold font-mono">
+          {filteredRashifal.length === 0 ? (
+            <p className="px-3 py-8 text-center text-xs text-muted-foreground">No rashis match search.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className={adminTable}>
+                <thead className={adminTableHead}>
                   <tr>
-                    <th className="p-3.5">Currency Code</th>
-                    <th className="p-3.5">Country / Currency Name</th>
-                    <th className="p-3.5">Unit</th>
-                    <th className="p-3.5">Buying Rate</th>
-                    <th className="p-3.5 text-right">Selling Rate</th>
+                    <th className={adminTableHeadCell}>#</th>
+                    <th className={adminTableHeadCell}>Rashi</th>
+                    <th className={adminTableHeadCell}>Luck %</th>
+                    <th className={adminTableHeadCell}>Lucky no.</th>
+                    <th className={adminTableHeadCell}>Overview</th>
+                    <th className={`${adminTableHeadCell} text-right`}>Edit</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/60">
-                  {forexData.map((f: ForexItem, idx: number) => (
-                    <tr key={f.code ? `${f.code}-${idx}` : `forex-${idx}`} className="hover:bg-muted/40 transition-colors">
-                      <td className="p-3.5 font-mono font-bold text-[#027081]">{f.code}</td>
-                      <td className="p-3.5 font-bold text-foreground">{f.nameNp}</td>
-                      <td className="p-3.5 font-mono font-bold">{f.unit}</td>
-                      <td className="p-3.5 font-extrabold text-[#027081]">Rs. {f.buy}</td>
-                      <td className="p-3.5 font-bold text-right text-emerald-600 dark:text-emerald-400">Rs. {f.sell}</td>
+                <tbody>
+                  {filteredRashifal.map(({ r, index }) => {
+                    const isExpanded = expandedRashi === index;
+                    return (
+                      <Fragment key={`${r.name}-${index}`}>
+                        <tr className={adminTableRow}>
+                          <td className={`${adminTableCell} font-mono text-muted-foreground`}>
+                            {index + 1}
+                          </td>
+                          <td className={adminTableCell}>
+                            <span className="font-medium text-foreground">
+                              {r.symbol} {r.name}
+                            </span>
+                            <span className="ml-1 text-[11px] text-muted-foreground">({r.enName})</span>
+                          </td>
+                          <td className={`${adminTableCell} font-mono`}>{r.luckyPercent ?? "—"}</td>
+                          <td className={`${adminTableCell} font-mono text-muted-foreground`}>
+                            {r.luckyNumber || "—"}
+                          </td>
+                          <td className={`${adminTableCell} max-w-xs truncate text-muted-foreground`}>
+                            {r.overview}
+                          </td>
+                          <td className={`${adminTableCell} text-right`}>
+                            <button
+                              type="button"
+                              onClick={() => setExpandedRashi(isExpanded ? null : index)}
+                              className={adminBtnGhost}
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="h-3.5 w-3.5" />
+                              ) : (
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                        {isExpanded ? (
+                          <tr className="bg-muted/20">
+                            <td colSpan={6} className="px-3 py-3">
+                              <div className="grid max-w-3xl gap-3">
+                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-medium text-muted-foreground">
+                                      Lucky number
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={r.luckyNumber || ""}
+                                      onChange={(e) =>
+                                        handleRashiChange(index, "luckyNumber", e.target.value)
+                                      }
+                                      className={adminInput}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-medium text-muted-foreground">
+                                      Lucky color
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={r.luckyColor || ""}
+                                      onChange={(e) =>
+                                        handleRashiChange(index, "luckyColor", e.target.value)
+                                      }
+                                      className={adminInput}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-medium text-muted-foreground">
+                                      Direction
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={r.luckyDirection || ""}
+                                      onChange={(e) =>
+                                        handleRashiChange(index, "luckyDirection", e.target.value)
+                                      }
+                                      className={adminInput}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-medium text-muted-foreground">
+                                      Luck %
+                                    </label>
+                                    <input
+                                      type="number"
+                                      value={r.luckyPercent ?? 0}
+                                      onChange={(e) =>
+                                        handleRashiChange(
+                                          index,
+                                          "luckyPercent",
+                                          Number(e.target.value)
+                                        )
+                                      }
+                                      className={adminInput}
+                                    />
+                                  </div>
+                                </div>
+                                {(
+                                  [
+                                    ["overview", "Overview", 3],
+                                    ["health", "Health", 2],
+                                    ["business", "Business", 2],
+                                    ["love", "Love", 2],
+                                    ["remedy", "Remedy", 2],
+                                  ] as const
+                                ).map(([field, label, rows]) => (
+                                  <div key={field} className="space-y-1">
+                                    <label className="text-xs font-medium text-foreground">{label}</label>
+                                    <textarea
+                                      rows={rows}
+                                      value={(r[field] as string) || ""}
+                                      onChange={(e) => handleRashiChange(index, field, e.target.value)}
+                                      className={`${adminInput} h-auto py-2`}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {section === "forex" && (
+        <section className={adminPanel}>
+          <div className={adminPanelHeader}>
+            <h2 className={adminPanelTitle}>NRB exchange rates</h2>
+            <span className="text-[11px] text-muted-foreground">
+              Showing {filteredForex.length} of {forexData.length}
+            </span>
+          </div>
+          {forexData.length === 0 ? (
+            <p className="px-3 py-8 text-center text-xs text-muted-foreground">Loading forex rates…</p>
+          ) : filteredForex.length === 0 ? (
+            <p className="px-3 py-8 text-center text-xs text-muted-foreground">No currencies match search.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className={adminTable}>
+                <thead className={adminTableHead}>
+                  <tr>
+                    <th className={adminTableHeadCell}>Code</th>
+                    <th className={adminTableHeadCell}>Currency</th>
+                    <th className={adminTableHeadCell}>Unit</th>
+                    <th className={adminTableHeadCell}>Buy (Rs.)</th>
+                    <th className={`${adminTableHeadCell} text-right`}>Sell (Rs.)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredForex.map((f, idx) => (
+                    <tr key={f.code ? `${f.code}-${idx}` : `forex-${idx}`} className={adminTableRow}>
+                      <td className={`${adminTableCell} font-mono font-medium`}>{f.code}</td>
+                      <td className={adminTableCell}>{f.nameNp}</td>
+                      <td className={`${adminTableCell} font-mono text-muted-foreground`}>{f.unit}</td>
+                      <td className={`${adminTableCell} font-mono`}>{f.buy}</td>
+                      <td className={`${adminTableCell} text-right font-mono`}>{f.sell}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground border border-dashed rounded-xl">
-              Loading foreign exchange rates...
-            </div>
           )}
-        </div>
+        </section>
       )}
-    </div>
+    </AdminPageShell>
   );
 }

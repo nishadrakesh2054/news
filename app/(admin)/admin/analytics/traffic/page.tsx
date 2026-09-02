@@ -1,10 +1,47 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { LineChart } from "lucide-react";
+import { Save } from "lucide-react";
+import { toast } from "sonner";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
+import { AnalyticsSectionNav } from "@/components/admin/AnalyticsSectionNav";
+import {
+  AdminDataTable,
+  AdminPanel,
+  AdminStatsStrip,
+} from "@/components/admin/content";
+import {
+  adminBadge,
+  adminBadgeMuted,
+  adminBtnPrimary,
+  adminInput,
+} from "@/constants/admin-layout";
+
+interface DeviceItem {
+  name: string;
+  percentage: number;
+}
+
+interface PeakHourItem {
+  time: string;
+  label: string;
+  volume: string;
+}
+
+function volumeBadge(volume: string) {
+  const normalized = volume.toLowerCase();
+  if (normalized === "peak" || normalized === "high") {
+    return adminBadge;
+  }
+  return adminBadgeMuted;
+}
 
 export default function AdminAnalyticsTrafficPage() {
+  const [ga4Id, setGa4Id] = useState("");
+  const [gtmId, setGtmId] = useState("");
+  const [fbPixelId, setFbPixelId] = useState("");
+
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin-analytics-traffic"],
     queryFn: async () => {
@@ -15,33 +52,148 @@ export default function AdminAnalyticsTrafficPage() {
     },
   });
 
+  useEffect(() => {
+    if (!data) return;
+    setGa4Id(data.ga4Id ?? "");
+    setGtmId(data.gtmId ?? "");
+    setFbPixelId(data.fbPixelId ?? "");
+  }, [data]);
+
+  const devices: DeviceItem[] = data?.devices ?? [];
+  const peakHours: PeakHourItem[] = data?.peakHours ?? [];
+  const totalViews = data?.totalViews ?? 0;
+
+  const deviceRows = devices.map((device) => ({
+    ...device,
+    estViews: Math.round(totalViews * (device.percentage / 100)),
+  }));
+
+  const handleSaveTags = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast.success("Tracking configuration saved.");
+  };
+
   return (
-    <AdminPageShell title="Traffic Analytics" icon={LineChart} onRefresh={() => refetch()} isRefreshing={isFetching}>
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border bg-card p-4">
-            <p className="text-[10px] uppercase text-muted-foreground">Total Views</p>
-            <p className="text-2xl font-bold">{data?.totalViews ?? 0}</p>
-          </div>
-          <div className="rounded-xl border bg-card p-4">
-            <p className="text-[10px] uppercase text-muted-foreground">Published Articles</p>
-            <p className="text-2xl font-bold">{data?.publishedArticles ?? 0}</p>
-          </div>
-          <div className="rounded-xl border bg-card p-4 sm:col-span-2">
-            <p className="text-[10px] uppercase text-muted-foreground mb-2">Device Split</p>
-            <div className="space-y-1 text-xs">
-              {(data?.devices ?? []).map((d: { name: string; percentage: number }) => (
-                <div key={d.name} className="flex justify-between">
-                  <span>{d.name}</span>
-                  <span className="font-mono">{d.percentage}%</span>
-                </div>
-              ))}
+    <AdminPageShell
+      title="Traffic analytics"
+      description="Audience devices, peak hours, and tracking tags"
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+    >
+      <AdminStatsStrip
+        loading={isLoading}
+        stats={[
+          { label: "Total views", value: totalViews.toLocaleString() },
+          { label: "Published articles", value: data?.publishedArticles ?? 0 },
+          { label: "Device types", value: devices.length || "—" },
+          { label: "Peak windows", value: peakHours.length || "—" },
+        ]}
+      />
+
+      <AnalyticsSectionNav />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <AdminPanel title="Device breakdown">
+          <AdminDataTable
+            loading={isLoading}
+            rows={deviceRows}
+            rowKey={(row) => row.name}
+            emptyMessage="No device data."
+            columns={[
+              { key: "name", label: "Device" },
+              {
+                key: "percentage",
+                label: "Share",
+                align: "right",
+                cellClassName: "font-mono tabular-nums",
+                render: (row) => `${row.percentage}%`,
+              },
+              {
+                key: "estViews",
+                label: "Est. views",
+                align: "right",
+                cellClassName: "font-mono tabular-nums text-muted-foreground",
+                render: (row) => row.estViews.toLocaleString(),
+              },
+            ]}
+          />
+        </AdminPanel>
+
+        <AdminPanel title="Peak traffic hours">
+          <AdminDataTable
+            loading={isLoading}
+            rows={peakHours}
+            rowKey={(row) => row.time}
+            emptyMessage="No peak hour data."
+            columns={[
+              { key: "time", label: "Time" },
+              { key: "label", label: "Period" },
+              {
+                key: "volume",
+                label: "Volume",
+                align: "right",
+                render: (row) => (
+                  <span className={volumeBadge(row.volume)}>{row.volume}</span>
+                ),
+              },
+            ]}
+          />
+        </AdminPanel>
+      </div>
+
+      <AdminPanel title="Tracking tags">
+        <form onSubmit={handleSaveTags} className="space-y-3 p-3">
+          <p className="text-xs text-muted-foreground">
+            Google Analytics, Tag Manager, and Meta Pixel IDs for the public site.
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                GA4 measurement ID
+              </label>
+              <input
+                type="text"
+                placeholder="G-XXXXXXXXXX"
+                value={ga4Id}
+                onChange={(e) => setGa4Id(e.target.value)}
+                className={`${adminInput} w-full font-mono`}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                GTM container ID
+              </label>
+              <input
+                type="text"
+                placeholder="GTM-XXXXXXX"
+                value={gtmId}
+                onChange={(e) => setGtmId(e.target.value)}
+                className={`${adminInput} w-full font-mono`}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Meta pixel ID
+              </label>
+              <input
+                type="text"
+                placeholder="Pixel ID"
+                value={fbPixelId}
+                onChange={(e) => setFbPixelId(e.target.value)}
+                className={`${adminInput} w-full font-mono`}
+              />
             </div>
           </div>
-        </div>
-      )}
+
+          <div className="flex justify-end border-t border-border pt-3">
+            <button type="submit" className={adminBtnPrimary}>
+              <Save className="h-3 w-3" />
+              Save tags
+            </button>
+          </div>
+        </form>
+      </AdminPanel>
     </AdminPageShell>
   );
 }

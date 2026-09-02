@@ -1,21 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import {
-  Zap,
-  RefreshCw,
-  Search,
-  Pencil,
-  ExternalLink,
-  ImageIcon,
-  X,
-  CheckCircle2,
-  Radio,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { toast } from "sonner";
+import { ExternalLink, ImageIcon, Pencil, Search, X } from "lucide-react";
+import { AdminPageShell } from "@/components/admin/AdminPageShell";
+import { AdminStatsStrip } from "@/components/admin/content";
+import {
+  adminBadgeMuted,
+  adminBtnGhost,
+  adminBtnPrimary,
+  adminBtnSecondary,
+  adminInput,
+  adminPanel,
+  adminTable,
+  adminTableCell,
+  adminTableHead,
+  adminTableHeadCell,
+  adminTableRow,
+  adminToolbarRow,
+  adminToolbarSearch,
+  adminToolbarSelectMd,
+} from "@/constants/admin-layout";
 
 interface BreakingItem {
   id: string;
@@ -58,288 +65,195 @@ export default function AdminBreakingPage() {
       if (!res.ok) throw new Error(json.error || "Failed to update breaking ticker");
       return json.data;
     },
-    onSuccess: (data, variables) => {
-      toast.success(
-        variables.isBreaking
-          ? "Added to Breaking News ticker"
-          : "Removed from Breaking News ticker"
-      );
+    onSuccess: (_data, variables) => {
+      toast.success(variables.isBreaking ? "Added to ticker" : "Removed from ticker");
       queryClient.invalidateQueries({ queryKey: ["admin-breaking"] });
       queryClient.invalidateQueries({ queryKey: ["admin-articles"] });
     },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
-  // Client-side filtering
-  const filteredArticles = breakingArticles.filter((art) => {
-    const matchesSearch =
-      search.trim() === "" ||
-      art.title.toLowerCase().includes(search.toLowerCase()) ||
-      (art.titleNp && art.titleNp.includes(search));
-    const matchesCategory =
-      categoryFilter === "ALL" || art.category.name.toLowerCase() === categoryFilter.toLowerCase();
-    return matchesSearch && matchesCategory;
-  });
-
-  // Categories list extracted dynamically
-  const categoriesList = Array.from(
-    new Set(breakingArticles.map((a) => a.category.nameNp || a.category.name))
+  const categoriesList = useMemo(
+    () => Array.from(new Set(breakingArticles.map((a) => a.category.nameNp || a.category.name))),
+    [breakingArticles]
   );
 
+  const filteredArticles = useMemo(() => {
+    return breakingArticles.filter((art) => {
+      const matchesSearch =
+        search.trim() === "" ||
+        art.title.toLowerCase().includes(search.toLowerCase()) ||
+        (art.titleNp && art.titleNp.includes(search));
+      const catName = art.category.nameNp || art.category.name;
+      const matchesCategory = categoryFilter === "ALL" || catName === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [breakingArticles, search, categoryFilter]);
+
+  const isFiltered = search.trim() !== "" || categoryFilter !== "ALL";
+
   return (
-    <div className="w-full space-y-3 px-6 py-2 pb-6">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
-        <div>
-          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
-            <Zap className="h-5 w-5 text-rose-600 animate-pulse" />
-            <span>Breaking Ticker Manager</span>
-          </h1>
-        </div>
+    <AdminPageShell
+      title="Breaking news"
+      description="Manage stories shown in the site breaking ticker"
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+      actions={
+        <Link href="/admin/articles" className={adminBtnSecondary}>
+          All articles
+        </Link>
+      }
+    >
+      <AdminStatsStrip
+        stats={[
+          { label: "Active ticker items", value: breakingArticles.length },
+          { label: "Showing", value: filteredArticles.length },
+          { label: "Categories", value: categoriesList.length },
+          { label: "Status", value: breakingArticles.length > 0 ? "Live" : "Empty" },
+        ]}
+      />
 
-        <div className="flex items-center space-x-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="h-8 px-2.5 text-xs rounded-lg border-border font-medium hover:bg-muted"
-            title="Refresh breaking news"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? "animate-spin text-rose-600" : ""}`} />
-            <span>Refresh</span>
-          </Button>
-
-          <Link href="/admin/articles">
-            <Button className="h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center gap-1.5 transition-all duration-200">
-              <span>View All Articles</span>
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Metrics Summary Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Active Ticker Items</p>
-            <p className="text-xl font-extrabold text-rose-600 mt-0.5">{breakingArticles.length}</p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center">
-            <Zap className="h-4 w-4 animate-pulse" />
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Portal Broadcast</p>
-            <p className="text-xl font-extrabold text-emerald-600 mt-0.5">LIVE</p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-            <Radio className="h-4 w-4 animate-pulse" />
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Auto Refresh</p>
-            <p className="text-xl font-extrabold text-[#027081] mt-0.5">30s Sync</p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-[#027081]/10 text-[#027081] flex items-center justify-center">
-            <CheckCircle2 className="h-4 w-4" />
-          </div>
-        </div>
-      </div>
-
-      {/* Filter Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 py-1">
-        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
-          {/* Search Box */}
-          <div className="relative min-w-[220px] flex-1 max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search breaking headline..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-card border border-border rounded-sm pl-8 pr-7 py-1.5 text-xs text-foreground outline-none focus:border-rose-600 shadow-2xs transition-colors"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Category Filter */}
-          {categoriesList.length > 0 && (
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-card border border-border rounded-sm px-3 py-1.5 text-xs font-semibold text-foreground outline-none focus:border-rose-600 shadow-2xs cursor-pointer"
-            >
-              <option value="ALL">All Categories</option>
-              {categoriesList.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          )}
-
-          {(search || categoryFilter !== "ALL") && (
+      <div className={adminToolbarRow}>
+        <div className={adminToolbarSearch}>
+          <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search headlines…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className={`${adminInput} w-full pl-7 pr-7`}
+          />
+          {search ? (
             <button
               type="button"
-              onClick={() => {
-                setSearch("");
-                setCategoryFilter("ALL");
-              }}
-              className="text-xs text-rose-600 hover:underline font-bold px-1"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              Reset
+              <X className="h-3.5 w-3.5" />
             </button>
-          )}
+          ) : null}
         </div>
+
+        {categoriesList.length > 0 ? (
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className={adminToolbarSelectMd}
+          >
+            <option value="ALL">All categories</option>
+            {categoriesList.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        ) : null}
+
+        {isFiltered ? (
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setCategoryFilter("ALL");
+            }}
+            className="inline-flex h-8 shrink-0 items-center px-2 text-xs font-medium text-[#C3272E] hover:underline"
+          >
+            Reset
+          </button>
+        ) : null}
+
+        <Link href="/admin/articles/new" className={`${adminBtnPrimary} ml-auto shrink-0`}>
+          New article
+        </Link>
       </div>
 
-      {/* Breaking Articles Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
+      <p className="text-xs text-muted-foreground">
+        To add breaking news, edit an article and enable &quot;Breaking&quot; or set format to Breaking.
+      </p>
+
+      <div className={adminPanel}>
         {isLoading ? (
-          <div className="p-12 text-center text-xs text-muted-foreground flex flex-col items-center justify-center space-y-2">
-            <div className="h-5 w-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
-            <span>Loading breaking news ticker items...</span>
-          </div>
+          <p className="px-3 py-8 text-center text-xs text-muted-foreground">Loading breaking news…</p>
         ) : isError ? (
-          <div className="p-12 text-center text-xs text-rose-500 font-semibold">
-            Failed to load breaking news.
-          </div>
+          <p className="px-3 py-8 text-center text-xs text-destructive">Failed to load breaking news.</p>
         ) : filteredArticles.length === 0 ? (
-          <div className="p-12 text-center text-xs text-muted-foreground space-y-2">
-            <p className="font-semibold">No active breaking news items matching criteria.</p>
-            <p className="text-[11px]">To add breaking news, edit an article and turn on &quot;Add to Breaking Ticker&quot;.</p>
-          </div>
+          <p className="px-3 py-8 text-center text-xs text-muted-foreground">
+            No breaking items match your filters.
+          </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-border bg-slate-50/80 dark:bg-slate-900/60 uppercase text-[10px] tracking-wider text-muted-foreground font-bold">
+            <table className={adminTable}>
+              <thead className={adminTableHead}>
                 <tr>
-                  <th className="px-4 py-3">Headline Title</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3">Broadcast Status</th>
-                  <th className="px-4 py-3">Last Updated</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className={adminTableHeadCell}>Headline</th>
+                  <th className={adminTableHeadCell}>Category</th>
+                  <th className={adminTableHeadCell}>Status</th>
+                  <th className={adminTableHeadCell}>Updated</th>
+                  <th className={`${adminTableHeadCell} text-right`}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/60">
+              <tbody>
                 {filteredArticles.map((art) => (
-                  <tr key={art.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
-                    {/* Title & Cover Thumbnail */}
-                    <td className="px-4 py-3 max-w-md">
-                      <div className="flex items-center space-x-3">
+                  <tr key={art.id} className={adminTableRow}>
+                    <td className={`${adminTableCell} max-w-md`}>
+                      <div className="flex items-center gap-2.5">
                         {art.coverImage ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
                           <img
                             src={art.coverImage}
-                            alt={art.title}
-                            className="h-10 w-10 object-cover rounded-xl border border-border shrink-0 shadow-2xs"
+                            alt=""
+                            className="h-8 w-8 shrink-0 border border-border object-cover"
                           />
                         ) : (
-                          <div className="h-10 w-10 rounded-xl border border-dashed border-border bg-muted/30 flex items-center justify-center text-muted-foreground shrink-0">
-                            <ImageIcon className="h-4 w-4" />
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-dashed border-border bg-muted/20 text-muted-foreground">
+                            <ImageIcon className="h-3.5 w-3.5" />
                           </div>
                         )}
-
-                        <div className="min-w-0 space-y-0.5">
-                          <div className="flex items-center space-x-1.5">
-                            <span className="text-[9px] font-extrabold text-rose-600 bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded animate-pulse">
-                              ⚡ BREAKING TICKER
-                            </span>
-                          </div>
-                          <p className="font-bold text-xs text-foreground truncate">
+                        <div className="min-w-0">
+                          <span className="mb-0.5 inline-flex items-center rounded-sm border border-[#C3272E]/30 bg-[#C3272E]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#C3272E]">
+                            Breaking
+                          </span>
+                          <p className="truncate font-medium text-foreground">
                             {art.titleNp || art.title}
                           </p>
-                          {art.titleNp && (
-                            <p className="text-[11px] text-muted-foreground truncate font-mono">
-                              {art.title}
-                            </p>
-                          )}
                         </div>
                       </div>
                     </td>
-
-                    {/* Category */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="font-semibold text-xs text-foreground bg-muted/40 px-2.5 py-1 rounded-lg border border-border/50">
+                    <td className={adminTableCell}>
+                      <span className={adminBadgeMuted}>
                         {art.category.nameNp || art.category.name}
                       </span>
                     </td>
-
-                    {/* Broadcast Status */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-600 border border-rose-500/20 text-[10px] font-extrabold px-2.5 py-1 rounded-lg">
-                        <Radio className="h-3 w-3 animate-pulse text-rose-500" />
-                        <span>LIVE ON TICKER</span>
-                      </span>
+                    <td className={`${adminTableCell} text-muted-foreground`}>{art.status}</td>
+                    <td className={`${adminTableCell} font-mono text-muted-foreground`}>
+                      {new Date(art.updatedAt).toLocaleString()}
                     </td>
-
-                    {/* Time */}
-                    <td className="px-4 py-3 whitespace-nowrap text-xs font-mono text-muted-foreground">
-                      {new Date(art.updatedAt).toLocaleTimeString("en-US", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
-
-                    {/* Action Buttons */}
-                    <td className="px-4 py-3 text-right whitespace-nowrap space-x-1">
-                      <a
-                        href={`/article/${art.slug}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex"
-                      >
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-foreground"
-                          title="View Public Page"
+                    <td className={`${adminTableCell} text-right`}>
+                      <div className="inline-flex items-center">
+                        <a
+                          href={`/article/${art.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={adminBtnGhost}
+                          title="View"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
-                        </Button>
-                      </a>
-
-                      <Link href={`/admin/articles/${art.id}/edit`}>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-[#027081]"
-                          title="Edit Story"
-                        >
+                        </a>
+                        <Link href={`/admin/articles/${art.id}/edit`} className={adminBtnGhost} title="Edit">
                           <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                      </Link>
-
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={toggleBreakingMutation.isPending}
-                        onClick={() =>
-                          toggleBreakingMutation.mutate({ articleId: art.id, isBreaking: false })
-                        }
-                        className="h-8 w-8 p-0 rounded-lg text-rose-600 hover:bg-rose-500/10"
-                        title="Remove from Breaking Ticker"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                        </Link>
+                        <button
+                          type="button"
+                          disabled={toggleBreakingMutation.isPending}
+                          onClick={() =>
+                            toggleBreakingMutation.mutate({ articleId: art.id, isBreaking: false })
+                          }
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#C3272E] hover:bg-muted"
+                          title="Remove from ticker"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -348,6 +262,6 @@ export default function AdminBreakingPage() {
           </div>
         )}
       </div>
-    </div>
+    </AdminPageShell>
   );
 }

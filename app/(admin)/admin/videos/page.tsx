@@ -28,7 +28,7 @@ export default function AdminVideosPage() {
 
   return (
     <AdminPageShell title="Videos" icon={Video} description="Video media from the library" onRefresh={() => refetch()} isRefreshing={isFetching}>
-      <div className="rounded-xl border bg-card overflow-hidden">
+      <div className="rounded-lg border bg-card overflow-hidden">
         {isLoading ? (
           <p className="p-6 text-sm text-muted-foreground">Loading...</p>
         ) : items.length === 0 ? (

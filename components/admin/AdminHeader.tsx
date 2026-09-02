@@ -26,18 +26,13 @@ export function AdminHeader() {
     : "NN";
 
   return (
-    <header className="sticky top-0 z-30 flex h-12 w-full items-center justify-between bg-[#0C4EA0] px-3 sm:px-5 text-white select-none shadow-sm">
+    <header className="relative z-40 flex h-12 w-full shrink-0 items-center justify-between bg-[#0C4EA0] px-3 sm:px-5 text-white select-none">
       <div className="flex items-center gap-2.5">
-        <Link href="/admin" className="flex items-center gap-2.5 group">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/newslogo.png"
-            alt="Nepal News Admin"
-            className="h-7 w-auto object-contain brightness-0 invert opacity-95 group-hover:opacity-100 transition-opacity"
-          />
-          <div className="hidden sm:flex flex-col leading-none">
-            <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/70">Admin Panel</span>
-          </div>
+        <Link
+          href="/admin"
+          className="group font-serif text-lg font-bold uppercase tracking-[0.14em] text-white transition-opacity hover:opacity-90 sm:text-xl"
+        >
+          Echo Manch
         </Link>
       </div>
 

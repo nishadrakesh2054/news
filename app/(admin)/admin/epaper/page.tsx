@@ -1,191 +1,298 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Newspaper, Upload, Plus, Calendar, CheckCircle2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { ExternalLink, Plus, Search, Upload, X } from "lucide-react";
+import { AdminPageShell } from "@/components/admin/AdminPageShell";
+import { AdminStatsStrip } from "@/components/admin/content";
+import {
+  adminBadgeMuted,
+  adminBtnPrimary,
+  adminInput,
+  adminPanel,
+  adminPanelHeader,
+  adminPanelTitle,
+  adminTable,
+  adminTableCell,
+  adminTableHead,
+  adminTableHeadCell,
+  adminTableRow,
+  adminToolbarRow,
+  adminToolbarSearch,
+} from "@/constants/admin-layout";
 
 interface EPaperItem {
   id: string;
   title: string;
   pdfUrl: string;
+  coverImage: string | null;
   publishDate: string;
   createdAt: string;
 }
 
 export default function AdminEPaperPage() {
-  const [epapers, setEpapers] = useState<EPaperItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
   const [title, setTitle] = useState("");
   const [pdfUrl, setPdfUrl] = useState("");
+  const [coverImage, setCoverImage] = useState("");
   const [publishDate, setPublishDate] = useState("");
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  useEffect(() => {
-    let ignore = false;
-    async function load() {
-      try {
-        const res = await fetch("/api/admin/epaper");
-        const data = await res.json();
-        if (!ignore && data.success) {
-          setEpapers(data.data || []);
-        }
-      } catch (err) {
-        console.error("Failed to load EPapers", err);
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    }
-    load();
-    return () => {
-      ignore = true;
-    };
-  }, []);
+  const { data: epapers = [], isLoading, isError, refetch, isFetching } = useQuery<EPaperItem[]>({
+    queryKey: ["admin-epaper"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/epaper");
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || "Failed to load e-papers");
+      return json.data;
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title || !pdfUrl) return;
-
-    try {
-      setSubmitting(true);
-      setMessage(null);
-
+  const createMutation = useMutation({
+    mutationFn: async (payload: {
+      title: string;
+      pdfUrl: string;
+      coverImage?: string;
+      publishDate?: string;
+    }) => {
       const res = await fetch("/api/admin/epaper", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, pdfUrl, publishDate }),
+        body: JSON.stringify(payload),
       });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || json.message || "Failed to publish");
+      return json.data;
+    },
+    onSuccess: () => {
+      toast.success("E-paper edition published");
+      queryClient.invalidateQueries({ queryKey: ["admin-epaper"] });
+      setTitle("");
+      setPdfUrl("");
+      setCoverImage("");
+      setPublishDate("");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
-      const data = await res.json();
-
-      if (data.success) {
-        setMessage({ type: "success", text: "EPaper published successfully!" });
-        setTitle("");
-        setPdfUrl("");
-        setPublishDate("");
-        const resEP = await fetch("/api/admin/epaper");
-        const dataEP = await resEP.json();
-        if (dataEP.success) setEpapers(dataEP.data || []);
-      } else {
-        setMessage({ type: "error", text: data.message || "Failed to publish EPaper." });
-      }
-    } catch {
-      setMessage({ type: "error", text: "An error occurred." });
-    } finally {
-      setSubmitting(false);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !pdfUrl.trim()) {
+      toast.error("Title and PDF URL are required");
+      return;
     }
+
+    createMutation.mutate({
+      title: title.trim(),
+      pdfUrl: pdfUrl.trim(),
+      coverImage: coverImage.trim() || undefined,
+      publishDate: publishDate || undefined,
+    });
   };
 
+  const filtered = useMemo(() => {
+    if (!search.trim()) return epapers;
+    const term = search.toLowerCase();
+    return epapers.filter((ep) => ep.title.toLowerCase().includes(term));
+  }, [epapers, search]);
+
+  const now = new Date();
+  const thisMonthCount = epapers.filter((ep) => {
+    const d = new Date(ep.publishDate);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length;
+
+  const latest = epapers[0];
+
   return (
-    <div className="w-full space-y-3 px-6 py-2 pb-6">
-      <div className="border-b border-border/60 pb-2">
-        <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
-          <Newspaper className="h-5 w-5 text-[#027081]" />
-          <span>EPaper Edition Publisher</span>
-        </h1>
-      </div>
+    <AdminPageShell
+      title="E-paper"
+      description="Publish daily PDF editions for readers"
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+    >
+      <AdminStatsStrip
+        stats={[
+          { label: "Total editions", value: epapers.length },
+          { label: "This month", value: thisMonthCount },
+          {
+            label: "Latest edition",
+            value: latest
+              ? new Date(latest.publishDate).toLocaleDateString()
+              : "—",
+          },
+          { label: "Showing", value: filtered.length },
+        ]}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Upload Form */}
-        <form onSubmit={handleSubmit} className="bg-card rounded-2xl border border-border p-5 space-y-4 shadow-xs">
-          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Plus className="h-4 w-4 text-[#027081]" />
-            <span>Add New EPaper Edition</span>
-          </h3>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <section className={adminPanel}>
+          <div className={adminPanelHeader}>
+            <h2 className={adminPanelTitle}>New edition</h2>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-3 p-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">
+                Edition title <span className="text-[#C3272E]">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Daily edition — 2 Sep 2026"
+                className={adminInput}
+              />
+            </div>
 
-          {message && (
-            <div
-              className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
-                message.type === "success"
-                  ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
-                  : "bg-rose-500/10 text-rose-600 border border-rose-500/20"
-              }`}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">
+                PDF URL <span className="text-[#C3272E]">*</span>
+              </label>
+              <input
+                type="url"
+                required
+                value={pdfUrl}
+                onChange={(e) => setPdfUrl(e.target.value)}
+                placeholder="https://…/edition.pdf"
+                className={`${adminInput} font-mono`}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Cover image URL</label>
+              <input
+                type="url"
+                value={coverImage}
+                onChange={(e) => setCoverImage(e.target.value)}
+                placeholder="Optional thumbnail"
+                className={`${adminInput} font-mono`}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Publication date</label>
+              <input
+                type="date"
+                value={publishDate}
+                onChange={(e) => setPublishDate(e.target.value)}
+                className={adminInput}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={createMutation.isPending}
+              className={`${adminBtnPrimary} w-full justify-center`}
             >
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              <span>{message.text}</span>
-            </div>
-          )}
+              {createMutation.isPending ? (
+                "Publishing…"
+              ) : (
+                <>
+                  <Upload className="h-3.5 w-3.5" />
+                  Publish edition
+                </>
+              )}
+            </button>
+          </form>
+        </section>
 
-          <div>
-            <label className="block text-xs font-bold text-foreground mb-1">Edition Title *</label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Daily National News - Aug 2026 Edition"
-              className="w-full h-9 px-3 rounded-sm border border-border bg-card text-foreground text-xs outline-none focus:border-[#027081]"
-            />
+        <section className={`${adminPanel} lg:col-span-2`}>
+          <div className={adminPanelHeader}>
+            <h2 className={adminPanelTitle}>Published editions</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setTitle("");
+                setPdfUrl("");
+                setCoverImage("");
+                setPublishDate("");
+              }}
+              className="inline-flex h-7 items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              <Plus className="h-3 w-3" />
+              Clear form
+            </button>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-foreground mb-1">PDF File URL *</label>
-            <input
-              type="url"
-              required
-              value={pdfUrl}
-              onChange={(e) => setPdfUrl(e.target.value)}
-              placeholder="https://cloudinary... /epaper.pdf"
-              className="w-full h-9 px-3 rounded-sm border border-border bg-card text-foreground text-xs font-mono outline-none focus:border-[#027081]"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-foreground mb-1">Publication Date</label>
-            <input
-              type="date"
-              value={publishDate}
-              onChange={(e) => setPublishDate(e.target.value)}
-              className="w-full h-9 px-3 rounded-sm border border-border bg-card text-foreground text-xs font-mono outline-none focus:border-[#027081]"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full inline-flex items-center justify-center gap-1.5 h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 transition-all duration-200 disabled:opacity-50"
-          >
-            <Upload className="h-3.5 w-3.5" />
-            <span>{submitting ? "Publishing..." : "Publish EPaper"}</span>
-          </button>
-        </form>
-
-        {/* Existing List */}
-        <div className="lg:col-span-2 bg-card rounded-2xl border border-border p-5 space-y-4 shadow-xs">
-          <h3 className="text-sm font-bold text-foreground border-b border-border pb-3">
-            Published EPapers ({epapers.length})
-          </h3>
-
-          {loading ? (
-            <div className="py-8 text-center text-xs text-muted-foreground">Loading...</div>
-          ) : epapers.length > 0 ? (
-            <div className="space-y-3">
-              {epapers.map((ep) => (
-                <div key={ep.id} className="p-4 rounded-xl border border-border/60 bg-muted/20 flex items-center justify-between">
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-bold text-foreground">{ep.title}</h4>
-                    <span className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
-                      <Calendar className="h-3 w-3" /> {new Date(ep.publishDate).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  <a
-                    href={ep.pdfUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs font-bold text-[#027081] hover:underline"
+          <div className="border-b border-border px-3 py-2">
+            <div className={adminToolbarRow}>
+              <div className={adminToolbarSearch}>
+                <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search editions…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className={`${adminInput} w-full pl-7 pr-7`}
+                />
+                {search ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
-                    View PDF →
-                  </a>
-                </div>
-              ))}
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+              </div>
             </div>
+          </div>
+
+          {isLoading ? (
+            <p className="px-3 py-8 text-center text-xs text-muted-foreground">Loading editions…</p>
+          ) : isError ? (
+            <p className="px-3 py-8 text-center text-xs text-destructive">Failed to load editions.</p>
+          ) : filtered.length === 0 ? (
+            <p className="px-3 py-8 text-center text-xs text-muted-foreground">
+              {search ? "No editions match your search." : "No e-paper editions published yet."}
+            </p>
           ) : (
-            <div className="py-8 text-center border border-dashed border-border rounded-xl text-xs text-muted-foreground">
-              No EPaper editions published yet.
+            <div className="overflow-x-auto">
+              <table className={adminTable}>
+                <thead className={adminTableHead}>
+                  <tr>
+                    <th className={adminTableHeadCell}>Title</th>
+                    <th className={adminTableHeadCell}>Published</th>
+                    <th className={adminTableHeadCell}>Added</th>
+                    <th className={`${adminTableHeadCell} text-right`}>PDF</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((ep) => (
+                    <tr key={ep.id} className={adminTableRow}>
+                      <td className={adminTableCell}>
+                        <p className="max-w-md truncate font-medium text-foreground">{ep.title}</p>
+                        {ep.coverImage ? (
+                          <span className={adminBadgeMuted}>Has cover</span>
+                        ) : null}
+                      </td>
+                      <td className={`${adminTableCell} whitespace-nowrap text-muted-foreground`}>
+                        {new Date(ep.publishDate).toLocaleDateString()}
+                      </td>
+                      <td className={`${adminTableCell} whitespace-nowrap text-muted-foreground`}>
+                        {new Date(ep.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className={`${adminTableCell} text-right`}>
+                        <a
+                          href={ep.pdfUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex h-7 items-center gap-1 px-2 text-xs font-medium text-[#0C4EA0] hover:underline"
+                        >
+                          Open
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
-        </div>
+        </section>
       </div>
-    </div>
+    </AdminPageShell>
   );
 }

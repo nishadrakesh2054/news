@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  FolderTree,
   Upload,
   Search,
   LayoutGrid,
@@ -13,16 +12,31 @@ import {
   Pencil,
   Trash2,
   X,
-  RefreshCw,
-  ImageIcon,
-  FileText,
   Loader2,
   ExternalLink,
   ChevronLeft,
   ChevronRight,
-  Info,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AdminPageShell } from "@/components/admin/AdminPageShell";
+import { AdminStatsStrip } from "@/components/admin/content";
+import {
+  adminBadgeMuted,
+  adminBtnGhost,
+  adminBtnPrimary,
+  adminBtnSecondary,
+  adminInput,
+  adminPanel,
+  adminSelect,
+  adminTable,
+  adminTableCell,
+  adminTableHead,
+  adminTableHeadCell,
+  adminTableRow,
+  adminToolbarRow,
+  adminToolbarSearch,
+  adminToolbarSelectMd,
+  adminToolbarSelectSm,
+} from "@/constants/admin-layout";
 
 interface MediaItem {
   id: string;
@@ -43,6 +57,13 @@ interface MediaItem {
   };
 }
 
+const FOLDER_OPTIONS = [
+  { value: "ALL", label: "All folders" },
+  { value: "articles", label: "Articles" },
+  { value: "ads", label: "Advertisements" },
+  { value: "general", label: "General" },
+];
+
 export default function AdminMediaPage() {
   const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -51,23 +72,19 @@ export default function AdminMediaPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(12);
 
-  // Modals state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [inspectingItem, setInspectingItem] = useState<MediaItem | null>(null);
 
-  // Upload Form state
   const [uploadFolder, setUploadFolder] = useState("articles");
   const [uploadAltText, setUploadAltText] = useState("");
   const [uploadCaption, setUploadCaption] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
-  // Edit details state
   const [editAltText, setEditAltText] = useState("");
   const [editCaption, setEditCaption] = useState("");
   const [editFilename, setEditFilename] = useState("");
   const [editFolder, setEditFolder] = useState("articles");
 
-  // Fetch Media Assets
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["admin-media", search, folderFilter, page, limit],
     queryFn: async () => {
@@ -85,27 +102,21 @@ export default function AdminMediaPage() {
     },
   });
 
-  // Delete Mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/media/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/admin/media/${id}`, { method: "DELETE" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to delete media asset");
       return json.data;
     },
     onSuccess: () => {
-      toast.success("Media asset deleted");
+      toast.success("Media deleted");
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
-      if (inspectingItem) setInspectingItem(null);
+      setInspectingItem(null);
     },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
-  // Update Mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: Record<string, unknown> }) => {
       const res = await fetch(`/api/admin/media/${id}`, {
@@ -118,16 +129,13 @@ export default function AdminMediaPage() {
       return json.data;
     },
     onSuccess: () => {
-      toast.success("Media details saved");
+      toast.success("Media updated");
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       setInspectingItem(null);
     },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
-  // Handle Multi-file Upload
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
@@ -139,22 +147,17 @@ export default function AdminMediaPage() {
       if (uploadAltText) formData.append("altText", uploadAltText);
       if (uploadCaption) formData.append("caption", uploadCaption);
 
-      const res = await fetch("/api/admin/media", {
-        method: "POST",
-        body: formData,
-      });
-
+      const res = await fetch("/api/admin/media", { method: "POST", body: formData });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to upload files");
 
-      toast.success(`Successfully uploaded ${json.data.length} file(s)`);
+      toast.success(`Uploaded ${json.data.length} file(s)`);
       queryClient.invalidateQueries({ queryKey: ["admin-media"] });
       setIsUploadModalOpen(false);
       setUploadAltText("");
       setUploadCaption("");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Upload failed";
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setIsUploading(false);
     }
@@ -162,7 +165,7 @@ export default function AdminMediaPage() {
 
   const copyToClipboard = (url: string) => {
     navigator.clipboard.writeText(url);
-    toast.success("Image URL copied to clipboard!");
+    toast.success("URL copied");
   };
 
   const openInspector = (item: MediaItem) => {
@@ -187,6 +190,8 @@ export default function AdminMediaPage() {
     });
   };
 
+  const isFiltered = search.trim() !== "" || folderFilter !== "ALL";
+
   const mediaList: MediaItem[] = data?.media || [];
   const metrics = data?.metrics || { totalFiles: 0, totalSizeBytes: 0, imageCount: 0 };
   const pagination = data?.pagination;
@@ -198,171 +203,113 @@ export default function AdminMediaPage() {
   };
 
   return (
-    <div className="w-full space-y-3 px-6 py-2 pb-6">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2">
-        <div>
-          <h1 className="text-lg font-bold tracking-tight text-foreground font-serif flex items-center gap-2">
-            <FolderTree className="h-5 w-5 text-[#027081]" />
-            <span>Media Asset Library</span>
-          </h1>
-        </div>
+    <AdminPageShell
+      title="Media library"
+      description="Upload and manage images for articles and site content"
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+      actions={
+        <button type="button" onClick={() => setIsUploadModalOpen(true)} className={adminBtnPrimary}>
+          <Upload className="h-3.5 w-3.5" />
+          Upload
+        </button>
+      }
+    >
+      <AdminStatsStrip
+        stats={[
+          { label: "Total assets", value: metrics.totalFiles },
+          { label: "Storage used", value: formatSize(metrics.totalSizeBytes) },
+          { label: "Images", value: metrics.imageCount },
+          { label: "Folders", value: 3 },
+        ]}
+      />
 
-        <div className="flex items-center space-x-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="h-8 px-2.5 text-xs rounded-lg border-border font-medium hover:bg-muted"
-            title="Refresh library"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? "animate-spin text-[#027081]" : ""}`} />
-            <span>Refresh</span>
-          </Button>
+      <div className={adminToolbarRow}>
+        <select
+          value={folderFilter}
+          onChange={(e) => {
+            setFolderFilter(e.target.value);
+            setPage(1);
+          }}
+          className={adminToolbarSelectMd}
+        >
+          {FOLDER_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
 
-          <Button
-            onClick={() => setIsUploadModalOpen(true)}
-            className="h-8 rounded-lg bg-brand hover:bg-[#0B3F8A] text-white shadow-xs text-[11px] font-bold px-3 py-1 flex items-center gap-1.5 transition-all duration-200"
-          >
-            <Upload className="h-3.5 w-3.5" />
-            <span>Upload Assets</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Metrics Summary Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Assets</p>
-            <p className="text-xl font-extrabold text-foreground mt-0.5">{metrics.totalFiles}</p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
-            <ImageIcon className="h-4 w-4" />
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Storage Used</p>
-            <p className="text-xl font-extrabold text-emerald-600 mt-0.5">
-              {formatSize(metrics.totalSizeBytes)}
-            </p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-            <FileText className="h-4 w-4" />
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Image Assets</p>
-            <p className="text-xl font-extrabold text-purple-600 mt-0.5">{metrics.imageCount}</p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-purple-500/10 text-purple-600 flex items-center justify-center">
-            <ImageIcon className="h-4 w-4" />
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border border-border p-3.5 shadow-2xs flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Asset Folders</p>
-            <p className="text-xl font-extrabold text-[#027081] mt-0.5">3 Folders</p>
-          </div>
-          <div className="h-8 w-8 rounded-lg bg-[#027081]/10 text-[#027081] flex items-center justify-center">
-            <FolderTree className="h-4 w-4" />
-          </div>
-        </div>
-      </div>
-
-      {/* Filter Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 py-1">
-        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
-          {/* Search Box */}
-          <div className="relative min-w-[220px] flex-1 max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search filename or ALT text..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="w-full bg-card border border-border rounded-sm pl-8 pr-7 py-1.5 text-xs text-foreground outline-none focus:border-[#027081] shadow-2xs transition-colors"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Folder Filter */}
-          <select
-            value={folderFilter}
+        <div className={adminToolbarSearch}>
+          <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search filename or alt text…"
+            value={search}
             onChange={(e) => {
-              setFolderFilter(e.target.value);
+              setSearch(e.target.value);
               setPage(1);
             }}
-            className="bg-card border border-border rounded-sm px-3 py-1.5 text-xs font-semibold text-foreground outline-none focus:border-[#027081] shadow-2xs cursor-pointer"
-          >
-            <option value="ALL">All Folders</option>
-            <option value="articles">Articles</option>
-            <option value="ads">Advertisements</option>
-            <option value="general">General</option>
-          </select>
-
-          {(search || folderFilter !== "ALL") && (
+            className={`${adminInput} w-full pl-7 pr-7`}
+          />
+          {search ? (
             <button
               type="button"
-              onClick={() => {
-                setSearch("");
-                setFolderFilter("ALL");
-                setPage(1);
-              }}
-              className="text-xs text-rose-600 hover:underline font-bold px-1"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              Reset
+              <X className="h-3.5 w-3.5" />
             </button>
-          )}
+          ) : null}
         </div>
 
-        {/* View Mode & Page Limit */}
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center space-x-1 border border-border rounded-lg p-0.5 bg-muted/40">
+        {isFiltered ? (
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setFolderFilter("ALL");
+              setPage(1);
+            }}
+            className="inline-flex h-8 shrink-0 items-center px-2 text-xs font-medium text-[#C3272E] hover:underline"
+          >
+            Reset
+          </button>
+        ) : null}
+
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="inline-flex h-8 items-center gap-px rounded-sm border border-border bg-card p-px">
             <button
               type="button"
               onClick={() => setViewMode("grid")}
-              className={`p-1 rounded ${viewMode === "grid" ? "bg-background text-[#027081]" : "text-muted-foreground"}`}
-              title="Grid View"
+              className={`inline-flex h-[30px] w-8 items-center justify-center rounded-sm ${
+                viewMode === "grid" ? "bg-[#0C4EA0] text-white" : "text-muted-foreground hover:bg-muted"
+              }`}
+              title="Grid view"
             >
-              <LayoutGrid className="h-4 w-4" />
+              <LayoutGrid className="h-3.5 w-3.5" />
             </button>
             <button
               type="button"
               onClick={() => setViewMode("list")}
-              className={`p-1 rounded ${viewMode === "list" ? "bg-background text-[#027081]" : "text-muted-foreground"}`}
-              title="List View"
+              className={`inline-flex h-[30px] w-8 items-center justify-center rounded-sm ${
+                viewMode === "list" ? "bg-[#0C4EA0] text-white" : "text-muted-foreground hover:bg-muted"
+              }`}
+              title="List view"
             >
-              <List className="h-4 w-4" />
+              <List className="h-3.5 w-3.5" />
             </button>
           </div>
 
-          <div className="flex items-center space-x-1.5 text-xs text-muted-foreground font-medium">
-            <span>Per page:</span>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span>Per page</span>
             <select
               value={limit}
               onChange={(e) => {
                 setLimit(Number(e.target.value));
                 setPage(1);
               }}
-              className="bg-background border border-border rounded-lg px-2 py-1 text-xs font-bold text-foreground outline-none focus:border-[#027081]"
+              className={adminToolbarSelectSm}
             >
               <option value={12}>12</option>
               <option value={24}>24</option>
@@ -372,100 +319,70 @@ export default function AdminMediaPage() {
         </div>
       </div>
 
-      {/* Main Content Area */}
       {isLoading ? (
-        <div className="p-12 text-center text-xs text-muted-foreground flex flex-col items-center justify-center space-y-2">
-          <div className="h-5 w-5 border-2 border-[#027081] border-t-transparent rounded-full animate-spin" />
-          <span>Loading media assets...</span>
-        </div>
+        <p className="py-8 text-center text-xs text-muted-foreground">Loading media…</p>
       ) : isError ? (
-        <div className="p-12 text-center text-xs text-rose-500 font-semibold">
-          Failed to load media assets.
-        </div>
+        <p className="py-8 text-center text-xs text-destructive">Failed to load media.</p>
       ) : mediaList.length === 0 ? (
-        <div className="p-12 text-center text-xs text-muted-foreground space-y-2 bg-card rounded-xl border border-border">
-          <p className="font-semibold">No media assets found matching your criteria.</p>
-          <Button
-            size="sm"
+        <div className={`${adminPanel} px-3 py-10 text-center`}>
+          <p className="text-xs text-muted-foreground">No media found.</p>
+          <button
+            type="button"
             onClick={() => setIsUploadModalOpen(true)}
-            className="bg-[#027081] text-white text-xs"
+            className={`${adminBtnPrimary} mt-3`}
           >
-            Upload First Asset
-          </Button>
+            Upload files
+          </button>
         </div>
       ) : viewMode === "grid" ? (
-        /* GRID VIEW */
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {mediaList.map((item) => (
-            <div
-              key={item.id}
-              className="bg-card rounded-xl border border-border overflow-hidden group shadow-2xs hover:border-[#027081]/60 transition-all flex flex-col justify-between"
-            >
-              {/* Thumbnail Container */}
-              <div className="relative h-32 w-full bg-slate-100 dark:bg-slate-900 overflow-hidden flex items-center justify-center">
+            <div key={item.id} className={`${adminPanel} group overflow-hidden`}>
+              <div className="relative flex h-28 items-center justify-center border-b border-border bg-muted/20">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={item.url}
                   alt={item.altText || item.filename}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                  className="h-full w-full object-cover"
                 />
-
-                {/* Format Badge Overlay */}
-                <span className="absolute top-1.5 left-1.5 bg-black/70 text-white text-[8px] font-mono font-bold px-1.5 py-0.5 rounded uppercase">
-                  {item.mimeType.split("/")[1] || "IMG"}
-                </span>
-
-                {/* Size Badge */}
-                <span className="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[8px] font-mono px-1.5 py-0.5 rounded">
-                  {formatSize(item.size)}
-                </span>
-
-                {/* Hover Action Overlay */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-1">
-                  <Button
+                <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
+                  <button
                     type="button"
-                    size="sm"
-                    variant="ghost"
                     onClick={() => copyToClipboard(item.url)}
-                    className="h-8 w-8 p-0 rounded-lg bg-white/20 text-white hover:bg-white/40"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-sm bg-white/90 text-foreground hover:bg-white"
                     title="Copy URL"
                   >
                     <Copy className="h-3.5 w-3.5" />
-                  </Button>
-
-                  <Button
+                  </button>
+                  <button
                     type="button"
-                    size="sm"
-                    variant="ghost"
                     onClick={() => openInspector(item)}
-                    className="h-8 w-8 p-0 rounded-lg bg-white/20 text-white hover:bg-white/40"
-                    title="Edit Details"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-sm bg-white/90 text-foreground hover:bg-white"
+                    title="Edit"
                   >
                     <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-
-                  <Button
+                  </button>
+                  <button
                     type="button"
-                    size="sm"
-                    variant="ghost"
                     onClick={() => {
                       if (confirm(`Delete "${item.filename}"?`)) deleteMutation.mutate(item.id);
                     }}
-                    className="h-8 w-8 p-0 rounded-lg bg-rose-600/80 text-white hover:bg-rose-600"
-                    title="Delete File"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-sm bg-[#C3272E] text-white hover:bg-[#a82128]"
+                    title="Delete"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  </button>
                 </div>
+                <span className="absolute bottom-1 right-1 rounded-sm bg-black/70 px-1 py-0.5 text-[9px] font-mono text-white">
+                  {formatSize(item.size)}
+                </span>
               </div>
-
-              {/* Title & Metadata Details Footer */}
-              <div className="p-2.5 space-y-1">
-                <p className="font-semibold text-xs text-foreground truncate" title={item.filename}>
+              <div className="space-y-0.5 p-2">
+                <p className="truncate text-xs font-medium text-foreground" title={item.filename}>
                   {item.filename}
                 </p>
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
-                  <span>{item.folder}</span>
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span className={adminBadgeMuted}>{item.folder}</span>
                   <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
@@ -473,87 +390,78 @@ export default function AdminMediaPage() {
           ))}
         </div>
       ) : (
-        /* LIST VIEW DATA TABLE */
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
+        <div className={adminPanel}>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-border bg-slate-50/80 dark:bg-slate-900/60 uppercase text-[10px] tracking-wider text-muted-foreground font-bold">
+            <table className={adminTable}>
+              <thead className={adminTableHead}>
                 <tr>
-                  <th className="px-4 py-3">Asset</th>
-                  <th className="px-4 py-3">Filename</th>
-                  <th className="px-4 py-3">Folder</th>
-                  <th className="px-4 py-3">Size</th>
-                  <th className="px-4 py-3">Dimensions</th>
-                  <th className="px-4 py-3">Uploaded</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className={adminTableHeadCell}>Preview</th>
+                  <th className={adminTableHeadCell}>Filename</th>
+                  <th className={adminTableHeadCell}>Folder</th>
+                  <th className={adminTableHeadCell}>Size</th>
+                  <th className={adminTableHeadCell}>Dimensions</th>
+                  <th className={adminTableHeadCell}>Uploaded</th>
+                  <th className={`${adminTableHeadCell} text-right`}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/60">
+              <tbody>
                 {mediaList.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
-                    <td className="px-4 py-2.5">
+                  <tr key={item.id} className={adminTableRow}>
+                    <td className={adminTableCell}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={item.url}
                         alt={item.filename}
-                        className="h-10 w-10 object-cover rounded-lg border border-border shrink-0"
+                        className="h-8 w-8 border border-border object-cover"
                       />
                     </td>
-                    <td className="px-4 py-2.5">
-                      <p className="font-bold text-xs text-foreground truncate max-w-xs">{item.filename}</p>
-                      {item.altText && (
-                        <p className="text-[11px] text-muted-foreground truncate max-w-xs">
-                          ALT: {item.altText}
+                    <td className={adminTableCell}>
+                      <p className="max-w-xs truncate font-medium text-foreground">{item.filename}</p>
+                      {item.altText ? (
+                        <p className="max-w-xs truncate text-[11px] text-muted-foreground">
+                          {item.altText}
                         </p>
-                      )}
+                      ) : null}
                     </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap font-medium text-xs text-muted-foreground uppercase">
-                      {item.folder}
-                    </td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
+                    <td className={`${adminTableCell} text-muted-foreground`}>{item.folder}</td>
+                    <td className={`${adminTableCell} font-mono text-muted-foreground`}>
                       {formatSize(item.size)}
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
+                    <td className={`${adminTableCell} font-mono text-muted-foreground`}>
                       {item.width && item.height ? `${item.width}×${item.height}` : "—"}
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-muted-foreground">
+                    <td className={`${adminTableCell} text-muted-foreground`}>
                       {new Date(item.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-2.5 text-right space-x-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyToClipboard(item.url)}
-                        className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-foreground"
-                        title="Copy Public URL"
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                      </Button>
-
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openInspector(item)}
-                        className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-[#027081]"
-                        title="Edit Details"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          if (confirm(`Delete "${item.filename}"?`)) deleteMutation.mutate(item.id);
-                        }}
-                        className="h-8 w-8 p-0 rounded-lg text-rose-500 hover:bg-rose-500/10"
-                        title="Delete Asset"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                    <td className={`${adminTableCell} text-right`}>
+                      <div className="inline-flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(item.url)}
+                          className={adminBtnGhost}
+                          title="Copy URL"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openInspector(item)}
+                          className={adminBtnGhost}
+                          title="Edit"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm(`Delete "${item.filename}"?`)) deleteMutation.mutate(item.id);
+                          }}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#C3272E] hover:bg-muted"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -563,71 +471,59 @@ export default function AdminMediaPage() {
         </div>
       )}
 
-      {/* Pagination Footer */}
-      {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
+      {pagination && pagination.totalPages > 1 ? (
+        <div className="flex flex-col items-center justify-between gap-3 text-xs text-muted-foreground sm:flex-row">
           <div>
-            Showing <strong className="text-foreground">{(page - 1) * limit + 1}</strong>–
-            <strong className="text-foreground">{Math.min(page * limit, pagination.total)}</strong> of{" "}
-            <strong className="text-foreground">{pagination.total}</strong> assets
+            Showing {(page - 1) * limit + 1}–{Math.min(page * limit, pagination.total)} of{" "}
+            {pagination.total}
           </div>
-
-          <div className="flex items-center space-x-1.5">
-            <Button
-              variant="outline"
-              size="sm"
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="h-8 text-xs px-3 rounded-lg border-border"
+              className={adminBtnSecondary}
             >
-              <ChevronLeft className="h-3.5 w-3.5 mr-1" />
-              <span>Previous</span>
-            </Button>
-
-            <span className="px-2 font-bold text-foreground">
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Previous
+            </button>
+            <span className="font-medium text-foreground">
               {page} / {pagination.totalPages}
             </span>
-
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              type="button"
               disabled={page >= pagination.totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="h-8 text-xs px-3 rounded-lg border-border"
+              className={adminBtnSecondary}
             >
-              <span>Next</span>
-              <ChevronRight className="h-3.5 w-3.5 ml-1" />
-            </Button>
+              Next
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Interactive Upload Modal */}
-      {isUploadModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card w-full max-w-lg rounded-2xl border border-border shadow-2xl p-6 space-y-5 animate-in fade-in-50">
-            <div className="flex items-center justify-between border-b border-border/60 pb-3">
-              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-                <Upload className="h-4 w-4 text-[#027081]" />
-                <span>Upload Media Assets</span>
-              </h2>
+      {isUploadModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg border border-border bg-card shadow-sm">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <h2 className="text-sm font-semibold text-foreground">Upload media</h2>
               <button
                 type="button"
                 onClick={() => setIsUploadModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-lg"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              {/* Folder Selector */}
+            <div className="space-y-3 p-4">
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-muted-foreground uppercase">Target Folder</label>
+                <label className="text-xs font-medium text-foreground">Folder</label>
                 <select
                   value={uploadFolder}
                   onChange={(e) => setUploadFolder(e.target.value)}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs font-semibold text-foreground outline-none focus:border-[#027081]"
+                  className={adminSelect}
                 >
                   <option value="articles">Articles</option>
                   <option value="ads">Advertisements</option>
@@ -635,49 +531,40 @@ export default function AdminMediaPage() {
                 </select>
               </div>
 
-              {/* Alt Text & Caption */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-muted-foreground uppercase">ALT Text (SEO)</label>
+                  <label className="text-xs font-medium text-foreground">Alt text</label>
                   <input
                     type="text"
-                    placeholder="Image description..."
+                    placeholder="Image description"
                     value={uploadAltText}
                     onChange={(e) => setUploadAltText(e.target.value)}
-                    className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs outline-none focus:border-[#027081]"
+                    className={adminInput}
                   />
                 </div>
-
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-muted-foreground uppercase">Caption / Credit</label>
+                  <label className="text-xs font-medium text-foreground">Caption</label>
                   <input
                     type="text"
-                    placeholder="Photo credit..."
+                    placeholder="Photo credit"
                     value={uploadCaption}
                     onChange={(e) => setUploadCaption(e.target.value)}
-                    className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs outline-none focus:border-[#027081]"
+                    className={adminInput}
                   />
                 </div>
               </div>
 
-              {/* File Drop Area */}
-              <div className="border-2 border-dashed border-border hover:border-[#027081] rounded-xl p-6 text-center bg-muted/20 hover:bg-muted/40 transition-colors">
+              <div className="border border-dashed border-border bg-muted/20 p-6 text-center">
                 {isUploading ? (
-                  <div className="flex flex-col items-center justify-center space-y-2 text-[#027081]">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    <span className="text-xs font-semibold">Uploading to Cloudinary & DB...</span>
+                  <div className="flex flex-col items-center gap-2 text-[#0C4EA0]">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span className="text-xs">Uploading…</span>
                   </div>
                 ) : (
-                  <label className="cursor-pointer space-y-2 block">
-                    <div className="h-10 w-10 rounded-full bg-[#027081]/10 text-[#027081] flex items-center justify-center mx-auto">
-                      <Upload className="h-5 w-5" />
-                    </div>
-                    <p className="text-xs font-bold text-foreground">
-                      Click to choose files (Max 500 KB per image)
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Supports PNG, JPG, JPEG, WEBP, GIF
-                    </p>
+                  <label className="block cursor-pointer space-y-2">
+                    <Upload className="mx-auto h-5 w-5 text-muted-foreground" />
+                    <p className="text-xs font-medium text-foreground">Choose image files</p>
+                    <p className="text-[11px] text-muted-foreground">PNG, JPG, WEBP, GIF — max 500 KB</p>
                     <input
                       type="file"
                       accept="image/*"
@@ -690,43 +577,32 @@ export default function AdminMediaPage() {
               </div>
             </div>
 
-            <div className="flex justify-end border-t border-border/60 pt-3">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsUploadModalOpen(false)}
-                className="text-xs"
-              >
+            <div className="flex justify-end border-t border-border px-4 py-3">
+              <button type="button" onClick={() => setIsUploadModalOpen(false)} className={adminBtnSecondary}>
                 Cancel
-              </Button>
+              </button>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Asset Details Inspector Modal */}
-      {inspectingItem && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card w-full max-w-2xl rounded-2xl border border-border shadow-2xl p-6 space-y-5 animate-in fade-in-50 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-border/60 pb-3">
-              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-                <Info className="h-4 w-4 text-[#027081]" />
-                <span>Media Asset Details</span>
-              </h2>
+      {inspectingItem ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto border border-border bg-card shadow-sm">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <h2 className="text-sm font-semibold text-foreground">Media details</h2>
               <button
                 type="button"
                 onClick={() => setInspectingItem(null)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-lg"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {/* Full Image Preview */}
+            <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <div className="rounded-xl border border-border overflow-hidden bg-slate-100 dark:bg-slate-900 flex items-center justify-center h-52">
+                <div className="flex h-48 items-center justify-center border border-border bg-muted/20">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={inspectingItem.url}
@@ -734,78 +610,61 @@ export default function AdminMediaPage() {
                     className="max-h-full max-w-full object-contain"
                   />
                 </div>
-
-                <div className="flex items-center justify-between gap-2">
-                  <Button
+                <div className="flex gap-2">
+                  <button
                     type="button"
-                    size="sm"
-                    variant="outline"
                     onClick={() => copyToClipboard(inspectingItem.url)}
-                    className="w-full text-xs font-semibold h-8 rounded-lg flex items-center justify-center gap-1.5"
+                    className={`${adminBtnSecondary} flex-1`}
                   >
-                    <Copy className="h-3.5 w-3.5 text-[#027081]" />
-                    <span>Copy Public URL</span>
-                  </Button>
-
+                    <Copy className="h-3.5 w-3.5" />
+                    Copy URL
+                  </button>
                   <a
                     href={inspectingItem.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex"
+                    className={adminBtnGhost}
+                    title="Open"
                   >
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0 rounded-lg text-muted-foreground"
-                      title="Open full size image"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </Button>
+                    <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                 </div>
               </div>
 
-              {/* Editable Metadata Form */}
-              <form onSubmit={handleUpdateSubmit} className="space-y-3 text-xs">
+              <form onSubmit={handleUpdateSubmit} className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-muted-foreground uppercase">Filename</label>
+                  <label className="text-xs font-medium text-foreground">Filename</label>
                   <input
                     type="text"
                     value={editFilename}
                     onChange={(e) => setEditFilename(e.target.value)}
-                    className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs outline-none focus:border-[#027081]"
+                    className={adminInput}
                   />
                 </div>
-
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-muted-foreground uppercase">ALT Text (SEO)</label>
+                  <label className="text-xs font-medium text-foreground">Alt text</label>
                   <input
                     type="text"
-                    placeholder="Describe image for search engines..."
                     value={editAltText}
                     onChange={(e) => setEditAltText(e.target.value)}
-                    className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs outline-none focus:border-[#027081]"
+                    className={adminInput}
                   />
                 </div>
-
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-muted-foreground uppercase">Caption / Credit</label>
+                  <label className="text-xs font-medium text-foreground">Caption</label>
                   <input
                     type="text"
-                    placeholder="Photo credit..."
                     value={editCaption}
                     onChange={(e) => setEditCaption(e.target.value)}
-                    className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs outline-none focus:border-[#027081]"
+                    className={adminInput}
                   />
                 </div>
-
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-muted-foreground uppercase">Folder</label>
+                  <label className="text-xs font-medium text-foreground">Folder</label>
                   <select
                     value={editFolder}
                     onChange={(e) => setEditFolder(e.target.value)}
-                    className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs font-semibold outline-none focus:border-[#027081]"
+                    className={adminSelect}
                   >
                     <option value="articles">Articles</option>
                     <option value="ads">Advertisements</option>
@@ -813,41 +672,37 @@ export default function AdminMediaPage() {
                   </select>
                 </div>
 
-                <div className="pt-2 text-[11px] text-muted-foreground space-y-1 border-t border-border/60">
-                  <p><strong>Size:</strong> {formatSize(inspectingItem.size)}</p>
-                  <p><strong>Type:</strong> {inspectingItem.mimeType}</p>
-                  <p><strong>Uploaded:</strong> {new Date(inspectingItem.createdAt).toLocaleString()}</p>
+                <div className="space-y-1 border-t border-border pt-2 text-[11px] text-muted-foreground">
+                  <p>Size: {formatSize(inspectingItem.size)}</p>
+                  <p>Type: {inspectingItem.mimeType}</p>
+                  <p>Uploaded: {new Date(inspectingItem.createdAt).toLocaleString()}</p>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-border/60 pt-3">
-                  <Button
+                <div className="flex items-center justify-between border-t border-border pt-3">
+                  <button
                     type="button"
-                    size="sm"
-                    variant="destructive"
                     onClick={() => {
                       if (confirm(`Delete "${inspectingItem.filename}"?`)) {
                         deleteMutation.mutate(inspectingItem.id);
                       }
                     }}
-                    className="h-8 text-xs px-2.5 bg-rose-600 text-white"
+                    className="inline-flex h-7 items-center px-2 text-xs font-medium text-[#C3272E] hover:underline"
                   >
-                    Delete Asset
-                  </Button>
-
-                  <Button
+                    Delete
+                  </button>
+                  <button
                     type="submit"
-                    size="sm"
+                    className={adminBtnPrimary}
                     disabled={updateMutation.isPending}
-                    className="bg-[#027081] text-white text-xs font-semibold px-4 h-8 rounded-lg"
                   >
-                    Save Changes
-                  </Button>
+                    Save changes
+                  </button>
                 </div>
               </form>
             </div>
           </div>
         </div>
-      )}
-    </div>
+      ) : null}
+    </AdminPageShell>
   );
 }

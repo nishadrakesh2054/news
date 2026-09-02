@@ -4,13 +4,19 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
+import { AdminDataTable } from "@/components/admin/content";
+import {
+  adminBtnPrimary,
+  adminInput,
+  adminPanel,
+} from "@/constants/admin-layout";
 import type { LucideIcon } from "lucide-react";
 
 type Column<T> = {
   key: keyof T | string;
   label: string;
+  align?: "left" | "right";
   render?: (row: T) => React.ReactNode;
 };
 
@@ -28,7 +34,6 @@ type AdminResourcePageProps<T extends { id: string }> = {
 
 export function AdminResourcePage<T extends { id: string }>({
   title,
-  icon,
   description,
   queryKey,
   apiPath,
@@ -87,84 +92,89 @@ export function AdminResourcePage<T extends { id: string }>({
   return (
     <AdminPageShell
       title={title}
-      icon={icon}
       description={description}
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
       actions={
         createFields.length > 0 ? (
-          <Button size="sm" className="h-8 text-xs" onClick={() => setShowForm((v) => !v)}>
-            <Plus className="h-3.5 w-3.5 mr-1" />
+          <button
+            type="button"
+            className={adminBtnPrimary}
+            onClick={() => setShowForm((v) => !v)}
+          >
+            <Plus className="h-3.5 w-3.5" />
             Add
-          </Button>
+          </button>
         ) : undefined
       }
     >
       {showForm && createFields.length > 0 ? (
-        <div className="rounded-xl border bg-card p-4 grid gap-3 sm:grid-cols-2">
+        <div className={`${adminPanel} grid gap-3 p-3 sm:grid-cols-2`}>
           {createFields.map((f) => (
             <div key={f.name} className="space-y-1">
-              <label className="text-xs font-medium">{f.label}</label>
+              <label className="text-xs font-medium text-foreground">{f.label}</label>
               <input
-                className="w-full h-9 rounded-md border px-3 text-sm"
+                className={adminInput}
                 placeholder={f.placeholder}
                 value={formValues[f.name] || ""}
                 onChange={(e) => setFormValues((prev) => ({ ...prev, [f.name]: e.target.value }))}
               />
             </div>
           ))}
-          <div className="sm:col-span-2 flex gap-2">
-            <Button size="sm" onClick={() => createMutation.mutate(buildCreatePayload(formValues))}>
+          <div className="flex gap-2 sm:col-span-2">
+            <button
+              type="button"
+              className={adminBtnPrimary}
+              onClick={() => createMutation.mutate(buildCreatePayload(formValues))}
+            >
               Save
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-7 items-center rounded-sm border border-border bg-card px-3 text-xs font-medium hover:bg-muted"
+              onClick={() => setShowForm(false)}
+            >
               Cancel
-            </Button>
+            </button>
           </div>
         </div>
       ) : null}
 
-      <div className="rounded-xl border bg-card overflow-hidden">
-        {isLoading ? (
-          <p className="p-6 text-sm text-muted-foreground">Loading...</p>
-        ) : isError ? (
-          <p className="p-6 text-sm text-destructive">{error?.message ?? "Failed to load data."}</p>
-        ) : data.length === 0 ? (
-          <p className="p-6 text-sm text-muted-foreground">{emptyMessage}</p>
+      <div className={adminPanel}>
+        {isError ? (
+          <p className="px-3 py-6 text-xs text-destructive">
+            {error?.message ?? "Failed to load data."}
+          </p>
         ) : (
-          <table className="w-full text-left text-xs">
-            <thead className="bg-muted/50 text-[10px] uppercase tracking-wider text-muted-foreground">
-              <tr>
-                {columns.map((c) => (
-                  <th key={String(c.key)} className="px-4 py-3 font-bold">
-                    {c.label}
-                  </th>
-                ))}
-                <th className="px-4 py-3 font-bold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {data.map((row) => (
-                <tr key={row.id} className="hover:bg-muted/30">
-                  {columns.map((c) => (
-                    <td key={String(c.key)} className="px-4 py-3">
-                      {c.render ? c.render(row) : String((row as Record<string, unknown>)[c.key as string] ?? "")}
-                    </td>
-                  ))}
-                  <td className="px-4 py-3 text-right">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-destructive"
-                      onClick={() => deleteMutation.mutate(row.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <AdminDataTable
+            loading={isLoading}
+            rows={data}
+            rowKey={(row) => row.id}
+            emptyMessage={emptyMessage}
+            columns={[
+              ...columns.map((c) => ({
+                key: String(c.key),
+                label: c.label,
+                align: c.align,
+                render: c.render,
+              })),
+              {
+                key: "actions",
+                label: "Actions",
+                align: "right" as const,
+                render: (row: T) => (
+                  <button
+                    type="button"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-destructive hover:bg-muted"
+                    onClick={() => deleteMutation.mutate(row.id)}
+                    title="Delete"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                ),
+              },
+            ]}
+          />
         )}
       </div>
     </AdminPageShell>
