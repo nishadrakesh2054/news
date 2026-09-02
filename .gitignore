@@ -30,8 +30,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-# .env*
+# env files — never commit secrets
+.env
+.env.*
+!.env.example
 
 # vercel
 .vercel
@@ -50,3 +52,6 @@ skills-lock.json
 AGENTS.md
 CLAUDE.md
 .neon
+
+# Sentry Config File
+.env.sentry-build-plugin

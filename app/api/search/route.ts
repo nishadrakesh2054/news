@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
-import { articleListSelect, mapArticleListItem } from "@/lib/article-selects";
+import { mapArticleListItem } from "@/lib/article-selects";
 import { parseSearchPagination } from "@/lib/search";
 import { searchPublishedArticles } from "@/lib/article-search";
 

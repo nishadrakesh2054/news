@@ -10,14 +10,14 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:push": "prisma db push",
-    "db:search-indexes": "tsx scripts/apply-search-indexes.ts",
+    "db:search-indexes": "prisma db execute --file prisma/sql/performance_indexes.sql --schema prisma/schema",
     "postinstall": "prisma generate"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
     "@neondatabase/serverless": "^1.1.0",
     "@prisma/client": "^6.19.3",
-    "@sentry/nextjs": "^10.73.0",
+    "@sentry/nextjs": "^10",
     "@tanstack/react-query": "^5.101.4",
     "@tiptap/extension-image": "^3.30.2",
     "@tiptap/extension-link": "^3.30.2",

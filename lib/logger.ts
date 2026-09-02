@@ -43,7 +43,6 @@ async function reportSentryError(message: string, meta?: LogMeta) {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var __sentryInitialized: boolean | undefined;
 }
 
