@@ -11,8 +11,7 @@ import { CommentsSection } from "@/components/web/CommentsSection";
 import { AudioNewsPlayer } from "@/components/portal/AudioNewsPlayer";
 import { ArticleViewTracker } from "@/components/portal/ArticleViewTracker";
 import { AdUnit } from "@/components/portal/AdUnit";
-import { absoluteUrl } from "@/lib/site-url";
-import { SITE_CONFIG } from "@/constants/site";
+import { SITE_CONFIG, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -28,16 +27,16 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 
   if (!article) {
     return {
-      title: "समाचार भेटिएन | नेपाल खबर",
+      title: `समाचार भेटिएन ${SITE_TITLE_SUFFIX_NP}`,
     };
   }
 
   const title = article.metaTitle || article.titleNp || article.title;
-  const description = article.metaDescription || article.excerpt || "नेपाल खबर डटकम";
+  const description = article.metaDescription || article.excerpt || SITE_CONFIG.domain;
   const image = article.ogImage || article.coverImage || "/favicon.ico";
 
   return {
-    title: `${title} | नेपाल खबर`,
+    title: `${title} ${SITE_TITLE_SUFFIX_NP}`,
     description,
     keywords: article.keywords ? article.keywords.split(",") : undefined,
     openGraph: {
@@ -245,7 +244,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                     <h2 className="text-lg font-extrabold text-foreground font-serif">
                       {article.author.name || "सम्पादकीय टोली"}
                     </h2>
-                    <p className="text-xs text-muted-foreground">नेपाल खबर समाचार टोली</p>
+                    <p className="text-xs text-muted-foreground">{SITE_CONFIG.nameNp} समाचार टोली</p>
                   </div>
                 </div>
 

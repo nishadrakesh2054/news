@@ -1,5 +1,5 @@
 self.addEventListener("push", (event) => {
-  let data = { title: "नेपाल खबर", body: "नयाँ समाचार", url: "/" };
+  let data = { title: "Echo Manch", body: "नयाँ समाचार", url: "/" };
   try {
     if (event.data) {
       data = { ...data, ...event.data.json() };

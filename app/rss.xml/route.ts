@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
+import { getSiteUrl } from "@/lib/site-url";
+import { SITE_CONFIG } from "@/constants/site";
 
 export async function GET() {
   try {
-    const siteUrl = process.env.NEXTAUTH_URL || "https://nepalnews.com";
+    const siteUrl = getSiteUrl();
 
     const articles = await prisma.article.findMany({
       where: { status: ArticleStatus.PUBLISHED },
@@ -19,9 +21,9 @@ export async function GET() {
     const xml = `<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
-  <title>नेपाल न्युज पोर्टल्स (Nepal News Portal)</title>
+  <title>${SITE_CONFIG.name} — Nepali News RSS</title>
   <link>${siteUrl}</link>
-  <description>नेपाल र विश्वभरका मुख्य ताजा तथा निष्पक्ष समाचारहरू</description>
+  <description>${SITE_CONFIG.description}</description>
   <language>ne-NP</language>
   <atom:link href="${siteUrl}/rss.xml" rel="self" type="application/rss+xml" />
 ${articles

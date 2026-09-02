@@ -6,6 +6,7 @@ import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { validateNewsletterSubscribe } from "@/lib/validations/newsletter";
 import { sendEmail } from "@/lib/mail";
 import { getSiteUrl } from "@/lib/site-url";
+import { SITE_CONFIG } from "@/constants/site";
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,13 +57,13 @@ export async function POST(request: NextRequest) {
     const unsubscribeUrl = `${siteUrl}/newsletter/unsubscribe?token=${subscriber.unsubscribeToken}`;
     await sendEmail({
       to: subscriber.email,
-      subject: "नेपाल खबर न्यूजलेटरमा स्वागत छ",
+      subject: `${SITE_CONFIG.nameNp} न्यूजलेटरमा स्वागत छ`,
       html: `
-        <p>धन्यवाद! तपाईं नेपाल खबर न्यूजलेटरमा सदस्य भएको छ।</p>
+        <p>धन्यवाद! तपाईं ${SITE_CONFIG.nameNp} न्यूजलेटरमा सदस्य भएको छ।</p>
         <p><a href="${siteUrl}">साइट हेर्नुहोस्</a></p>
         <p style="font-size:12px;color:#666"><a href="${unsubscribeUrl}">Unsubscribe</a></p>
       `,
-      text: `Thank you for subscribing to Nepal Khabar newsletter.\nUnsubscribe: ${unsubscribeUrl}`,
+      text: `Thank you for subscribing to ${SITE_CONFIG.name} newsletter.\nUnsubscribe: ${unsubscribeUrl}`,
     });
 
     return apiSuccess(

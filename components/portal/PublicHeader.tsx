@@ -8,6 +8,7 @@ import { getFormattedNepaliDate } from "@/lib/nepaliDate";
 import { useRouter, useSearchParams } from "next/navigation";
 import { NepaliUtilityBar } from "./NepaliUtilityBar";
 import { AdUnit, type AdUnitData } from "@/components/portal/AdUnit";
+import { SITE_CONFIG } from "@/constants/site";
 
 interface AdItem extends AdUnitData {
   slot?: string;
@@ -113,7 +114,7 @@ export function PublicHeader() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/newslogo.png"
-            alt="नेपाल खबर (Nepal News)"
+            alt={`${SITE_CONFIG.nameNp} (${SITE_CONFIG.name})`}
             className="h-14 sm:h-16 md:h-20 w-auto object-contain rounded-none group-hover:opacity-95 transition-opacity py-1"
           />
         </Link>

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
 import { ArrowLeft, Mail, Newspaper, UserRound } from "lucide-react";
 import { absoluteUrl } from "@/lib/site-url";
+import { SITE_CONFIG, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
 
 interface AuthorProfilePageProps {
   params: Promise<{ id: string }>;
@@ -18,19 +19,19 @@ export async function generateMetadata({ params }: AuthorProfilePageProps): Prom
   });
 
   if (!author) {
-    return { title: "लेखक भेटिएन | नेपाल खबर" };
+    return { title: `लेखक भेटिएन ${SITE_TITLE_SUFFIX_NP}` };
   }
 
   const name = author.name || "लेखक";
   return {
     title: `${name} | लेखक प्रोफाइल`,
-    description: `${name} द्वारा लेखिएका समाचार, रिपोर्ट, विश्लेषण र विशेष सामग्री | नेपाल खबर`,
+    description: `${name} द्वारा लेखिएका समाचार, रिपोर्ट, विश्लेषण र विशेष सामग्री | ${SITE_CONFIG.nameNp}`,
     alternates: {
       canonical: `/author/${id}`,
     },
     openGraph: {
       title: `${name} | लेखक प्रोफाइल`,
-      description: `${name} द्वारा लेखिएका समाचार, रिपोर्ट, विश्लेषण र विशेष सामग्री | नेपाल खबर`,
+      description: `${name} द्वारा लेखिएका समाचार, रिपोर्ट, विश्लेषण र विशेष सामग्री | ${SITE_CONFIG.nameNp}`,
       url: absoluteUrl(`/author/${id}`),
       type: "profile",
       images: author.image ? [{ url: author.image, width: 640, height: 640, alt: name }] : undefined,
@@ -38,7 +39,7 @@ export async function generateMetadata({ params }: AuthorProfilePageProps): Prom
     twitter: {
       card: "summary_large_image",
       title: `${name} | लेखक प्रोफाइल`,
-      description: `${name} द्वारा लेखिएका समाचार, रिपोर्ट, विश्लेषण र विशेष सामग्री | नेपाल खबर`,
+      description: `${name} द्वारा लेखिएका समाचार, रिपोर्ट, विश्लेषण र विशेष सामग्री | ${SITE_CONFIG.nameNp}`,
       images: author.image ? [author.image] : undefined,
     },
   };

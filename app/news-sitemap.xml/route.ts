@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
+import { getSiteUrl } from "@/lib/site-url";
 
 export async function GET() {
   try {
-    const siteUrl = process.env.NEXTAUTH_URL || "https://nepalnews.com";
+    const siteUrl = getSiteUrl();
 
     // Google News sitemaps should contain articles published in the last 48 hours
     const twoDaysAgo = new Date();

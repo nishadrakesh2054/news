@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getFormattedNepaliDate } from "@/lib/nepaliDate";
 import { Newspaper, Calendar, Download, ExternalLink, ArrowLeft } from "lucide-react";
+import { SITE_CONFIG } from "@/constants/site";
 
 import { EPaper } from "@prisma/client";
 
@@ -39,7 +40,7 @@ export default async function PublicEPaperPage() {
               <span>इ-पत्रिका छापा संस्करण (Daily EPaper Edition)</span>
             </h1>
             <p className="text-xs text-muted-foreground mt-1">
-              नेपाल खबरको दैनिक प्रकाशित छापा पत्रिकाको डिजिटल PDF संस्करण।
+              {SITE_CONFIG.nameNp} को दैनिक प्रकाशित छापा पत्रिकाको डिजिटल PDF संस्करण।
             </p>
           </div>
 

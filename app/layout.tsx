@@ -61,8 +61,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    site: "@nepalkhabar",
-    creator: "@nepalkhabar",
+    site: SITE_CONFIG.twitter,
+    creator: SITE_CONFIG.twitter,
     title: SITE_CONFIG.title,
     description: SITE_CONFIG.description,
     images: ["/logo/logo.png"],

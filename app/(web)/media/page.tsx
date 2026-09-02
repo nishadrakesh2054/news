@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
 import { ArrowLeft, Camera, PlayCircle } from "lucide-react";
+import { SITE_CONFIG } from "@/constants/site";
 
 export const revalidate = 60;
 
@@ -40,7 +41,7 @@ export default async function MediaGalleryPage() {
             <Camera className="h-8 w-8" />
             <div>
               <h1 className="text-3xl font-extrabold text-foreground font-serif">मिडिया र फोटो ग्यालेरी</h1>
-              <p className="text-xs text-muted-foreground">Nepal News multimedia coverage and visual stories</p>
+              <p className="text-xs text-muted-foreground">{SITE_CONFIG.name} multimedia coverage and visual stories</p>
             </div>
           </div>
         </section>

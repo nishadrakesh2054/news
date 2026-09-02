@@ -4,7 +4,7 @@ export type LanguageEditionType = "ne" | "en";
  * Detects the active Language Edition ("ne" for Nepali, "en" for English)
  * Checks:
  * 1. searchParams `lang` (e.g. ?lang=en or ?lang=ne)
- * 2. Host header / domain name (e.g. english.nepalkhabar.com or en.nepalkhabar.com)
+ * 2. Host header / domain name (e.g. english.echomanch.com or en.echomanch.com)
  * 3. Path prefix (e.g. /en/...)
  */
 export function resolveLanguageEdition(

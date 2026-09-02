@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Mail, Phone, MapPin, ShieldCheck } from "lucide-react";
 import { NewsletterSignup } from "./NewsletterSignup";
 import { PushOptIn } from "./PushOptIn";
+import { SITE_CONFIG } from "@/constants/site";
 
 export function PublicFooter() {
   return (
@@ -15,7 +16,7 @@ export function PublicFooter() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/newslogo.png"
-              alt="नेपाल खबर (Nepal News)"
+              alt={`${SITE_CONFIG.nameNp} (${SITE_CONFIG.name})`}
               className="h-12 w-auto object-contain brightness-0 invert opacity-90 hover:opacity-100 transition-opacity rounded-none"
             />
           </Link>
@@ -65,7 +66,7 @@ export function PublicFooter() {
             </li>
             <li className="flex items-center space-x-2">
               <Mail className="h-4 w-4 text-[#027081] shrink-0" />
-              <span>news@nepalkhabar.com</span>
+              <span>{SITE_CONFIG.email}</span>
             </li>
           </ul>
         </div>
@@ -82,7 +83,7 @@ export function PublicFooter() {
 
       {/* Bottom Copyright Bar */}
       <div className="max-w-[1480px] mx-auto px-4 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
-        <p>© २०८३ नेपाल खबर डटकम। सर्वाधिकार सुरक्षित।</p>
+        <p>© २०८३ {SITE_CONFIG.domain}। सर्वाधिकार सुरक्षित।</p>
         <div className="flex flex-wrap items-center space-x-4">
           <Link href="/editorial-team" className="hover:underline text-amber-400 font-bold">सम्पादकीय टोली तथा दर्ता</Link>
           <Link href="/epaper" className="hover:underline text-sky-400 font-bold">इ-पत्रिका छापा संस्करण</Link>

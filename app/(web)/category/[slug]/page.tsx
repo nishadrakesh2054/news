@@ -6,7 +6,7 @@ import { ArticleStatus } from "@prisma/client";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
 import { FolderTree, ChevronRight } from "lucide-react";
 import { absoluteUrl } from "@/lib/site-url";
-import { SITE_CONFIG } from "@/constants/site";
+import { SITE_CONFIG, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -19,26 +19,26 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   });
 
   if (!category) {
-    return { title: "श्रेणी भेटिएन | नेपाल खबर" };
+    return { title: `श्रेणी भेटिएन ${SITE_TITLE_SUFFIX_NP}` };
   }
 
   const name = category.nameNp || category.name;
   return {
     title: `${name} समाचार`,
-    description: `${name} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | नेपाल खबर`,
+    description: `${name} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | ${SITE_CONFIG.nameNp}`,
     alternates: {
       canonical: `/category/${category.slug}`,
     },
     openGraph: {
-      title: `${name} समाचार | नेपाल खबर`,
-      description: `${name} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | नेपाल खबर`,
+      title: `${name} समाचार | ${SITE_CONFIG.nameNp}`,
+      description: `${name} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | ${SITE_CONFIG.nameNp}`,
       url: absoluteUrl(`/category/${category.slug}`),
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: `${name} समाचार | नेपाल खबर`,
-      description: `${name} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | नेपाल खबर`,
+      title: `${name} समाचार | ${SITE_CONFIG.nameNp}`,
+      description: `${name} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | ${SITE_CONFIG.nameNp}`,
     },
   };
 }
@@ -97,7 +97,7 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     name: `${categoryName} समाचार`,
-    description: `${categoryName} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | नेपाल खबर`,
+    description: `${categoryName} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | ${SITE_CONFIG.nameNp}`,
     url: absoluteUrl(`/category/${category.slug}`),
     isPartOf: { "@type": "WebSite", name: SITE_CONFIG.name, url: absoluteUrl("/") },
   };

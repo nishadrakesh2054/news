@@ -21,12 +21,12 @@ Required for production:
 |----------|---------|
 | `DATABASE_URL` | Neon pooler URL |
 | `NEXTAUTH_SECRET` | Session signing (long random string) |
-| `NEXTAUTH_URL` | Production URL |
-| `NEXT_PUBLIC_SITE_URL` | Public site URL (emails, SEO, sitemaps) |
+| `NEXTAUTH_URL` | `https://echomanch.com` |
+| `NEXT_PUBLIC_SITE_URL` | `https://echomanch.com` |
 | `CLOUDINARY_*` | Media uploads |
 | `CRON_SECRET` | Protects `/api/cron/*` |
 | `RESEND_API_KEY` | Password reset + newsletter emails |
-| `MAIL_FROM_EMAIL` | Sender address |
+| `MAIL_FROM_EMAIL` | `info@echomanch.com` |
 | `SENTRY_DSN` | Error monitoring (optional) |
 
 ## Deployment checklist
@@ -54,7 +54,7 @@ On Vercel, set `CRON_SECRET` in project env. Vercel automatically adds the Beare
 Manual test:
 
 ```bash
-curl -H "Authorization: Bearer $CRON_SECRET" https://your-domain.com/api/cron/publish-scheduled
+curl -H "Authorization: Bearer $CRON_SECRET" https://echomanch.com/api/cron/publish-scheduled
 ```
 
 ## Password reset

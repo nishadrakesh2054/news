@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Users, ShieldCheck, FileCheck, ArrowLeft, Mail, Phone } from "lucide-react";
+import { SITE_CONFIG } from "@/constants/site";
 
 export default function EditorialTeamPage() {
   return (
@@ -91,7 +92,7 @@ export default function EditorialTeamPage() {
                 <Phone className="h-3.5 w-3.5 text-[#027081]" /> +९७७-०१-४XXXXXX
               </span>
               <span className="flex items-center gap-1">
-                <Mail className="h-3.5 w-3.5 text-[#027081]" /> info@nepalkhabar.com
+                <Mail className="h-3.5 w-3.5 text-[#027081]" /> {SITE_CONFIG.email}
               </span>
             </div>
           </div>

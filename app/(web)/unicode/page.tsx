@@ -94,7 +94,7 @@ export default function UnicodeConverterPage() {
             <label className="text-xs font-bold text-foreground flex items-center justify-between">
               <span>अंग्रेजी (Romanized Text Input):</span>
               <span className="text-[10px] text-muted-foreground font-mono">
-                उदा: nepal khabar
+                उदा: echo manch
               </span>
             </label>
             <textarea
