@@ -16,9 +16,10 @@ export function AnalyticsSectionNav() {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {NAV_ITEMS.map((item) => {
-        const active = item.exact
-          ? pathname === item.href
-          : pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const active =
+          "exact" in item && item.exact
+            ? pathname === item.href
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
         return (
           <Link

@@ -8,5 +8,6 @@
   "tailwindcss.lint.invalidApply": "ignore",
   "tailwindcss.lint.invalidScreen": "ignore",
   "tailwindcss.lint.invalidVariant": "ignore",
-  "tailwindcss.lint.recommendedVariantOrder": "warning"
+  "tailwindcss.lint.recommendedVariantOrder": "warning",
+  "tailwindcss.lint.suggestCanonicalClasses": "ignore"
 }

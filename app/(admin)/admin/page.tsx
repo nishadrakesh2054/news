@@ -20,6 +20,13 @@ const SHORTCUTS = [
   { href: "/admin/analytics", label: "Analytics" },
 ] as const;
 
+interface TopArticleItem {
+  id: string;
+  title: string;
+  views: number;
+  category?: { name: string };
+}
+
 export default function AdminDashboardPage() {
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin-dashboard"],
@@ -35,7 +42,7 @@ export default function AdminDashboardPage() {
   const totalArticles = data?.totalArticles ?? 0;
   const breakingCount = data?.breakingCount ?? 0;
   const totalViews = data?.totalViews ?? 0;
-  const topArticles = data?.topArticles ?? [];
+  const topArticles: TopArticleItem[] = data?.topArticles ?? [];
 
   return (
     <AdminPageShell
@@ -99,7 +106,7 @@ export default function AdminDashboardPage() {
           </Link>
         }
       >
-        <AdminDataTable
+        <AdminDataTable<TopArticleItem>
           loading={isLoading}
           rows={topArticles}
           rowKey={(row) => row.id}

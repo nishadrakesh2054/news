@@ -192,7 +192,7 @@ export default function AdminUtilitiesPage() {
         ))}
       </div>
 
-      {showSearch || section === "rashifal" ? (
+      {section !== "gold" ? (
         <div className={adminToolbarRow}>
           {showSearch ? (
             <div className={adminToolbarSearch}>
