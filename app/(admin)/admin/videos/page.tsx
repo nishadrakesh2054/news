@@ -1,10 +1,19 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { Film, HardDrive, Video } from "lucide-react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Film, HardDrive, Link2, Video } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminDataTable, AdminPanel, AdminStatsStrip } from "@/components/admin/content";
-import { adminBtnGhost } from "@/constants/admin-layout";
+import {
+  adminBtnGhost,
+  adminBtnPrimary,
+  adminInput,
+  adminPanel,
+  adminPanelHeader,
+  adminPanelTitle,
+} from "@/constants/admin-layout";
 
 type VideoItem = {
   id: string;
@@ -12,6 +21,8 @@ type VideoItem = {
   url: string;
   mimeType: string;
   size: number;
+  caption: string | null;
+  altText: string | null;
   uploader?: { name: string };
 };
 
@@ -22,6 +33,10 @@ function formatBytes(bytes: number) {
 }
 
 export default function AdminVideosPage() {
+  const queryClient = useQueryClient();
+  const [title, setTitle] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+
   const { data, isLoading, refetch, isFetching } = useQuery<{ items: VideoItem[]; total: number }>({
     queryKey: ["admin-videos"],
     queryFn: async () => {
@@ -32,58 +47,98 @@ export default function AdminVideosPage() {
     },
   });
 
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/videos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, youtubeUrl }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to add video");
+      return json.data;
+    },
+    onSuccess: () => {
+      toast.success("YouTube video added");
+      setTitle("");
+      setYoutubeUrl("");
+      queryClient.invalidateQueries({ queryKey: ["admin-videos"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const items = data?.items ?? [];
   const totalSize = items.reduce((sum, item) => sum + (item.size || 0), 0);
-  const mp4Count = items.filter((item) => item.mimeType.includes("mp4")).length;
+  const youtubeCount = items.filter((item) => item.mimeType === "video/youtube").length;
 
   return (
     <AdminPageShell
       title="Videos"
-      description="Video media from the library"
+      description="Uploaded files and YouTube embeds"
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
     >
       <AdminStatsStrip
         loading={isLoading}
         stats={[
-          {
-            label: "Total videos",
-            value: data?.total ?? items.length,
-            hint: "In media library",
-            icon: Video,
-          },
-          {
-            label: "MP4 files",
-            value: mp4Count,
-            hint: "Standard web format",
-            icon: Film,
-          },
-          {
-            label: "Storage used",
-            value: formatBytes(totalSize),
-            hint: "Current page set",
-            icon: HardDrive,
-          },
-          {
-            label: "Upload via",
-            value: "Media",
-            hint: "Use Media library",
-            icon: Video,
-          },
+          { label: "Total videos", value: data?.total ?? items.length, icon: Video },
+          { label: "YouTube", value: youtubeCount, icon: Link2 },
+          { label: "Uploaded files", value: items.length - youtubeCount, icon: Film },
+          { label: "Storage used", value: formatBytes(totalSize), icon: HardDrive },
         ]}
       />
+
+      <section className={adminPanel}>
+        <div className={adminPanelHeader}>
+          <h2 className={adminPanelTitle}>Add YouTube video</h2>
+        </div>
+        <div className="grid gap-3 p-3 sm:grid-cols-[1fr_1fr_auto]">
+          <input
+            type="text"
+            placeholder="Video title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className={adminInput}
+          />
+          <input
+            type="url"
+            placeholder="https://youtube.com/watch?v=…"
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            className={`${adminInput} font-mono`}
+          />
+          <button
+            type="button"
+            onClick={() => addMutation.mutate()}
+            disabled={!title.trim() || !youtubeUrl.trim() || addMutation.isPending}
+            className={adminBtnPrimary}
+          >
+            Add video
+          </button>
+        </div>
+        <p className="border-t border-border/70 px-3 py-2 text-[10px] text-muted-foreground">
+          Upload MP4 files via Media library. Paste YouTube links here for embed videos.
+        </p>
+      </section>
 
       <AdminPanel title="Video library">
         <AdminDataTable
           loading={isLoading}
           rows={items}
           rowKey={(row) => row.id}
-          emptyMessage="No videos yet. Upload via Media library."
+          emptyMessage="No videos yet. Add a YouTube link or upload via Media library."
           columns={[
             {
               key: "filename",
-              label: "File",
-              render: (row) => <span className="font-medium">{row.filename}</span>,
+              label: "Title",
+              render: (row) => (
+                <div>
+                  <span className="font-medium">{row.filename}</span>
+                  {row.mimeType === "video/youtube" ? (
+                    <p className="text-[10px] text-[#0C4EA0]">YouTube embed</p>
+                  ) : null}
+                </div>
+              ),
             },
             {
               key: "mimeType",
@@ -94,7 +149,7 @@ export default function AdminVideosPage() {
               key: "size",
               label: "Size",
               cellClassName: "font-mono tabular-nums text-muted-foreground",
-              render: (row) => formatBytes(row.size),
+              render: (row) => (row.mimeType === "video/youtube" ? "—" : formatBytes(row.size)),
             },
             {
               key: "uploader",
@@ -106,12 +161,7 @@ export default function AdminVideosPage() {
               label: "Link",
               align: "right",
               render: (row) => (
-                <a
-                  href={row.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={adminBtnGhost}
-                >
+                <a href={row.url} target="_blank" rel="noreferrer" className={adminBtnGhost}>
                   Open
                 </a>
               ),

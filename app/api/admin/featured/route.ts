@@ -6,9 +6,12 @@ import { writeAuditLog } from "@/lib/audit-log";
 
 export async function GET() {
   try {
+    const auth = await requireEditor();
+    if (auth.error) return auth.error;
+
     const articles = await prisma.article.findMany({
       where: { isFeatured: true },
-      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+      orderBy: [{ featuredOrder: "asc" }, { publishedAt: "desc" }, { createdAt: "desc" }],
       select: {
         id: true,
         title: true,
@@ -35,11 +38,20 @@ export async function POST(request: NextRequest) {
     const { articleId, isFeatured, featuredOrder } = await request.json();
     if (!articleId) return apiError("articleId is required");
 
+    let order = typeof featuredOrder === "number" ? featuredOrder : null;
+    if (isFeatured !== false && order === null) {
+      const maxOrder = await prisma.article.aggregate({
+        where: { isFeatured: true },
+        _max: { featuredOrder: true },
+      });
+      order = (maxOrder._max.featuredOrder ?? 0) + 1;
+    }
+
     const article = await prisma.article.update({
       where: { id: articleId },
       data: {
         isFeatured: isFeatured ?? true,
-        featuredOrder: typeof featuredOrder === "number" ? featuredOrder : null,
+        featuredOrder: isFeatured === false ? null : order,
       },
     });
 

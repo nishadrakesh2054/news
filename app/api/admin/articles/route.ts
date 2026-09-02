@@ -1,17 +1,25 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Role, ArticleStatus, ArticleType, Prisma } from "@prisma/client";
+import { ArticleStatus, ArticleType, Prisma } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
+import { requireStaff } from "@/lib/admin-auth";
+import { validateArticleCreate } from "@/lib/validations/article";
+import { resolvePublishedAt } from "@/lib/article-scheduling";
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireStaff();
+    if (auth.error) return auth.error;
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") as ArticleStatus | null;
     const type = searchParams.get("type") as ArticleType | null;
     const categoryId = searchParams.get("categoryId") || "";
+    const tagId = searchParams.get("tagId") || "";
+    const province = searchParams.get("province") || "";
+    const district = searchParams.get("district") || "";
+    const scheduled = searchParams.get("scheduled") === "true";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
 
@@ -22,6 +30,9 @@ export async function GET(request: NextRequest) {
         { title: { contains: search, mode: "insensitive" } },
         { titleNp: { contains: search, mode: "insensitive" } },
         { content: { contains: search, mode: "insensitive" } },
+        { contentNp: { contains: search, mode: "insensitive" } },
+        { district: { contains: search, mode: "insensitive" } },
+        { tags: { some: { name: { contains: search, mode: "insensitive" } } } },
       ];
     }
 
@@ -37,7 +48,27 @@ export async function GET(request: NextRequest) {
       where.categoryId = categoryId;
     }
 
-    const [total, articles, statusGroups, viewsAggregate, breakingCount] = await Promise.all([
+    if (tagId) {
+      where.tags = { some: { id: tagId } };
+    }
+
+    if (province) {
+      const provinceNum = Number(province);
+      if (!Number.isNaN(provinceNum)) {
+        where.province = provinceNum;
+      }
+    }
+
+    if (district.trim()) {
+      where.district = { contains: district.trim(), mode: "insensitive" };
+    }
+
+    if (scheduled) {
+      where.scheduledAt = { gt: new Date() };
+      where.status = { in: [ArticleStatus.DRAFT, ArticleStatus.PENDING] };
+    }
+
+    const [total, articles, statusGroups, viewsAggregate, breakingCount, scheduledCount] = await Promise.all([
       prisma.article.count({ where }),
       prisma.article.findMany({
         where,
@@ -54,6 +85,9 @@ export async function GET(request: NextRequest) {
           isBreaking: true,
           views: true,
           publishedAt: true,
+          scheduledAt: true,
+          province: true,
+          district: true,
           createdAt: true,
           author: {
             select: {
@@ -70,6 +104,9 @@ export async function GET(request: NextRequest) {
               slug: true,
             },
           },
+          tags: {
+            select: { id: true, name: true, slug: true },
+          },
         },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
@@ -85,10 +122,16 @@ export async function GET(request: NextRequest) {
         _sum: { views: true },
       }),
       prisma.article.count({ where: { ...where, isBreaking: true } }),
+      prisma.article.count({
+        where: {
+          scheduledAt: { gt: new Date() },
+          status: { in: [ArticleStatus.DRAFT, ArticleStatus.PENDING] },
+        },
+      }),
     ]);
 
-    const statusCount = (status: ArticleStatus) =>
-      statusGroups.find((group) => group.status === status)?._count._all ?? 0;
+    const statusCount = (value: ArticleStatus) =>
+      statusGroups.find((group) => group.status === value)?._count._all ?? 0;
 
     return apiSuccess(
       {
@@ -100,6 +143,7 @@ export async function GET(request: NextRequest) {
           pending: statusCount(ArticleStatus.PENDING),
           archived: statusCount(ArticleStatus.ARCHIVED),
           breaking: breakingCount,
+          scheduled: scheduledCount,
           views: viewsAggregate._sum.views ?? 0,
         },
         pagination: {
@@ -118,74 +162,68 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !([Role.ADMIN, Role.EDITOR, Role.AUTHOR] as Role[]).includes(session.user.role)) {
-      return apiError("Unauthorized: Only staff members can create articles", 403);
-    }
+    const auth = await requireStaff();
+    if (auth.error) return auth.error;
 
     const body = await request.json();
-    const {
-      title,
-      titleNp,
-      slug,
-      content,
-      excerpt,
-      coverImage,
-      caption,
-      status,
-      type,
-      languageEdition,
-      isFeatured,
-      isBreaking,
-      categoryId,
-      metaTitle,
-      metaDescription,
-      keywords,
-      ogImage,
-    } = body;
-
-    if (!title || !slug || !content || !categoryId) {
-      return apiError("Title, slug, content, and category are required", 400);
+    const validation = validateArticleCreate(body);
+    if (!validation.ok) {
+      return apiError(validation.error, 400);
     }
 
+    const data = validation.data;
+
     const existingSlug = await prisma.article.findUnique({
-      where: { slug: slug.trim().toLowerCase() },
+      where: { slug: data.slug! },
     });
 
     if (existingSlug) {
       return apiError("An article with this slug already exists", 400);
     }
 
-    const articleStatus = Object.values(ArticleStatus).includes(status)
-      ? status
-      : ArticleStatus.DRAFT;
+    if (data.tagIds?.length) {
+      const tagCount = await prisma.tag.count({
+        where: { id: { in: data.tagIds } },
+      });
+      if (tagCount !== data.tagIds.length) {
+        return apiError("One or more tags are invalid", 400);
+      }
+    }
 
-    const articleType = Object.values(ArticleType).includes(type)
-      ? type
-      : ArticleType.STANDARD;
+    const articleStatus = data.status ?? ArticleStatus.DRAFT;
+    const publishedAt = resolvePublishedAt(articleStatus, data.scheduledAt ?? null, null);
 
     const article = await prisma.article.create({
       data: {
-        title: title.trim(),
-        titleNp: titleNp ? titleNp.trim() : null,
-        slug: slug.trim().toLowerCase(),
-        content,
-        excerpt: excerpt ? excerpt.trim() : null,
-        coverImage: coverImage ? coverImage.trim() : null,
-        caption: caption ? caption.trim() : null,
+        title: data.title!,
+        titleNp: data.titleNp ?? null,
+        slug: data.slug!,
+        content: data.content!,
+        contentNp: data.contentNp ?? null,
+        excerpt: data.excerpt ?? null,
+        coverImage: data.coverImage ?? null,
+        caption: data.caption ?? null,
         status: articleStatus,
-        type: articleType,
-        languageEdition: languageEdition || "BOTH",
-        isFeatured: Boolean(isFeatured),
-        isBreaking: Boolean(isBreaking),
-        categoryId,
-        authorId: session.user.id,
-        metaTitle: metaTitle ? metaTitle.trim() : null,
-        metaDescription: metaDescription ? metaDescription.trim() : null,
-        keywords: keywords ? keywords.trim() : null,
-        ogImage: ogImage ? ogImage.trim() : null,
-        publishedAt: articleStatus === ArticleStatus.PUBLISHED ? new Date() : null,
+        type: data.type!,
+        languageEdition: data.languageEdition!,
+        isFeatured: Boolean(data.isFeatured),
+        isBreaking: Boolean(data.isBreaking),
+        categoryId: data.categoryId!,
+        authorId: auth.session!.user.id,
+        metaTitle: data.metaTitle ?? null,
+        metaDescription: data.metaDescription ?? null,
+        keywords: data.keywords ?? null,
+        ogImage: data.ogImage ?? null,
+        province: data.province ?? null,
+        district: data.district ?? null,
+        scheduledAt: data.scheduledAt ?? null,
+        publishedAt,
+        ...(data.tagIds?.length
+          ? { tags: { connect: data.tagIds.map((id) => ({ id })) } }
+          : {}),
+      },
+      include: {
+        tags: { select: { id: true, name: true, slug: true } },
       },
     });
 

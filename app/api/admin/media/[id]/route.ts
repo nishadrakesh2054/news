@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
+import { requireStaff } from "@/lib/admin-auth";
 import cloudinary from "@/lib/cloudinary";
 
 export async function PATCH(
@@ -8,6 +9,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireStaff();
+    if (auth.error) return auth.error;
+
     const { id } = await params;
     const body = await request.json();
 
@@ -37,6 +41,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireStaff();
+    if (auth.error) return auth.error;
+
     const { id } = await params;
 
     const media = await prisma.media.findUnique({ where: { id } });
@@ -44,7 +51,6 @@ export async function DELETE(
       return apiError("Media asset not found", 404);
     }
 
-    // Delete from Cloudinary CDN if publicId exists
     if (media.publicId) {
       try {
         await cloudinary.uploader.destroy(media.publicId);
@@ -53,7 +59,6 @@ export async function DELETE(
       }
     }
 
-    // Delete record from Database
     await prisma.media.delete({ where: { id } });
 
     return apiSuccess({ id }, "Media asset deleted successfully", 200);

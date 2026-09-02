@@ -1,12 +1,13 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
+import { requireEditor } from "@/lib/admin-auth";
 
 export async function GET() {
   try {
+    const auth = await requireEditor();
+    if (auth.error) return auth.error;
+
     const epapers = await prisma.ePaper.findMany({
       orderBy: { publishDate: "desc" },
       take: 50,
@@ -19,11 +20,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !([Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {
-      return apiError("Unauthorized: Only Admin/Editor can upload EPapers", 403);
-    }
+    const auth = await requireEditor();
+    if (auth.error) return auth.error;
 
     const body = await request.json();
     const { title, pdfUrl, coverImage, publishDate } = body;

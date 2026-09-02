@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { CommentStatus, Role } from "@prisma/client";
+import { CommentStatus, Role, ArticleStatus } from "@prisma/client";
+import { validateCommentCreate } from "@/lib/validations/comment";
 
 export async function GET(
   request: NextRequest,
@@ -49,21 +50,22 @@ export async function POST(
   try {
     const { id: articleId } = await params;
     const session = await getServerSession(authOptions);
-
     const body = await request.json();
-    const { content, authorName, authorEmail } = body;
-
-    if (!content || !content.trim()) {
-      return apiError("प्रतिक्रिया/टिप्पणी आवश्यक छ (Comment content required)", 400);
-    }
 
     const article = await prisma.article.findUnique({
       where: { id: articleId },
     });
 
-    if (!article) {
+    if (!article || article.status !== ArticleStatus.PUBLISHED) {
       return apiError("समाचार भेटिएन (Article not found)", 404);
     }
+
+    const validation = validateCommentCreate(body);
+    if (!validation.ok) {
+      return apiError(validation.error, 400);
+    }
+
+    const { content, authorName, authorEmail } = validation.data;
 
     let isAutoApproved = false;
     let authorId: string | null = null;
@@ -83,7 +85,7 @@ export async function POST(
 
     const comment = await prisma.comment.create({
       data: {
-        content: content.trim(),
+        content,
         articleId,
         authorId,
         authorName: finalAuthorName,

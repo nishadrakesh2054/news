@@ -1,8 +1,50 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { apiSuccess, handleServerError } from "@/lib/api-response";
+import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireEditor } from "@/lib/admin-auth";
 import { writeAuditLog } from "@/lib/audit-log";
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const auth = await requireEditor();
+    if (auth.error) return auth.error;
+
+    const { id } = await params;
+
+    const gallery = await prisma.gallery.findUnique({
+      where: { id },
+      include: {
+        items: {
+          orderBy: { order: "asc" },
+          include: {
+            media: {
+              select: {
+                id: true,
+                filename: true,
+                url: true,
+                mimeType: true,
+                altText: true,
+                caption: true,
+              },
+            },
+          },
+        },
+        _count: { select: { items: true } },
+      },
+    });
+
+    if (!gallery) {
+      return apiError("Gallery not found", 404);
+    }
+
+    return apiSuccess(gallery);
+  } catch (error) {
+    return handleServerError(error, "Failed to fetch gallery");
+  }
+}
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

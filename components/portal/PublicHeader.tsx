@@ -34,7 +34,7 @@ export function PublicHeader() {
 
   useEffect(() => {
     // Fetch Leaderboard Ad
-    fetch("/api/admin/ads")
+    fetch("/api/ads")
       .then((res) => res.json())
       .then((json) => {
         if (json.success && Array.isArray(json.data)) {

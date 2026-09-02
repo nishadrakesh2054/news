@@ -22,7 +22,7 @@ export function CategoryNavbar() {
   const isEnglish = langParam === "en" || isEnHost;
 
   useEffect(() => {
-    fetch("/api/admin/categories")
+    fetch("/api/categories")
       .then((res) => res.json())
       .then((json) => {
         if (json.success && Array.isArray(json.data)) {

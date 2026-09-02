@@ -3,11 +3,12 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ExternalLink, Plus, Search, Upload, X } from "lucide-react";
+import { ExternalLink, Pencil, Search, Trash2, Upload, X } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
 import {
   adminBadgeMuted,
+  adminBtnGhost,
   adminBtnPrimary,
   adminInput,
   adminPanel,
@@ -35,9 +36,13 @@ export default function AdminEPaperPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [title, setTitle] = useState("");
-  const [pdfUrl, setPdfUrl] = useState("");
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [coverImage, setCoverImage] = useState("");
   const [publishDate, setPublishDate] = useState("");
+  const [editing, setEditing] = useState<EPaperItem | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editCover, setEditCover] = useState("");
+  const [editDate, setEditDate] = useState("");
 
   const { data: epapers = [], isLoading, isError, refetch, isFetching } = useQuery<EPaperItem[]>({
     queryKey: ["admin-epaper"],
@@ -49,46 +54,90 @@ export default function AdminEPaperPage() {
     },
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (payload: {
-      title: string;
-      pdfUrl: string;
-      coverImage?: string;
-      publishDate?: string;
-    }) => {
-      const res = await fetch("/api/admin/epaper", {
+  const uploadMutation = useMutation({
+    mutationFn: async () => {
+      if (!pdfFile) throw new Error("PDF file is required");
+
+      const formData = new FormData();
+      formData.append("file", pdfFile);
+      formData.append("title", title.trim());
+      if (coverImage.trim()) formData.append("coverImage", coverImage.trim());
+      if (publishDate) formData.append("publishDate", publishDate);
+
+      const res = await fetch("/api/admin/epaper/upload", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: formData,
       });
       const json = await res.json();
-      if (!res.ok || !json.success) throw new Error(json.error || json.message || "Failed to publish");
+      if (!res.ok) throw new Error(json.error || "Upload failed");
       return json.data;
     },
     onSuccess: () => {
-      toast.success("E-paper edition published");
+      toast.success("E-paper edition uploaded");
       queryClient.invalidateQueries({ queryKey: ["admin-epaper"] });
       setTitle("");
-      setPdfUrl("");
+      setPdfFile(null);
       setCoverImage("");
       setPublishDate("");
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editing) return;
+      const res = await fetch(`/api/admin/epaper/${editing.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editTitle.trim(),
+          coverImage: editCover.trim() || null,
+          publishDate: editDate || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Update failed");
+      return json.data;
+    },
+    onSuccess: () => {
+      toast.success("Edition updated");
+      setEditing(null);
+      queryClient.invalidateQueries({ queryKey: ["admin-epaper"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/admin/epaper/${id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Delete failed");
+    },
+    onSuccess: () => {
+      toast.success("Edition deleted");
+      queryClient.invalidateQueries({ queryKey: ["admin-epaper"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !pdfUrl.trim()) {
-      toast.error("Title and PDF URL are required");
+    if (!title.trim()) {
+      toast.error("Edition title is required");
       return;
     }
+    if (!pdfFile) {
+      toast.error("Please select a PDF file");
+      return;
+    }
+    uploadMutation.mutate();
+  };
 
-    createMutation.mutate({
-      title: title.trim(),
-      pdfUrl: pdfUrl.trim(),
-      coverImage: coverImage.trim() || undefined,
-      publishDate: publishDate || undefined,
-    });
+  const openEdit = (ep: EPaperItem) => {
+    setEditing(ep);
+    setEditTitle(ep.title);
+    setEditCover(ep.coverImage || "");
+    setEditDate(ep.publishDate.slice(0, 10));
   };
 
   const filtered = useMemo(() => {
@@ -108,7 +157,7 @@ export default function AdminEPaperPage() {
   return (
     <AdminPageShell
       title="E-paper"
-      description="Publish daily PDF editions for readers"
+      description="Upload and manage daily PDF editions"
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
     >
@@ -118,9 +167,7 @@ export default function AdminEPaperPage() {
           { label: "This month", value: thisMonthCount },
           {
             label: "Latest edition",
-            value: latest
-              ? new Date(latest.publishDate).toLocaleDateString()
-              : "—",
+            value: latest ? new Date(latest.publishDate).toLocaleDateString() : "—",
           },
           { label: "Showing", value: filtered.length },
         ]}
@@ -129,7 +176,7 @@ export default function AdminEPaperPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <section className={adminPanel}>
           <div className={adminPanelHeader}>
-            <h2 className={adminPanelTitle}>New edition</h2>
+            <h2 className={adminPanelTitle}>Upload edition</h2>
           </div>
           <form onSubmit={handleSubmit} className="space-y-3 p-3">
             <div className="space-y-1">
@@ -148,16 +195,15 @@ export default function AdminEPaperPage() {
 
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">
-                PDF URL <span className="text-[#C3272E]">*</span>
+                PDF file <span className="text-[#C3272E]">*</span>
               </label>
               <input
-                type="url"
-                required
-                value={pdfUrl}
-                onChange={(e) => setPdfUrl(e.target.value)}
-                placeholder="https://…/edition.pdf"
-                className={`${adminInput} font-mono`}
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
+                className={`${adminInput} file:mr-2 file:border-0 file:bg-muted file:px-2 file:py-1 file:text-xs`}
               />
+              <p className="text-[10px] text-muted-foreground">Max 20 MB · uploaded to Cloudinary</p>
             </div>
 
             <div className="space-y-1">
@@ -183,15 +229,15 @@ export default function AdminEPaperPage() {
 
             <button
               type="submit"
-              disabled={createMutation.isPending}
+              disabled={uploadMutation.isPending}
               className={`${adminBtnPrimary} w-full justify-center`}
             >
-              {createMutation.isPending ? (
-                "Publishing…"
+              {uploadMutation.isPending ? (
+                "Uploading…"
               ) : (
                 <>
                   <Upload className="h-3.5 w-3.5" />
-                  Publish edition
+                  Upload edition
                 </>
               )}
             </button>
@@ -201,19 +247,6 @@ export default function AdminEPaperPage() {
         <section className={`${adminPanel} lg:col-span-2`}>
           <div className={adminPanelHeader}>
             <h2 className={adminPanelTitle}>Published editions</h2>
-            <button
-              type="button"
-              onClick={() => {
-                setTitle("");
-                setPdfUrl("");
-                setCoverImage("");
-                setPublishDate("");
-              }}
-              className="inline-flex h-7 items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
-            >
-              <Plus className="h-3 w-3" />
-              Clear form
-            </button>
           </div>
 
           <div className="border-b border-border px-3 py-2">
@@ -256,7 +289,7 @@ export default function AdminEPaperPage() {
                     <th className={adminTableHeadCell}>Title</th>
                     <th className={adminTableHeadCell}>Published</th>
                     <th className={adminTableHeadCell}>Added</th>
-                    <th className={`${adminTableHeadCell} text-right`}>PDF</th>
+                    <th className={`${adminTableHeadCell} text-right`}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -264,9 +297,7 @@ export default function AdminEPaperPage() {
                     <tr key={ep.id} className={adminTableRow}>
                       <td className={adminTableCell}>
                         <p className="max-w-md truncate font-medium text-foreground">{ep.title}</p>
-                        {ep.coverImage ? (
-                          <span className={adminBadgeMuted}>Has cover</span>
-                        ) : null}
+                        {ep.coverImage ? <span className={adminBadgeMuted}>Has cover</span> : null}
                       </td>
                       <td className={`${adminTableCell} whitespace-nowrap text-muted-foreground`}>
                         {new Date(ep.publishDate).toLocaleDateString()}
@@ -275,15 +306,37 @@ export default function AdminEPaperPage() {
                         {new Date(ep.createdAt).toLocaleDateString()}
                       </td>
                       <td className={`${adminTableCell} text-right`}>
-                        <a
-                          href={ep.pdfUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex h-7 items-center gap-1 px-2 text-xs font-medium text-[#0C4EA0] hover:underline"
-                        >
-                          Open
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
+                        <div className="inline-flex items-center">
+                          <a
+                            href={ep.pdfUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={adminBtnGhost}
+                            title="Open PDF"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => openEdit(ep)}
+                            className={adminBtnGhost}
+                            title="Edit"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(`Delete edition "${ep.title}"?`)) {
+                                deleteMutation.mutate(ep.id);
+                              }
+                            }}
+                            className="inline-flex h-7 w-7 items-center justify-center text-[#C3272E] hover:bg-muted"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -293,6 +346,53 @@ export default function AdminEPaperPage() {
           )}
         </section>
       </div>
+
+      {editing ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className={`${adminPanel} w-full max-w-md`}>
+            <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
+              <h2 className="text-sm font-semibold text-foreground">Edit edition</h2>
+              <button type="button" onClick={() => setEditing(null)} className="text-muted-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-3 p-4">
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className={adminInput}
+              />
+              <input
+                type="url"
+                placeholder="Cover image URL"
+                value={editCover}
+                onChange={(e) => setEditCover(e.target.value)}
+                className={`${adminInput} font-mono`}
+              />
+              <input
+                type="date"
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+                className={adminInput}
+              />
+              <div className="flex justify-end gap-2 border-t border-border/70 pt-3">
+                <button type="button" onClick={() => setEditing(null)} className={adminBtnGhost}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateMutation.mutate()}
+                  disabled={updateMutation.isPending}
+                  className={adminBtnPrimary}
+                >
+                  Save changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AdminPageShell>
   );
 }

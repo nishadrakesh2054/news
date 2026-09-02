@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ExternalLink, Save } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, Save } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
 import {
@@ -15,11 +15,6 @@ import {
   adminPanelHeader,
   adminPanelTitle,
   adminSelect,
-  adminTable,
-  adminTableCell,
-  adminTableHead,
-  adminTableHeadCell,
-  adminTableRow,
 } from "@/constants/admin-layout";
 
 interface CategoryOption {
@@ -44,6 +39,7 @@ export default function AdminHomepageLayoutPage() {
   const [showHeroFeatured, setShowHeroFeatured] = useState(true);
   const [heroLayoutMode, setHeroLayoutMode] = useState<HeroLayoutMode>("lead_3_grid");
   const [showLiveBar, setShowLiveBar] = useState(true);
+  const [sectionOrder, setSectionOrder] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const { data: categories = [], isLoading, refetch, isFetching } = useQuery<CategoryOption[]>({
@@ -56,6 +52,11 @@ export default function AdminHomepageLayoutPage() {
     },
   });
 
+  const sortedCategories = useMemo(
+    () => [...categories].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name)),
+    [categories]
+  );
+
   useEffect(() => {
     fetch("/api/admin/homepage")
       .then((r) => r.json())
@@ -67,10 +68,42 @@ export default function AdminHomepageLayoutPage() {
           if (d.showHeroFeatured !== undefined) setShowHeroFeatured(d.showHeroFeatured);
           if (d.heroLayoutMode) setHeroLayoutMode(d.heroLayoutMode);
           if (d.showLiveBar !== undefined) setShowLiveBar(d.showLiveBar);
+          if (Array.isArray(d.sectionOrder) && d.sectionOrder.length > 0) {
+            setSectionOrder(d.sectionOrder);
+          }
         }
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (sectionOrder.length === 0 && sortedCategories.length > 0) {
+      setSectionOrder(sortedCategories.map((cat) => cat.id));
+    }
+  }, [sortedCategories, sectionOrder.length]);
+
+  const orderedSections = sectionOrder
+    .map((id) => sortedCategories.find((cat) => cat.id === id))
+    .filter((cat): cat is CategoryOption => Boolean(cat));
+
+  const hiddenCount = sortedCategories.length - orderedSections.length;
+
+  const toggleCategory = (categoryId: string, enabled: boolean) => {
+    if (enabled) {
+      setSectionOrder((current) => [...current, categoryId]);
+    } else {
+      setSectionOrder((current) => current.filter((id) => id !== categoryId));
+    }
+  };
+
+  const moveSection = (index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= sectionOrder.length) return;
+    const next = [...sectionOrder];
+    const [item] = next.splice(index, 1);
+    next.splice(nextIndex, 0, item);
+    setSectionOrder(next);
+  };
 
   const handleSaveLayout = async () => {
     try {
@@ -84,6 +117,7 @@ export default function AdminHomepageLayoutPage() {
           showHeroFeatured,
           heroLayoutMode,
           showLiveBar,
+          sectionOrder,
         }),
       });
       const json = await res.json();
@@ -120,9 +154,9 @@ export default function AdminHomepageLayoutPage() {
       <AdminStatsStrip
         stats={[
           { label: "Hero layout", value: heroLabel },
+          { label: "Homepage sections", value: orderedSections.length },
+          { label: "Hidden categories", value: hiddenCount },
           { label: "Breaking ticker", value: showBreakingTicker ? "On" : "Off" },
-          { label: "Live bar", value: showLiveBar ? "On" : "Off" },
-          { label: "Category sections", value: categories.length },
         ]}
       />
 
@@ -210,34 +244,60 @@ export default function AdminHomepageLayoutPage() {
           </div>
           {isLoading ? (
             <p className="px-3 py-6 text-xs text-muted-foreground">Loading categories…</p>
-          ) : categories.length === 0 ? (
+          ) : sortedCategories.length === 0 ? (
             <p className="px-3 py-6 text-xs text-muted-foreground">No categories configured.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className={adminTable}>
-                <thead className={adminTableHead}>
-                  <tr>
-                    <th className={adminTableHeadCell}>#</th>
-                    <th className={adminTableHeadCell}>Name</th>
-                    <th className={adminTableHeadCell}>Slug</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {categories.map((cat, idx) => (
-                    <tr key={cat.id} className={adminTableRow}>
-                      <td className={`${adminTableCell} font-mono text-muted-foreground`}>{idx + 1}</td>
-                      <td className={`${adminTableCell} font-medium text-foreground`}>
+            <div className="divide-y divide-border/70">
+              {sortedCategories.map((cat) => {
+                const enabled = sectionOrder.includes(cat.id);
+                const index = sectionOrder.indexOf(cat.id);
+                return (
+                  <div key={cat.id} className="flex items-center gap-2 px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={enabled}
+                      onChange={(e) => toggleCategory(cat.id, e.target.checked)}
+                      className="h-3.5 w-3.5 rounded-sm border-border accent-[#0C4EA0]"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-medium text-foreground">
                         {cat.nameNp || cat.name}
-                      </td>
-                      <td className={adminTableCell}>
-                        <span className={adminBadgeMuted}>/{cat.slug}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </p>
+                      <p className="truncate text-[10px] text-muted-foreground">/{cat.slug}</p>
+                    </div>
+                    {enabled ? (
+                      <div className="flex items-center gap-0.5">
+                        <span className="text-[10px] text-muted-foreground">#{index + 1}</span>
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          onClick={() => moveSection(index, -1)}
+                          className="rounded-sm p-1 hover:bg-muted"
+                        >
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={index === sectionOrder.length - 1}
+                          onClick={() => moveSection(index, 1)}
+                          className="rounded-sm p-1 hover:bg-muted"
+                        >
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className={adminBadgeMuted}>Hidden</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
+          <div className="border-t border-border/70 px-3 py-2">
+            <p className="text-[10px] text-muted-foreground">
+              Checked categories appear on the homepage in the order shown. Save layout to apply.
+            </p>
+          </div>
         </section>
       </div>
     </AdminPageShell>

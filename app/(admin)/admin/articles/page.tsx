@@ -44,6 +44,7 @@ import {
   adminToolbarSelectStatus,
 } from "@/constants/admin-layout";
 import { ArticleStatus, ArticleType } from "@prisma/client";
+import { NEPAL_PROVINCES, getProvinceLabel } from "@/constants/provinces";
 
 interface ArticleItem {
   id: string;
@@ -58,6 +59,9 @@ interface ArticleItem {
   isBreaking: boolean;
   views: number;
   publishedAt: string | null;
+  scheduledAt: string | null;
+  province: number | null;
+  district: string | null;
   createdAt: string;
   author: {
     name: string;
@@ -68,6 +72,13 @@ interface ArticleItem {
     name: string;
     nameNp: string | null;
   };
+  tags: Array<{ id: string; name: string; slug: string }>;
+}
+
+interface TagOption {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 interface CategoryOption {
@@ -85,6 +96,10 @@ export default function AdminArticlesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
+  const [tagFilter, setTagFilter] = useState<string>("ALL");
+  const [provinceFilter, setProvinceFilter] = useState<string>("ALL");
+  const [districtFilter, setDistrictFilter] = useState<string>("");
+  const [scheduledOnly, setScheduledOnly] = useState(false);
   const [limit, setLimit] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
   const [sortField, setSortField] = useState<SortField>("createdAt");
@@ -101,9 +116,31 @@ export default function AdminArticlesPage() {
     },
   });
 
+  const { data: tagsData = [] } = useQuery<TagOption[]>({
+    queryKey: ["admin-tags-filter"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/tags");
+      const json = await res.json();
+      if (!res.ok) throw new Error("Failed to fetch tags");
+      return json.data;
+    },
+  });
+
   // Fetch Articles with Server Query Params
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ["admin-articles", search, statusFilter, typeFilter, categoryFilter, page, limit],
+    queryKey: [
+      "admin-articles",
+      search,
+      statusFilter,
+      typeFilter,
+      categoryFilter,
+      tagFilter,
+      provinceFilter,
+      districtFilter,
+      scheduledOnly,
+      page,
+      limit,
+    ],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -113,6 +150,10 @@ export default function AdminArticlesPage() {
       if (statusFilter !== "ALL") params.append("status", statusFilter);
       if (typeFilter !== "ALL") params.append("type", typeFilter);
       if (categoryFilter !== "ALL") params.append("categoryId", categoryFilter);
+      if (tagFilter !== "ALL") params.append("tagId", tagFilter);
+      if (provinceFilter !== "ALL") params.append("province", provinceFilter);
+      if (districtFilter.trim()) params.append("district", districtFilter.trim());
+      if (scheduledOnly) params.append("scheduled", "true");
 
       const res = await fetch(`/api/admin/articles?${params.toString()}`);
       const json = await res.json();
@@ -192,12 +233,23 @@ export default function AdminArticlesPage() {
     setStatusFilter("ALL");
     setTypeFilter("ALL");
     setCategoryFilter("ALL");
+    setTagFilter("ALL");
+    setProvinceFilter("ALL");
+    setDistrictFilter("");
+    setScheduledOnly(false);
     setPage(1);
     toast.success("Filters reset");
   };
 
   const isFiltered =
-    search.trim() !== "" || statusFilter !== "ALL" || typeFilter !== "ALL" || categoryFilter !== "ALL";
+    search.trim() !== "" ||
+    statusFilter !== "ALL" ||
+    typeFilter !== "ALL" ||
+    categoryFilter !== "ALL" ||
+    tagFilter !== "ALL" ||
+    provinceFilter !== "ALL" ||
+    districtFilter.trim() !== "" ||
+    scheduledOnly;
 
   const pagination = data?.pagination;
   const summary = data?.summary;
@@ -216,6 +268,28 @@ export default function AdminArticlesPage() {
       default:
         return "Standard";
     }
+  };
+
+  const formatScheduledAt = (value: string | null) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toLocaleString("en-NP", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const isScheduledPending = (art: ArticleItem) => {
+    if (!art.scheduledAt) return false;
+    const scheduled = new Date(art.scheduledAt);
+    return (
+      scheduled.getTime() > Date.now() &&
+      (art.status === ArticleStatus.DRAFT || art.status === ArticleStatus.PENDING)
+    );
   };
 
   const statusOptions = [
@@ -261,9 +335,11 @@ export default function AdminArticlesPage() {
             label: "Drafts",
             value: summary?.draft ?? 0,
             hint:
-              summary?.archived && summary.archived > 0
-                ? `${summary.archived} archived`
-                : "Not published",
+              summary?.scheduled && summary.scheduled > 0
+                ? `${summary.scheduled} scheduled`
+                : summary?.archived && summary.archived > 0
+                  ? `${summary.archived} archived`
+                  : "Not published",
             icon: Clock,
           },
           {
@@ -348,6 +424,62 @@ export default function AdminArticlesPage() {
             <option value="OPINION">Opinion</option>
             <option value="FEATURE">Feature</option>
           </select>
+
+          <select
+            value={tagFilter}
+            onChange={(e) => {
+              setTagFilter(e.target.value);
+              setPage(1);
+            }}
+            className={adminToolbarSelectMd}
+          >
+            <option value="ALL">All tags</option>
+            {tagsData.map((tag) => (
+              <option key={tag.id} value={tag.id}>
+                {tag.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={provinceFilter}
+            onChange={(e) => {
+              setProvinceFilter(e.target.value);
+              setPage(1);
+            }}
+            className={adminToolbarSelectMd}
+          >
+            <option value="ALL">All provinces</option>
+            {NEPAL_PROVINCES.map((province) => (
+              <option key={province.value} value={province.value}>
+                {province.label}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="text"
+            placeholder="District…"
+            value={districtFilter}
+            onChange={(e) => {
+              setDistrictFilter(e.target.value);
+              setPage(1);
+            }}
+            className={`${adminInput} h-8 w-28 shrink-0`}
+          />
+
+          <label className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-sm border border-border/70 px-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={scheduledOnly}
+              onChange={(e) => {
+                setScheduledOnly(e.target.checked);
+                setPage(1);
+              }}
+              className="h-3.5 w-3.5 rounded-sm accent-[#0C4EA0]"
+            />
+            Scheduled
+          </label>
 
           {isFiltered ? (
             <button
@@ -465,12 +597,27 @@ export default function AdminArticlesPage() {
                                 Breaking
                               </span>
                             ) : null}
+                            {isScheduledPending(art) ? (
+                              <span className="inline-flex items-center rounded-sm border border-[#0C4EA0]/30 bg-[#0C4EA0]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#0C4EA0]">
+                                Scheduled
+                              </span>
+                            ) : null}
                           </div>
                           <p className="truncate font-medium text-foreground">
                             {art.titleNp || art.title}
                           </p>
                           {art.titleNp ? (
                             <p className="truncate text-[11px] text-muted-foreground">{art.title}</p>
+                          ) : null}
+                          {isScheduledPending(art) ? (
+                            <p className="truncate text-[10px] text-[#0C4EA0]">
+                              Publishes {formatScheduledAt(art.scheduledAt)}
+                            </p>
+                          ) : null}
+                          {art.province || art.district ? (
+                            <p className="truncate text-[10px] text-muted-foreground">
+                              {[getProvinceLabel(art.province), art.district].filter(Boolean).join(" · ")}
+                            </p>
                           ) : null}
                         </div>
                       </div>
@@ -495,6 +642,7 @@ export default function AdminArticlesPage() {
                         className={`${adminSelect} h-7 w-auto min-w-[108px]`}
                       >
                         <option value="DRAFT">Draft</option>
+                        <option value="PENDING">Review</option>
                         <option value="PUBLISHED">Published</option>
                         <option value="ARCHIVED">Archived</option>
                       </select>

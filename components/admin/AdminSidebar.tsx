@@ -2,8 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { ADMIN_NAV_SECTIONS, isAdminNavItemActive } from "@/constants/admin-navigation";
+import {
+  ADMIN_NAV_SECTIONS,
+  filterNavSectionsForRole,
+  isAdminNavItemActive,
+} from "@/constants/admin-navigation";
 import {
   ADMIN_SIDEBAR_WIDTH_COLLAPSED,
   ADMIN_SIDEBAR_WIDTH_EXPANDED,
@@ -45,6 +50,8 @@ function SidebarToggle({
 
 export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const navSections = filterNavSectionsForRole(ADMIN_NAV_SECTIONS, session?.user?.role);
 
   return (
     <aside
@@ -60,7 +67,7 @@ export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps)
         ) : null}
 
         <div className="space-y-3">
-          {ADMIN_NAV_SECTIONS.map((section, sectionIndex) => (
+          {navSections.map((section, sectionIndex) => (
             <div
               key={section.title}
               className={sectionIndex > 0 ? "space-y-0.5 border-t border-white/10 pt-2.5" : "space-y-0.5"}

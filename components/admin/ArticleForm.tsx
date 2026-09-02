@@ -9,7 +9,9 @@ import { ArticleStatus, ArticleType, LanguageEdition } from "@prisma/client";
 import Link from "next/link";
 import { TipTapEditor } from "@/components/admin/TipTapEditor";
 import { DualImagePicker } from "@/components/admin/DualImagePicker";
+import { NepaliTypingHelper } from "@/components/admin/NepaliTypingHelper";
 import { AdminFormBodySection, AdminFormRow, AdminFormSection } from "@/components/admin/content";
+import { NEPAL_PROVINCES } from "@/constants/provinces";
 import {
   ADMIN_BRAND,
   adminBtnDanger,
@@ -21,6 +23,12 @@ import {
   adminPanel,
   adminSelect,
 } from "@/constants/admin-layout";
+
+interface TagItem {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 interface CategoryItem {
   id: string;
@@ -76,6 +84,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
   const [titleNp, setTitleNp] = useState<string>((initialData?.titleNp as string) || "");
   const [slug, setSlug] = useState<string>((initialData?.slug as string) || "");
   const [content, setContent] = useState<string>((initialData?.content as string) || "");
+  const [contentNp, setContentNp] = useState<string>((initialData?.contentNp as string) || "");
   const [excerpt, setExcerpt] = useState<string>((initialData?.excerpt as string) || "");
   const [coverImage, setCoverImage] = useState<string>((initialData?.coverImage as string) || "");
   const [caption, setCaption] = useState<string>((initialData?.caption as string) || "");
@@ -105,6 +114,11 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
     initialData?.province ? Number(initialData.province) : undefined
   );
   const [district, setDistrict] = useState<string>((initialData?.district as string) || "");
+  const [tagIds, setTagIds] = useState<string[]>(
+    Array.isArray(initialData?.tags)
+      ? (initialData.tags as Array<{ id: string }>).map((tag) => tag.id)
+      : []
+  );
 
   const { data: categories = [] } = useQuery<CategoryItem[]>({
     queryKey: ["admin-categories"],
@@ -112,6 +126,16 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       const res = await fetch("/api/admin/categories");
       const json = await res.json();
       if (!res.ok) throw new Error("Failed to fetch categories");
+      return json.data;
+    },
+  });
+
+  const { data: tags = [] } = useQuery<TagItem[]>({
+    queryKey: ["admin-tags"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/tags");
+      const json = await res.json();
+      if (!res.ok) throw new Error("Failed to fetch tags");
       return json.data;
     },
   });
@@ -159,16 +183,39 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title || !slug || !content || !categoryId) {
-      toast.error("Please fill in English title, slug, content, and category");
+    const hasEnglishBody = content.replace(/<[^>]*>/g, "").trim().length > 0;
+    const hasNepaliBody = contentNp.replace(/<[^>]*>/g, "").trim().length > 0;
+
+    if (!slug || !categoryId) {
+      toast.error("Please fill in slug and category");
       return;
     }
 
+    if (languageEdition === LanguageEdition.NEPALI_ONLY) {
+      if (!titleNp.trim() || !hasNepaliBody) {
+        toast.error("Nepali headline and body are required for Nepali-only articles");
+        return;
+      }
+    } else if (languageEdition === LanguageEdition.ENGLISH_ONLY) {
+      if (!title.trim() || !hasEnglishBody) {
+        toast.error("English title and body are required for English-only articles");
+        return;
+      }
+    } else if (!title.trim() || !hasEnglishBody) {
+      toast.error("English title and body are required for bilingual articles");
+      return;
+    }
+
+    if (scheduledAt && new Date(scheduledAt).getTime() > Date.now() && status === ArticleStatus.PUBLISHED) {
+      toast.info("Future schedule detected — article will be queued for review until publish time");
+    }
+
     saveMutation.mutate({
-      title,
+      title: title.trim() || titleNp.trim(),
       titleNp: titleNp || undefined,
       slug: autoSlug(slug),
-      content,
+      content: hasEnglishBody ? content : contentNp,
+      contentNp: contentNp || undefined,
       excerpt: excerpt || undefined,
       coverImage: coverImage || undefined,
       caption: caption || undefined,
@@ -178,6 +225,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       province: province ? Number(province) : undefined,
       district: district || undefined,
       scheduledAt: scheduledAt || undefined,
+      tagIds,
       isFeatured,
       isBreaking,
       categoryId,
@@ -235,21 +283,24 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       <form id={FORM_ID} onSubmit={handleSubmit} className="space-y-4">
         <AdminFormSection number={1} title="Article information">
           <AdminFormRow serial={1} label="Nepali headline (शीर्षक)">
-            <input
-              id="title-np"
-              type="text"
-              placeholder="नेपाली मुख्य शीर्षक…"
-              value={titleNp}
-              onChange={(e) => setTitleNp(e.target.value)}
-              className={`${adminInput} w-full max-w-2xl text-sm font-semibold`}
-            />
+            <div className="w-full max-w-2xl space-y-2">
+              <input
+                id="title-np"
+                type="text"
+                placeholder="नेपाली मुख्य शीर्षक…"
+                value={titleNp}
+                onChange={(e) => setTitleNp(e.target.value)}
+                className={`${adminInput} w-full text-sm font-semibold`}
+              />
+              <NepaliTypingHelper />
+            </div>
           </AdminFormRow>
 
-          <AdminFormRow serial={2} label="English title" required>
+          <AdminFormRow serial={2} label="English title" required={languageEdition !== LanguageEdition.NEPALI_ONLY}>
             <input
               id="title-en"
               type="text"
-              required
+              required={languageEdition !== LanguageEdition.NEPALI_ONLY}
               placeholder="English story title…"
               value={title}
               onChange={(e) => handleTitleChange(e.target.value)}
@@ -292,9 +343,9 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
 
         <AdminFormBodySection
           number={2}
-          title="Article body"
-          required
-          hint="Write the full story here. The editor expands as you add content — suitable for long multi-page articles. Use Expand for distraction-free writing."
+          title="Article body (English)"
+          required={languageEdition !== LanguageEdition.NEPALI_ONLY}
+          hint="Write the full story in English. Use Expand for distraction-free writing."
         >
           <TipTapEditor
             value={content}
@@ -304,7 +355,21 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
           />
         </AdminFormBodySection>
 
-        <AdminFormSection number={3} title="Category & classification">
+        <AdminFormBodySection
+          number={3}
+          title="Article body (Nepali / नेपाली)"
+          required={languageEdition === LanguageEdition.NEPALI_ONLY}
+          hint="Write the Nepali version of the story. Required for Nepali-only editions."
+        >
+          <TipTapEditor
+            value={contentNp}
+            onChange={setContentNp}
+            variant="longform"
+            placeholder="पूरा समाचार यहाँ लेख्नुहोस्…"
+          />
+        </AdminFormBodySection>
+
+        <AdminFormSection number={4} title="Category & classification">
           <AdminFormRow serial={1} label="Category" required>
             <select
               id="category"
@@ -360,13 +425,11 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
               className={`${adminSelect} w-full max-w-sm`}
             >
               <option value="">National / not applicable</option>
-              <option value="1">Province 1 — Koshi</option>
-              <option value="2">Province 2 — Madhesh</option>
-              <option value="3">Province 3 — Bagmati</option>
-              <option value="4">Province 4 — Gandaki</option>
-              <option value="5">Province 5 — Lumbini</option>
-              <option value="6">Province 6 — Karnali</option>
-              <option value="7">Province 7 — Sudurpashchim</option>
+              {NEPAL_PROVINCES.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </AdminFormRow>
 
@@ -380,9 +443,47 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
               className={`${adminInput} w-full max-w-sm`}
             />
           </AdminFormRow>
+
+          <AdminFormRow serial={6} label="Tags">
+            {tags.length > 0 ? (
+              <div className="flex flex-wrap gap-2 max-w-2xl">
+                {tags.map((tag) => {
+                  const checked = tagIds.includes(tag.id);
+                  return (
+                    <label
+                      key={tag.id}
+                      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-sm border px-2 py-1 text-xs ${
+                        checked
+                          ? "border-[#0C4EA0] bg-[#0C4EA0]/10 text-[#0C4EA0]"
+                          : "border-border/70 text-muted-foreground"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={checked}
+                        onChange={() => {
+                          setTagIds((current) =>
+                            checked
+                              ? current.filter((id) => id !== tag.id)
+                              : [...current, tag.id]
+                          );
+                        }}
+                      />
+                      {tag.name}
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                No tags yet. Create tags under Content → Tags.
+              </p>
+            )}
+          </AdminFormRow>
         </AdminFormSection>
 
-        <AdminFormSection number={4} title="Publishing & placement">
+        <AdminFormSection number={5} title="Publishing & placement">
           <AdminFormRow serial={1} label="Publication status">
             <select
               value={status}
@@ -400,7 +501,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
           <AdminFormRow
             serial={2}
             label="Scheduled publish date"
-            hint="Leave blank to publish immediately when status is set to Published"
+            hint="Future dates queue the article for automatic publishing via cron"
           >
             <input
               id="scheduled-at"
@@ -435,7 +536,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
           </AdminFormRow>
         </AdminFormSection>
 
-        <AdminFormSection number={5} title="Media & cover image">
+        <AdminFormSection number={6} title="Media & cover image">
           <AdminFormRow
             serial={1}
             label="Cover image"
@@ -522,7 +623,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
           </AdminFormRow>
         </AdminFormSection>
 
-        <AdminFormSection number={6} title="SEO & social metadata">
+        <AdminFormSection number={7} title="SEO & social metadata">
           <AdminFormRow
             serial={1}
             label="Meta title"

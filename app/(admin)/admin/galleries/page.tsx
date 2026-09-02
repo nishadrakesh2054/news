@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Search, Images } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
 import {
@@ -312,6 +313,13 @@ export default function AdminGalleriesPage() {
                     </td>
                     <td className={`${adminTableCell} text-right`}>
                       <div className="inline-flex items-center">
+                        <Link
+                          href={`/admin/galleries/${gallery.id}`}
+                          className={adminBtnGhost}
+                          title="Manage photos"
+                        >
+                          <Images className="h-3.5 w-3.5" />
+                        </Link>
                         <button
                           type="button"
                           onClick={() => openEditModal(gallery)}

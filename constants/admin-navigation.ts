@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { Role } from "@prisma/client";
 import {
   LayoutDashboard,
   FileText,
@@ -43,6 +44,8 @@ export type AdminNavItem = {
   description?: string;
   /** When true, only highlight on exact path match (for parent routes with children). */
   exactMatch?: boolean;
+  /** Restrict visibility to these staff roles. Omit for all staff (ADMIN, EDITOR, AUTHOR). */
+  roles?: Role[];
 };
 
 export type AdminNavSection = {
@@ -169,6 +172,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Megaphone,
         status: "live",
         api: "/api/admin/ads",
+        roles: [Role.ADMIN, Role.EDITOR],
       },
     ],
   },
@@ -242,6 +246,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Menu,
         status: "live",
         api: "/api/admin/website/menus",
+        roles: [Role.ADMIN, Role.EDITOR],
       },
       {
         label: "SEO",
@@ -249,6 +254,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Search,
         status: "live",
         api: "/api/admin/website/seo",
+        roles: [Role.ADMIN, Role.EDITOR],
       },
       {
         label: "Redirects",
@@ -256,6 +262,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: ArrowRightLeft,
         status: "live",
         api: "/api/admin/website/redirects",
+        roles: [Role.ADMIN, Role.EDITOR],
       },
       {
         label: "Site Settings",
@@ -263,7 +270,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Settings,
         status: "live",
         api: "/api/admin/settings",
-        description: "UI built; persistence API pending",
+        description: "Site identity, contact, and comment defaults",
+        roles: [Role.ADMIN, Role.EDITOR],
       },
     ],
   },
@@ -276,6 +284,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Users,
         status: "live",
         api: "/api/admin/users",
+        roles: [Role.ADMIN],
       },
       {
         label: "Roles & Permissions",
@@ -283,7 +292,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Shield,
         status: "live",
         api: "/api/admin/system/roles",
-        description: "Role changes live on users page; matrix UI pending",
+        description: "Role changes live on users page; permission matrix is read-only",
+        roles: [Role.ADMIN],
       },
       {
         label: "Audit Logs",
@@ -291,6 +301,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: ScrollText,
         status: "live",
         api: "/api/admin/system/audit-logs",
+        roles: [Role.ADMIN],
       },
       {
         label: "API Management",
@@ -298,6 +309,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Plug,
         status: "live",
         api: "/api/admin/system/api-keys",
+        roles: [Role.ADMIN],
       },
       {
         label: "System / Maintenance",
@@ -305,6 +317,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Wrench,
         status: "live",
         api: "/api/admin/system/maintenance",
+        roles: [Role.ADMIN],
       },
     ],
   },
@@ -328,4 +341,18 @@ export function isAdminNavItemActive(pathname: string, href: string, exactMatch 
   }
 
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export function filterNavSectionsForRole(
+  sections: AdminNavSection[],
+  role: Role | undefined
+): AdminNavSection[] {
+  if (!role) return [];
+
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !item.roles || item.roles.includes(role)),
+    }))
+    .filter((section) => section.items.length > 0);
 }

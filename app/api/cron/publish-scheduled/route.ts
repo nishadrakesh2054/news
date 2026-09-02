@@ -1,12 +1,29 @@
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
+import { verifyCronSecret } from "@/lib/admin-auth";
+import { getJsonSetting } from "@/lib/settings-store";
 
-export async function GET() {
+const DEFAULT_MAINTENANCE = {
+  maintenanceMode: false,
+  maintenanceMessage: "Site is under maintenance. Please check back soon.",
+  cacheEnabled: true,
+  cronEnabled: true,
+};
+
+export async function GET(request: NextRequest) {
   try {
+    const authError = verifyCronSecret(request);
+    if (authError) return authError;
+
+    const maintenance = await getJsonSetting("system_maintenance", DEFAULT_MAINTENANCE);
+    if (!maintenance.cronEnabled) {
+      return apiSuccess({ publishedCount: 0 }, "Cron is disabled in maintenance settings.");
+    }
+
     const now = new Date();
 
-    // Find all articles scheduled to be published on or before right now
     const scheduledArticles = await prisma.article.findMany({
       where: {
         status: { in: [ArticleStatus.DRAFT, ArticleStatus.PENDING] },
@@ -19,9 +36,8 @@ export async function GET() {
       return apiSuccess({ publishedCount: 0 }, "No scheduled articles due for publication.");
     }
 
-    const ids = scheduledArticles.map((a) => a.id);
+    const ids = scheduledArticles.map((article) => article.id);
 
-    // Update their status to PUBLISHED
     await prisma.article.updateMany({
       where: { id: { in: ids } },
       data: {
@@ -30,10 +46,13 @@ export async function GET() {
       },
     });
 
-    return apiSuccess({
-      publishedCount: scheduledArticles.length,
-      publishedArticles: scheduledArticles,
-    }, `Successfully published ${scheduledArticles.length} scheduled articles.`);
+    return apiSuccess(
+      {
+        publishedCount: scheduledArticles.length,
+        publishedArticles: scheduledArticles,
+      },
+      `Successfully published ${scheduledArticles.length} scheduled articles.`
+    );
   } catch (error) {
     return handleServerError(error, "Failed to publish scheduled articles.");
   }

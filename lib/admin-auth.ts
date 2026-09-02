@@ -2,7 +2,9 @@ import { getServerSession } from "next-auth";
 import { Role } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { apiError } from "@/lib/api-response";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+
+export const STAFF_ROLES: Role[] = [Role.ADMIN, Role.EDITOR, Role.AUTHOR];
 
 export async function getAdminSession() {
   return getServerSession(authOptions);
@@ -10,6 +12,32 @@ export async function getAdminSession() {
 
 export function hasRole(role: Role, allowed: Role[]) {
   return allowed.includes(role);
+}
+
+export function isStaffRole(role: Role | undefined | null): role is Role {
+  return role !== undefined && role !== null && STAFF_ROLES.includes(role);
+}
+
+export async function requireStaff(message = "Unauthorized: Staff access required") {
+  return requireRoles(STAFF_ROLES, message);
+}
+
+export function verifyCronSecret(request: NextRequest): NextResponse | null {
+  const secret = process.env.CRON_SECRET;
+
+  if (!secret) {
+    if (process.env.NODE_ENV === "development") {
+      return null;
+    }
+    return apiError("Cron secret is not configured", 503) as NextResponse;
+  }
+
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${secret}`) {
+    return apiError("Unauthorized", 401) as NextResponse;
+  }
+
+  return null;
 }
 
 export async function requireRoles(allowed: Role[], message = "Unauthorized") {

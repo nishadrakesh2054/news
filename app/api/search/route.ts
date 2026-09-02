@@ -8,9 +8,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q") || "";
     const categorySlug = searchParams.get("category") || "";
+    const tagSlug = searchParams.get("tag") || "";
+    const province = searchParams.get("province") || "";
+    const district = searchParams.get("district") || "";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "12");
-    const sort = searchParams.get("sort") || "recent"; // "recent" | "views"
+    const sort = searchParams.get("sort") || "recent";
 
     const where: Prisma.ArticleWhereInput = {
       status: ArticleStatus.PUBLISHED,
@@ -22,20 +25,36 @@ export async function GET(request: NextRequest) {
         { title: { contains: q, mode: "insensitive" } },
         { titleNp: { contains: q, mode: "insensitive" } },
         { content: { contains: q, mode: "insensitive" } },
+        { contentNp: { contains: q, mode: "insensitive" } },
         { excerpt: { contains: q, mode: "insensitive" } },
         { keywords: { contains: q, mode: "insensitive" } },
+        { district: { contains: q, mode: "insensitive" } },
+        { tags: { some: { name: { contains: q, mode: "insensitive" } } } },
       ];
     }
 
     if (categorySlug) {
-      where.category = {
-        slug: categorySlug,
-      };
+      where.category = { slug: categorySlug };
     }
 
-    const orderBy: Prisma.ArticleOrderByWithRelationInput = sort === "views" ? { views: "desc" } : { createdAt: "desc" };
+    if (tagSlug) {
+      where.tags = { some: { slug: tagSlug } };
+    }
 
-    // Parallel count & fetch for maximum search speed
+    if (province) {
+      const provinceNum = Number(province);
+      if (!Number.isNaN(provinceNum)) {
+        where.province = provinceNum;
+      }
+    }
+
+    if (district.trim()) {
+      where.district = { contains: district.trim(), mode: "insensitive" };
+    }
+
+    const orderBy: Prisma.ArticleOrderByWithRelationInput =
+      sort === "views" ? { views: "desc" } : { publishedAt: "desc" };
+
     const [total, articles] = await Promise.all([
       prisma.article.count({ where }),
       prisma.article.findMany({
@@ -52,6 +71,8 @@ export async function GET(request: NextRequest) {
           coverImage: true,
           type: true,
           views: true,
+          province: true,
+          district: true,
           createdAt: true,
           publishedAt: true,
           category: {
@@ -66,6 +87,13 @@ export async function GET(request: NextRequest) {
             select: {
               name: true,
               image: true,
+            },
+          },
+          tags: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
             },
           },
         },
