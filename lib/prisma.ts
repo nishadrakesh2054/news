@@ -22,7 +22,8 @@ export function resolveDatabaseUrl(): string {
 
 function createPrismaClient() {
   const connectionString = resolveDatabaseUrl();
-  const log = process.env.NODE_ENV === "development" ? (["warn", "error"] as const) : (["error"] as const);
+  const log: Array<"warn" | "error"> =
+    process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"];
 
   if (!connectionString) {
     return new PrismaClient({ log });
