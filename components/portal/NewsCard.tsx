@@ -67,34 +67,51 @@ export function NewsCard({
   );
 
   if (variant === "lead" || variant === "stack") {
-    const minH = variant === "lead" ? "min-h-[280px] sm:min-h-[420px]" : "min-h-[180px] sm:min-h-[200px]";
-    const titleSize =
-      variant === "lead"
-        ? "text-xl sm:text-3xl font-extrabold"
-        : "text-sm sm:text-base font-bold";
+    const isLead = variant === "lead";
+    const frameH = isLead ? "h-[320px] sm:h-[460px]" : "h-[200px]";
+    const titleSize = isLead
+      ? "text-xl sm:text-3xl font-extrabold"
+      : "text-sm sm:text-base font-bold";
 
     return (
-      <Link href={href} className={`group relative block overflow-hidden bg-gray-900 ${minH} ${className}`}>
+      <Link
+        href={href}
+        className={`group relative block overflow-hidden bg-neutral-800 ${frameH} ${className}`}
+      >
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={image}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            className="absolute inset-0 z-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
         ) : null}
         {label ? (
           <span
-            className="absolute left-0 top-0 z-10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white"
+            className="absolute left-0 top-0 z-20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white"
             style={{ backgroundColor: PORTAL.accent }}
           >
             {label}
           </span>
         ) : null}
-        {/* Solid caption bar — no glass/transparency */}
-        <div className="absolute inset-x-0 bottom-0 z-10 bg-gray-950 p-3 sm:p-4">
-          <h2 className={`line-clamp-3 leading-snug text-white ${titleSize}`}>{title}</h2>
-          <p className="mt-1 text-[10px] font-medium text-gray-300">
+        {/* Translucent gradient — photo shows through, title stays readable */}
+        <div
+          className={`absolute inset-x-0 bottom-0 z-10 ${isLead ? "px-4 pb-4 pt-24 sm:px-5 sm:pb-5 sm:pt-28" : "px-3 pb-3 pt-14"}`}
+          style={{
+            background:
+              "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0) 100%)",
+          }}
+        >
+          <h2
+            className={`line-clamp-3 leading-snug text-white ${titleSize}`}
+            style={{ textShadow: "0 1px 3px rgba(0,0,0,0.65)" }}
+          >
+            {title}
+          </h2>
+          <p
+            className="mt-1 text-[10px] font-medium text-white/90"
+            style={{ textShadow: "0 1px 2px rgba(0,0,0,0.55)" }}
+          >
             {category ? `${category} · ` : ""}
             {when}
           </p>

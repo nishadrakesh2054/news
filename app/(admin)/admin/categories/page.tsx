@@ -28,6 +28,7 @@ interface CategoryItem {
   nameNp: string | null;
   slug: string;
   description: string | null;
+  descriptionNp: string | null;
   order: number;
   createdAt: string;
   _count: {
@@ -45,6 +46,7 @@ export default function AdminCategoriesPage() {
   const [nameNp, setNameNp] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
+  const [descriptionNp, setDescriptionNp] = useState("");
   const [order, setOrder] = useState(0);
 
   const { data: categories = [], isLoading, isError, refetch, isFetching } = useQuery<CategoryItem[]>({
@@ -58,7 +60,14 @@ export default function AdminCategoriesPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (payload: { name: string; nameNp?: string; slug: string; description?: string; order: number }) => {
+    mutationFn: async (payload: {
+      name: string;
+      nameNp?: string;
+      slug: string;
+      description?: string;
+      descriptionNp?: string;
+      order: number;
+    }) => {
       const res = await fetch("/api/admin/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -115,6 +124,7 @@ export default function AdminCategoriesPage() {
     setNameNp("");
     setSlug("");
     setDescription("");
+    setDescriptionNp("");
     setOrder((categories.length || 0) + 1);
     setIsModalOpen(true);
   };
@@ -125,6 +135,7 @@ export default function AdminCategoriesPage() {
     setNameNp(category.nameNp || "");
     setSlug(category.slug);
     setDescription(category.description || "");
+    setDescriptionNp(category.descriptionNp || "");
     setOrder(category.order);
     setIsModalOpen(true);
   };
@@ -159,6 +170,7 @@ export default function AdminCategoriesPage() {
       nameNp: nameNp || undefined,
       slug: autoSlug(slug),
       description: description || undefined,
+      descriptionNp: descriptionNp || undefined,
       order: Number(order),
     };
 
@@ -387,14 +399,28 @@ export default function AdminCategoriesPage() {
 
               <div className="space-y-1">
                 <label htmlFor="category-description" className="text-xs font-medium text-foreground">
-                  Description
+                  Description (EN)
                 </label>
                 <textarea
                   id="category-description"
                   rows={2}
-                  placeholder="Optional…"
+                  placeholder="Optional English…"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  className={`${adminInput} min-h-16 w-full resize-y py-2`}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="category-description-np" className="text-xs font-medium text-foreground">
+                  Description (NE)
+                </label>
+                <textarea
+                  id="category-description-np"
+                  rows={2}
+                  placeholder="वैकल्पिक नेपाली…"
+                  value={descriptionNp}
+                  onChange={(e) => setDescriptionNp(e.target.value)}
                   className={`${adminInput} min-h-16 w-full resize-y py-2`}
                 />
               </div>

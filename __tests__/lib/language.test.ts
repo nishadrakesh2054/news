@@ -9,6 +9,7 @@ import {
   resolveArticleExcerpt,
   resolveArticleTitle,
   resolveCategoryName,
+  resolveCategoryDescription,
   resolveKeywords,
   resolveLanguageEdition,
   resolveMetaDescription,
@@ -59,6 +60,16 @@ describe("localized fields", () => {
     const category = { name: "Politics", nameNp: "राजनीति" };
     expect(resolveCategoryName(category, "en")).toBe("Politics");
     expect(resolveCategoryName(category, "ne")).toBe("राजनीति");
+  });
+
+  it("resolves category descriptions by edition", () => {
+    const category = {
+      description: "National and international politics",
+      descriptionNp: "राष्ट्रिय तथा अन्तर्राष्ट्रिय राजनीति",
+    };
+    expect(resolveCategoryDescription(category, "en")).toBe("National and international politics");
+    expect(resolveCategoryDescription(category, "ne")).toBe("राष्ट्रिय तथा अन्तर्राष्ट्रिय राजनीति");
+    expect(resolveCategoryDescription({ description: "EN only" }, "ne")).toBeNull();
   });
 
   it("resolves excerpts by edition", () => {

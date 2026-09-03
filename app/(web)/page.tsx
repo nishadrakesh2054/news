@@ -4,7 +4,11 @@ import { Suspense } from "react";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus, ArticleType, Prisma } from "@prisma/client";
-import { resolveLanguageEdition, resolveCategoryName } from "@/lib/language";
+import {
+  resolveLanguageEdition,
+  resolveCategoryName,
+  resolveCategoryDescription,
+} from "@/lib/language";
 import { SITE_CONFIG, SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
 import { TrendingHashtags } from "@/components/portal/TrendingHashtags";
 import { NewsCard } from "@/components/portal/NewsCard";
@@ -12,6 +16,7 @@ import { HomeSidebarTabs } from "@/components/portal/HomeSidebarTabs";
 import { NewsletterMembership } from "@/components/portal/NewsletterMembership";
 import { CategoryGridSection } from "@/components/portal/CategoryGridSection";
 import { OpinionSection } from "@/components/portal/OpinionSection";
+import { ProvinceNewsWidget } from "@/components/portal/ProvinceNewsWidget";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { PORTAL } from "@/constants/portal";
@@ -77,8 +82,14 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
       : { in: ["BOTH", "NEPALI_ONLY"] },
   };
 
-  const [publishedArticles, categories, opinionArticles, economyArticles, sportsArticles] =
-    await Promise.all([
+  const [
+    publishedArticles,
+    categories,
+    opinionArticles,
+    economyArticles,
+    sportsArticles,
+    provinceArticles,
+  ] = await Promise.all([
       prisma.article.findMany({
         where: whereClause,
         select: articleSelect,
@@ -94,6 +105,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
           nameNp: true,
           slug: true,
           description: true,
+          descriptionNp: true,
           articles: {
             where: whereClause,
             orderBy: { publishedAt: "desc" },
@@ -141,15 +153,37 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         orderBy: { publishedAt: "desc" },
         take: 4,
       }),
+      prisma.article.findMany({
+        where: {
+          ...whereClause,
+          province: { not: null },
+        },
+        select: {
+          id: true,
+          title: true,
+          titleNp: true,
+          slug: true,
+          coverImage: true,
+          province: true,
+          district: true,
+          createdAt: true,
+        },
+        orderBy: { publishedAt: "desc" },
+        take: 48,
+      }),
     ]);
 
-  const leadStory =
-    publishedArticles.find((a) => a.isFeatured) || publishedArticles[0] || null;
-  const rest = publishedArticles.filter((a) => a.id !== leadStory?.id);
-  const stackStories = rest.slice(0, 2);
+  const featured = publishedArticles.filter((a) => a.isFeatured);
+  const mainStories = (
+    featured.length >= 2
+      ? featured
+      : [...featured, ...publishedArticles.filter((a) => !a.isFeatured)]
+  ).slice(0, 2);
+  const mainIds = new Set(mainStories.map((a) => a.id));
+  const rest = publishedArticles.filter((a) => !mainIds.has(a.id));
   const recentSidebar = rest.slice(0, 6);
   const popularSidebar = [...publishedArticles].sort((a, b) => b.views - a.views).slice(0, 6);
-  const latestBelow = rest.slice(2, 10);
+  const latestBelow = rest.slice(0, 10);
 
   const emptyLabel = isEnglish ? "No stories available yet." : "कुनै समाचार उपलब्ध छैन।";
 
@@ -159,35 +193,27 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         <TrendingHashtags />
       </Suspense>
 
-      {/* Hero: lead + 2 stack + sidebar */}
+      {/* Hero: 2 main stories stacked (~70% / 9 cols) + sidebar (~30% / 3 cols) */}
       <PortalContainer className="py-4 sm:py-5">
-        {!leadStory ? (
+        {mainStories.length === 0 ? (
           <div className="border border-dashed border-gray-300 px-6 py-16 text-center text-sm text-gray-500">
             {emptyLabel}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-            <div className="lg:col-span-5">
-              <NewsCard
-                article={leadStory}
-                lang={lang}
-                variant="lead"
-                badge={isEnglish ? "Main News" : "मुख्य समाचार"}
-              />
-            </div>
-
-            <div className="flex flex-col gap-4 lg:col-span-3">
-              {stackStories.map((art) => (
-                <NewsCard key={art.id} article={art} lang={lang} variant="stack" className="flex-1" />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
+            <div className="flex flex-col gap-4 lg:col-span-9">
+              {mainStories.map((art) => (
+                <NewsCard
+                  key={art.id}
+                  article={art}
+                  lang={lang}
+                  variant="lead"
+                  badge={isEnglish ? "Main News" : "मुख्य समाचार"}
+                />
               ))}
-              {stackStories.length === 0 ? (
-                <div className="flex flex-1 items-center justify-center border border-dashed border-gray-300 text-xs text-gray-500">
-                  {emptyLabel}
-                </div>
-              ) : null}
             </div>
 
-            <aside className="flex flex-col gap-4 lg:col-span-4">
+            <aside className="flex flex-col gap-4 lg:col-span-3">
               <HomeSidebarTabs recent={recentSidebar} popular={popularSidebar} lang={lang} />
               <NewsletterMembership isEnglish={isEnglish} />
             </aside>
@@ -213,6 +239,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
                   optimizeCloudinaryUrl(cat.articles[0]?.coverImage, "card") ||
                   cat.articles[0]?.coverImage;
                 const name = resolveCategoryName(cat, lang);
+                const description = resolveCategoryDescription(cat, lang);
                 return (
                   <Link
                     key={cat.id}
@@ -228,8 +255,8 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
                     <h3 className="text-sm font-bold group-hover:underline" style={{ color: PORTAL.brand }}>
                       {name}
                     </h3>
-                    {cat.description ? (
-                      <p className="line-clamp-2 text-[11px] leading-snug text-gray-500">{cat.description}</p>
+                    {description ? (
+                      <p className="line-clamp-2 text-[11px] leading-snug text-gray-500">{description}</p>
                     ) : null}
                   </Link>
                 );
@@ -238,6 +265,11 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
           </PortalContainer>
         </section>
       ) : null}
+
+      {/* Province news tabs */}
+      <PortalContainer className="py-6">
+        <ProvinceNewsWidget articles={provinceArticles} lang={lang} />
+      </PortalContainer>
 
       {/* Latest stream under hero */}
       {latestBelow.length > 0 ? (

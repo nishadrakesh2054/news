@@ -15,6 +15,7 @@ export async function GET() {
         nameNp: true,
         slug: true,
         description: true,
+        descriptionNp: true,
         order: true,
         createdAt: true,
         _count: {
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
       return apiError("Unauthorized: Only Admins and Editors can create categories", 403);
     }
 
-    const { name, nameNp, slug, description, order } = await request.json();
+    const { name, nameNp, slug, description, descriptionNp, order } = await request.json();
 
     if (!name || !slug) {
       return apiError("Category name and slug are required", 400);
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
         nameNp: nameNp ? nameNp.trim() : null,
         slug: slug.trim().toLowerCase(),
         description: description ? description.trim() : null,
+        descriptionNp: descriptionNp ? descriptionNp.trim() : null,
         order: typeof order === "number" ? order : 0,
       },
     });

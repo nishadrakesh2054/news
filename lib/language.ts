@@ -184,6 +184,21 @@ export function resolveCategoryName(
   return category.nameNp || category.name;
 }
 
+/** Category blurb by edition — never mix EN description under Nepali UI. */
+export function resolveCategoryDescription(
+  category?: {
+    description?: string | null;
+    descriptionNp?: string | null;
+  } | null,
+  lang: LanguageEditionType = "ne"
+): string | null {
+  if (!category) return null;
+  if (lang === "en") {
+    return category.description?.trim() || category.descriptionNp?.trim() || null;
+  }
+  return category.descriptionNp?.trim() || null;
+}
+
 export function htmlLang(lang: LanguageEditionType): string {
   return lang === "en" ? "en" : "ne";
 }

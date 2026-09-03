@@ -18,7 +18,7 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { name, nameNp, slug, description, order } = await request.json();
+    const { name, nameNp, slug, description, descriptionNp, order } = await request.json();
 
     const existingCategory = await prisma.category.findUnique({
       where: { id },
@@ -44,6 +44,9 @@ export async function PATCH(
         ...(nameNp !== undefined && { nameNp: nameNp ? nameNp.trim() : null }),
         ...(slug && { slug: slug.trim().toLowerCase() }),
         ...(description !== undefined && { description: description ? description.trim() : null }),
+        ...(descriptionNp !== undefined && {
+          descriptionNp: descriptionNp ? descriptionNp.trim() : null,
+        }),
         ...(typeof order === "number" && { order }),
       },
     });

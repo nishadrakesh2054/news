@@ -2,122 +2,135 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MapPin, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import type { LanguageEditionType } from "@/lib/language";
+import { resolveArticleTitle } from "@/lib/language";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
+import { PORTAL } from "@/constants/portal";
 
 export const PROVINCES = [
-  { id: 1, name: "कोशी प्रदेश", slug: "koshi" },
-  { id: 2, name: "मधेश प्रदेश", slug: "madhesh" },
-  { id: 3, name: "बागमती प्रदेश", slug: "bagmati" },
-  { id: 4, name: "गण्डकी प्रदेश", slug: "gandaki" },
-  { id: 5, name: "लुम्बिनी प्रदेश", slug: "lumbini" },
-  { id: 6, name: "कर्णाली प्रदेश", slug: "karnali" },
-  { id: 7, name: "सुदूरपश्चिम प्रदेश", slug: "sudurpashchim" },
-];
+  { id: 1, name: "कोशी", nameEn: "Koshi", slug: "koshi" },
+  { id: 2, name: "मधेश", nameEn: "Madhesh", slug: "madhesh" },
+  { id: 3, name: "बागमती", nameEn: "Bagmati", slug: "bagmati" },
+  { id: 4, name: "गण्डकी", nameEn: "Gandaki", slug: "gandaki" },
+  { id: 5, name: "लुम्बिनी", nameEn: "Lumbini", slug: "lumbini" },
+  { id: 6, name: "कर्णाली", nameEn: "Karnali", slug: "karnali" },
+  { id: 7, name: "सुदूरपश्चिम", nameEn: "Sudurpashchim", slug: "sudurpashchim" },
+] as const;
 
-interface ArticleItem {
+type ProvinceArticle = {
   id: string;
   title: string;
   titleNp?: string | null;
   slug: string;
-  excerpt?: string | null;
   coverImage?: string | null;
   province?: number | null;
   district?: string | null;
-  createdAt: string;
-}
+  createdAt: Date | string;
+};
 
-interface ProvinceNewsWidgetProps {
-  articles: ArticleItem[];
-}
+type ProvinceNewsWidgetProps = {
+  articles: ProvinceArticle[];
+  lang?: LanguageEditionType;
+};
 
-export function ProvinceNewsWidget({ articles }: ProvinceNewsWidgetProps) {
-  const [activeProvince, setActiveProvince] = useState<number>(3); // Default Bagmati
+export function ProvinceNewsWidget({ articles, lang = "ne" }: ProvinceNewsWidgetProps) {
+  const isEnglish = lang === "en";
+  const langQ = isEnglish ? "?lang=en" : "";
+  const [activeProvince, setActiveProvince] = useState<number>(3);
 
-  const filteredArticles = articles.filter(
-    (a) => a.province === activeProvince || (!a.province && activeProvince === 3)
-  );
-
+  const filteredArticles = articles.filter((a) => a.province === activeProvince);
   const currentProv = PROVINCES.find((p) => p.id === activeProvince) || PROVINCES[2];
+  const provLabel = isEnglish ? currentProv.nameEn : currentProv.name;
 
   return (
-    <section className="bg-card rounded-2xl border border-border p-6 shadow-2xs space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border pb-4">
-        <div className="flex items-center space-x-2">
-          <MapPin className="h-6 w-6 text-[#027081]" />
-          <h2 className="text-xl font-extrabold text-foreground font-serif">
-            प्रदेश विशेष समाचार (7 Provinces Regional Feed)
-          </h2>
-        </div>
-
-        <Link
-          href={`/province/${currentProv.slug}`}
-          className="text-xs font-bold text-[#027081] hover:underline flex items-center gap-1"
+    <section className="space-y-4">
+      <div className="flex items-center gap-3">
+        <h2
+          className="shrink-0 text-xl font-extrabold tracking-tight whitespace-nowrap sm:text-2xl"
+          style={{ color: PORTAL.brand }}
         >
-          <span>{currentProv.name}का सबै समाचार</span>
-          <ChevronRight className="h-4 w-4" />
+          {isEnglish ? "Province News" : "प्रदेश समाचार"}
+        </h2>
+        <div
+          className="h-px min-w-4 flex-1"
+          style={{ backgroundColor: PORTAL.accent, opacity: 0.35 }}
+        />
+        <Link
+          href={`/province/${currentProv.slug}${langQ}`}
+          className="inline-flex shrink-0 items-center gap-0.5 text-xs font-bold whitespace-nowrap hover:underline"
+          style={{ color: PORTAL.brand }}
+        >
+          {isEnglish ? "More news" : "थप समाचार"}
+          <ChevronRight className="h-3.5 w-3.5" />
         </Link>
       </div>
 
-      {/* Province Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {PROVINCES.map((prov) => {
-          const isActive = activeProvince === prov.id;
+          const active = activeProvince === prov.id;
           return (
             <button
               key={prov.id}
+              type="button"
               onClick={() => setActiveProvince(prov.id)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                isActive
-                  ? "bg-[#027081] text-white shadow-xs"
-                  : "bg-muted/50 text-foreground hover:bg-muted"
+              className={`shrink-0 px-3 py-2 text-xs font-bold whitespace-nowrap transition-colors ${
+                active ? "text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
+              style={active ? { backgroundColor: PORTAL.brand } : undefined}
             >
-              {prov.name}
+              {isEnglish ? prov.nameEn : prov.name}
             </button>
           );
         })}
       </div>
 
-      {/* Grid of Articles */}
       {filteredArticles.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredArticles.slice(0, 6).map((art) => (
-            <Link
-              key={art.id}
-              href={`/article/${art.slug}`}
-              className="group flex space-x-3.5 p-3 rounded-xl border border-border/50 bg-background hover:border-[#027081]/40 transition-colors"
-            >
-              {art.coverImage && (
-                <div className="h-20 w-24 rounded-lg overflow-hidden shrink-0 bg-muted">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={art.coverImage}
-                    alt={art.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredArticles.slice(0, 6).map((art) => {
+            const title = resolveArticleTitle(art, lang);
+            const image = optimizeCloudinaryUrl(art.coverImage, "thumbnail") || art.coverImage;
+            const when = formatTimeAgoNp(
+              typeof art.createdAt === "string" ? new Date(art.createdAt) : art.createdAt
+            );
+
+            return (
+              <Link
+                key={art.id}
+                href={`/article/${art.slug}${langQ}`}
+                className="group flex gap-3 border border-gray-200 p-3 hover:border-gray-300 hover:bg-gray-50"
+              >
+                <div className="h-16 w-20 shrink-0 overflow-hidden bg-gray-200">
+                  {image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={image} alt="" className="h-full w-full object-cover" />
+                  ) : null}
                 </div>
-              )}
-              <div className="flex-1 min-w-0 space-y-1">
-                {art.district && (
-                  <span className="text-[10px] font-bold text-[#027081] bg-[#027081]/10 px-2 py-0.5 rounded">
-                    {art.district}
-                  </span>
-                )}
-                <h3 className="text-xs sm:text-sm font-bold text-foreground line-clamp-2 group-hover:text-[#027081] transition-colors leading-snug font-serif">
-                  {art.titleNp || art.title}
-                </h3>
-                <span className="text-[10px] text-muted-foreground font-mono block">
-                  {formatTimeAgoNp(art.createdAt)}
-                </span>
-              </div>
-            </Link>
-          ))}
+                <div className="min-w-0 flex-1 space-y-1">
+                  {art.district ? (
+                    <span className="text-[10px] font-bold uppercase" style={{ color: PORTAL.accent }}>
+                      {art.district}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold uppercase" style={{ color: PORTAL.brand }}>
+                      {provLabel}
+                    </span>
+                  )}
+                  <h3 className="line-clamp-2 text-sm font-bold leading-snug text-gray-900 group-hover:underline">
+                    {title}
+                  </h3>
+                  <span className="block text-[10px] text-gray-500">{when}</span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       ) : (
-        <div className="p-8 text-center border border-dashed border-border rounded-xl text-xs text-muted-foreground">
-          {currentProv.name}मा हाल कुनै विशेष समाचार दर्ता भएको छैन।
+        <div className="border border-dashed border-gray-300 px-4 py-10 text-center text-xs text-gray-500">
+          {isEnglish
+            ? `No province news for ${currentProv.nameEn} yet.`
+            : `${currentProv.name}मा हाल कुनै प्रदेश समाचार छैन।`}
         </div>
       )}
     </section>

@@ -3,7 +3,8 @@ model Category {
   name        String    @unique
   nameNp      String?
   slug        String    @unique
-  description String?
+  description   String?
+  descriptionNp String?
   order       Int       @default(0)
   articles    Article[]
   createdAt   DateTime  @default(now())

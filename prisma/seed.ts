@@ -90,14 +90,70 @@ async function main() {
   console.log(`✅ Users ready: ${admin.email}, ${editor.email}`);
 
   const categoriesData = [
-    { name: "Politics", nameNp: "राजनीति", slug: "politics", order: 1, desc: "National and international politics" },
-    { name: "Economy", nameNp: "अर्थतन्त्र", slug: "economy", order: 2, desc: "Markets, banks, budget and business" },
-    { name: "Society", nameNp: "समाज", slug: "society", order: 3, desc: "Social affairs and public interest" },
-    { name: "Sports", nameNp: "खेलकुद", slug: "sports", order: 4, desc: "Cricket, football and national sports" },
-    { name: "Entertainment", nameNp: "मनोरञ्जन", slug: "entertainment", order: 5, desc: "Film, music and culture" },
-    { name: "Opinion", nameNp: "विचार", slug: "opinion", order: 6, desc: "Editorials and analysis" },
-    { name: "Technology", nameNp: "प्रविधि", slug: "technology", order: 7, desc: "Digital tech and innovation" },
-    { name: "World", nameNp: "विश्व", slug: "world", order: 8, desc: "International news" },
+    {
+      name: "Politics",
+      nameNp: "राजनीति",
+      slug: "politics",
+      order: 1,
+      desc: "National and international politics",
+      descNp: "राष्ट्रिय तथा अन्तर्राष्ट्रिय राजनीति",
+    },
+    {
+      name: "Economy",
+      nameNp: "अर्थतन्त्र",
+      slug: "economy",
+      order: 2,
+      desc: "Markets, banks, budget and business",
+      descNp: "बजार, बैंक, बजेट र व्यापार",
+    },
+    {
+      name: "Society",
+      nameNp: "समाज",
+      slug: "society",
+      order: 3,
+      desc: "Social affairs and public interest",
+      descNp: "सामाजिक सरोकार र जनहितका विषय",
+    },
+    {
+      name: "Sports",
+      nameNp: "खेलकुद",
+      slug: "sports",
+      order: 4,
+      desc: "Cricket, football and national sports",
+      descNp: "क्रिकेट, फुटबल र राष्ट्रिय खेलकुद",
+    },
+    {
+      name: "Entertainment",
+      nameNp: "मनोरञ्जन",
+      slug: "entertainment",
+      order: 5,
+      desc: "Film, music and culture",
+      descNp: "चलचित्र, संगीत र संस्कृति",
+    },
+    {
+      name: "Opinion",
+      nameNp: "विचार",
+      slug: "opinion",
+      order: 6,
+      desc: "Editorials and analysis",
+      descNp: "सम्पादकीय र विश्लेषण",
+    },
+    {
+      name: "Technology",
+      nameNp: "प्रविधि",
+      slug: "technology",
+      order: 7,
+      desc: "Digital tech and innovation",
+      descNp: "डिजिटल प्रविधि र नवप्रवर्तन",
+    },
+    {
+      name: "World",
+      nameNp: "विश्व",
+      slug: "world",
+      order: 8,
+      desc: "International news",
+      descNp: "अन्तर्राष्ट्रिय समाचार",
+    },
     { name: "Lifestyle", nameNp: "जीवनशैली", slug: "lifestyle", order: 9, desc: "Health, travel and culture" },
   ];
 
@@ -105,12 +161,19 @@ async function main() {
   for (const cat of categoriesData) {
     const row = await prisma.category.upsert({
       where: { slug: cat.slug },
-      update: { name: cat.name, nameNp: cat.nameNp, order: cat.order, description: cat.desc },
+      update: {
+        name: cat.name,
+        nameNp: cat.nameNp,
+        order: cat.order,
+        description: cat.desc,
+        descriptionNp: cat.descNp,
+      },
       create: {
         name: cat.name,
         nameNp: cat.nameNp,
         slug: cat.slug,
         description: cat.desc,
+        descriptionNp: cat.descNp,
         order: cat.order,
       },
     });
