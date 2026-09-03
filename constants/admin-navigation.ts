@@ -84,7 +84,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         href: "/admin/articles/review",
         icon: ClipboardCheck,
         status: "live",
-        api: "/api/admin/articles",
+        api: "/api/admin/articles/review",
         description: "Approve pending articles before publication",
         roles: [Role.ADMIN, Role.EDITOR],
       },

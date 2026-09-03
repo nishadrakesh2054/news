@@ -23,6 +23,16 @@ export function apiError(error: string, status = 400) {
   );
 }
 
+function clientSafeErrorMessage(error: unknown, fallback: string) {
+  if (!(error instanceof Error) || !error.message) return fallback;
+  let message = error.message;
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+  if (databaseUrl) {
+    message = message.split(databaseUrl).join("[database]");
+  }
+  return message;
+}
+
 export function handleServerError(
   error: unknown,
   fallbackMessage: string = MESSAGES.SYSTEM.SERVER_ERROR
@@ -31,6 +41,5 @@ export function handleServerError(
     error,
     fallbackMessage,
   });
-  const errorMessage = error instanceof Error ? error.message : fallbackMessage;
-  return apiError(errorMessage, 500);
+  return apiError(clientSafeErrorMessage(error, fallbackMessage), 500);
 }

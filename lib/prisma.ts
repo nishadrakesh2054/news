@@ -4,9 +4,33 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+/** Neon pooler + `channel_binding=require` often fails on serverless TCP. */
+export function resolveDatabaseUrl(): string {
+  const raw = process.env.DATABASE_URL?.trim() || "";
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    url.searchParams.delete("channel_binding");
+    if (!url.searchParams.has("sslmode")) {
+      url.searchParams.set("sslmode", "require");
+    }
+    return url.toString();
+  } catch {
+    return raw;
+  }
+}
+
 function createPrismaClient() {
+  const connectionString = resolveDatabaseUrl();
+  const log = process.env.NODE_ENV === "development" ? (["warn", "error"] as const) : (["error"] as const);
+
+  if (!connectionString) {
+    return new PrismaClient({ log });
+  }
+
   return new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
+    log,
+    datasources: { db: { url: connectionString } },
   });
 }
 

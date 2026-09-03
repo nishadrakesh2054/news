@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { ArticleStatus, ArticleType, LanguageEdition, Prisma, Role } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireStaff } from "@/lib/admin-auth";
 import { validateArticleCreate } from "@/lib/validations/article";
@@ -12,6 +12,9 @@ import {
   assertFeaturedPermission,
 } from "@/lib/article-permissions";
 import { writeAuditLog } from "@/lib/audit-log";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
@@ -87,81 +90,78 @@ export async function GET(request: NextRequest) {
       where.languageEdition = languageEdition as LanguageEdition;
     }
 
-    const [total, articles, statusGroups, viewsAggregate, breakingCount, scheduledCount] = await Promise.all([
-      prisma.article.count({ where }),
-      prisma.article.findMany({
-        where,
-        select: {
-          id: true,
-          title: true,
-          titleNp: true,
-          slug: true,
-          excerpt: true,
-          coverImage: true,
-          status: true,
-          type: true,
-          languageEdition: true,
-          isFeatured: true,
-          isBreaking: true,
-          views: true,
-          publishedAt: true,
-          scheduledAt: true,
-          province: true,
-          district: true,
-          createdAt: true,
-          author: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
+    const [total, articles, published, draft, pending, archived, viewsAggregate, breakingCount, scheduledCount] =
+      await Promise.all([
+        prisma.article.count({ where }),
+        prisma.article.findMany({
+          where,
+          select: {
+            id: true,
+            title: true,
+            titleNp: true,
+            slug: true,
+            excerpt: true,
+            coverImage: true,
+            status: true,
+            type: true,
+            languageEdition: true,
+            isFeatured: true,
+            isBreaking: true,
+            views: true,
+            publishedAt: true,
+            scheduledAt: true,
+            province: true,
+            district: true,
+            createdAt: true,
+            author: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+            category: {
+              select: {
+                id: true,
+                name: true,
+                nameNp: true,
+                slug: true,
+              },
+            },
+            tags: {
+              select: { id: true, name: true, slug: true },
             },
           },
-          category: {
-            select: {
-              id: true,
-              name: true,
-              nameNp: true,
-              slug: true,
-            },
+          orderBy: { createdAt: "desc" },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.article.count({ where: { ...where, status: ArticleStatus.PUBLISHED } }),
+        prisma.article.count({ where: { ...where, status: ArticleStatus.DRAFT } }),
+        prisma.article.count({ where: { ...where, status: ArticleStatus.PENDING } }),
+        prisma.article.count({ where: { ...where, status: ArticleStatus.ARCHIVED } }),
+        prisma.article.aggregate({
+          where,
+          _sum: { views: true },
+        }),
+        prisma.article.count({ where: { ...where, isBreaking: true } }),
+        prisma.article.count({
+          where: {
+            scheduledAt: { gt: new Date() },
+            status: { in: [ArticleStatus.DRAFT, ArticleStatus.PENDING] },
           },
-          tags: {
-            select: { id: true, name: true, slug: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.article.groupBy({
-        by: ["status"],
-        where,
-        _count: { _all: true },
-      }),
-      prisma.article.aggregate({
-        where,
-        _sum: { views: true },
-      }),
-      prisma.article.count({ where: { ...where, isBreaking: true } }),
-      prisma.article.count({
-        where: {
-          scheduledAt: { gt: new Date() },
-          status: { in: [ArticleStatus.DRAFT, ArticleStatus.PENDING] },
-        },
-      }),
-    ]);
-
-    const statusCount = (value: ArticleStatus) =>
-      statusGroups.find((group) => group.status === value)?._count._all ?? 0;
+        }),
+      ]);
 
     return apiSuccess(
       {
         articles,
         summary: {
           total,
-          published: statusCount(ArticleStatus.PUBLISHED),
-          draft: statusCount(ArticleStatus.DRAFT),
-          pending: statusCount(ArticleStatus.PENDING),
-          archived: statusCount(ArticleStatus.ARCHIVED),
+          published,
+          draft,
+          pending,
+          archived,
           breaking: breakingCount,
           scheduled: scheduledCount,
           views: viewsAggregate._sum.views ?? 0,

@@ -26,7 +26,7 @@ function hostsMatch(a: string, b: string): boolean {
   }
 }
 
-/** True when both editions share one host (e.g. echomanchs.vercel.app). */
+/** True when both editions share one host (e.g. echomanchnews.vercel.app). */
 export function isSameHostEditions(): boolean {
   return hostsMatch(getSiteUrl(), getEnglishSiteUrl());
 }

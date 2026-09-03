@@ -40,11 +40,10 @@ export default function AdminArticleReviewPage() {
     queryKey: ["admin-review-queue", page],
     queryFn: async () => {
       const params = new URLSearchParams({
-        status: "PENDING",
         limit: "20",
         page: String(page),
       });
-      const res = await fetch(`/api/admin/articles?${params.toString()}`);
+      const res = await fetch(`/api/admin/articles/review?${params.toString()}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to load review queue");
       return json.data as {
