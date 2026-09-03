@@ -26,7 +26,7 @@ function hostsMatch(a: string, b: string): boolean {
   }
 }
 
-/** True when both editions share one host (e.g. echomanch.vercel.app). */
+/** True when both editions share one host (e.g. echomanchs.vercel.app). */
 export function isSameHostEditions(): boolean {
   return hostsMatch(getSiteUrl(), getEnglishSiteUrl());
 }
@@ -51,7 +51,7 @@ export function absoluteUrl(path: string, lang: LanguageEditionType = "ne"): str
 
 /**
  * Localhost / same-host Vercel → ?lang=
- * Separate hosts (echomanch.com / en.echomanch.com) → switch base URL
+ * Separate hosts (echomanchs.com / en.echomanchs.com) → switch base URL
  */
 export function editionHomeHref(lang: LanguageEditionType, hostname?: string | null): string {
   const host = hostname?.split(":")[0]?.toLowerCase() ?? "";

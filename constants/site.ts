@@ -4,14 +4,14 @@ export const SITE_CONFIG = {
   title: "Echo Manch | Nepali News, Breaking, Politics & More",
   description:
     "Echo Manch delivers breaking news, politics, economy, sports, culture, and in-depth reporting from Nepal.",
-  url: (process.env.NEXT_PUBLIC_SITE_URL || "https://echomanch.com").replace(/\/$/, ""),
+  url: (process.env.NEXT_PUBLIC_SITE_URL || "https://echomanchs.com").replace(/\/$/, ""),
   englishUrl: (
-    process.env.NEXT_PUBLIC_ENGLISH_SITE_URL || "https://en.echomanch.com"
+    process.env.NEXT_PUBLIC_ENGLISH_SITE_URL || "https://en.echomanchs.com"
   ).replace(/\/$/, ""),
-  domain: "echomanch.com",
-  englishDomain: "en.echomanch.com",
-  email: "info@echomanch.com",
-  twitter: "@echomanch",
+  domain: "echomanchs.com",
+  englishDomain: "en.echomanchs.com",
+  email: "info@echomanchs.com",
+  twitter: "@echomanchs",
 } as const;
 
 /** SEO suffix for page titles, e.g. "Category | Echo Manch" */

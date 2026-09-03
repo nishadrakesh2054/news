@@ -21,13 +21,13 @@ Required for production:
 |----------|---------|
 | `DATABASE_URL` | Neon pooler URL |
 | `NEXTAUTH_SECRET` | Session signing (long random string) |
-| `NEXTAUTH_URL` | `https://echomanch.com` |
-| `NEXT_PUBLIC_SITE_URL` | `https://echomanch.com` (Nepali public) |
-| `NEXT_PUBLIC_ENGLISH_SITE_URL` | `https://en.echomanch.com` (English public) |
+| `NEXTAUTH_URL` | `https://echomanchs.com` |
+| `NEXT_PUBLIC_SITE_URL` | `https://echomanchs.com` (Nepali public) |
+| `NEXT_PUBLIC_ENGLISH_SITE_URL` | `https://en.echomanchs.com` (English public) |
 | `CLOUDINARY_*` | Media uploads |
 | `CRON_SECRET` | Protects `/api/cron/*` |
 | `RESEND_API_KEY` | Password reset + newsletter emails |
-| `MAIL_FROM_EMAIL` | `info@echomanch.com` |
+| `MAIL_FROM_EMAIL` | `info@echomanchs.com` |
 | `SENTRY_DSN` | Error monitoring (optional) |
 
 ## Bilingual editions (one CMS / one API)
@@ -36,8 +36,8 @@ Point both domains at the same Next.js deployment:
 
 | Host | Edition |
 |------|---------|
-| `echomanch.com` | Nepali (`NEPALI_ONLY` + `BOTH`) |
-| `en.echomanch.com` | English (`ENGLISH_ONLY` + `BOTH`) |
+| `echomanchs.com` | Nepali (`NEPALI_ONLY` + `BOTH`) |
+| `en.echomanchs.com` | English (`ENGLISH_ONLY` + `BOTH`) |
 
 - CMS: set each article’s **Language edition** (Nepali only / English only / Both).
 - Public APIs honor `Host` and optional `?lang=en|ne` (e.g. `GET /api/articles?lang=en`).
@@ -52,26 +52,28 @@ On Vercel: add both domains to the project. Set `NEXT_PUBLIC_SITE_URL` and `NEXT
 - [ ] `pnpm db:push` on production DB
 - [ ] `pnpm db:search-indexes` on production DB
 - [ ] All env vars set on Vercel (not in git)
-- [ ] Both `echomanch.com` and `en.echomanch.com` attached to the same project
+- [ ] Both `echomanchs.com` and `en.echomanchs.com` attached to the same project
 - [ ] `CRON_SECRET` set — Vercel cron sends `Authorization: Bearer $CRON_SECRET`
 - [ ] Security headers active (`next.config.ts`)
 - [ ] Rotate secrets if `.env` was ever pushed to GitHub
 
 ## Cron jobs
 
-`vercel.json` schedules:
+`vercel.json` schedules (Hobby plan = once per day each):
 
-| Schedule | Endpoint |
+| Schedule (UTC) | Endpoint |
 |----------|----------|
-| Every 5 min | `GET /api/cron/publish-scheduled` |
-| Every 5 min | `GET /api/cron/send-notifications` |
+| `0 1 * * *` (01:00) | `GET /api/cron/publish-scheduled` |
+| `0 2 * * *` (02:00) | `GET /api/cron/send-notifications` |
+
+> Vercel Hobby cannot use `*/5 * * * *`. Pro unlocks frequent crons.
 
 On Vercel, set `CRON_SECRET` in project env. Vercel automatically adds the Bearer header when invoking crons.
 
 Manual test:
 
 ```bash
-curl -H "Authorization: Bearer $CRON_SECRET" https://echomanch.com/api/cron/publish-scheduled
+curl -H "Authorization: Bearer $CRON_SECRET" https://echomanchs.vercel.app/api/cron/publish-scheduled
 ```
 
 ## Password reset

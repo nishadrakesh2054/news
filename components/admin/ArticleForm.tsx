@@ -65,11 +65,11 @@ const FORMAT_OPTIONS: { value: ArticleType; label: string }[] = [
 const LANGUAGE_OPTIONS: { value: LanguageEdition; label: string }[] = [
   {
     value: LanguageEdition.NEPALI_ONLY,
-    label: "Nepali only → echomanch.com",
+    label: "Nepali only → echomanchs.com",
   },
   {
     value: LanguageEdition.ENGLISH_ONLY,
-    label: "English only → en.echomanch.com",
+    label: "English only → en.echomanchs.com",
   },
   {
     value: LanguageEdition.BOTH,
@@ -405,10 +405,10 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
           title="Article information"
           hint={
             languageEdition === LanguageEdition.BOTH
-              ? "Both editions selected — fill Nepali + English title, body, and excerpt. One save publishes to echomanch.com and en.echomanch.com."
+              ? "Both editions selected — fill Nepali + English title, body, and excerpt. One save publishes to echomanchs.com and en.echomanchs.com."
               : languageEdition === LanguageEdition.ENGLISH_ONLY
-                ? "English only — this article appears on en.echomanch.com only."
-                : "Nepali only — this article appears on echomanch.com only. Change Language edition below to publish in both languages."
+                ? "English only — this article appears on en.echomanchs.com only."
+                : "Nepali only — this article appears on echomanchs.com only. Change Language edition below to publish in both languages."
           }
         >
           <AdminFormRow
@@ -470,7 +470,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
             serial={4}
             label="URL slug (shared)"
             required
-            hint="One latin slug for both sites — same path on echomanch.com and en.echomanch.com"
+            hint="One latin slug for both sites — same path on echomanchs.com and en.echomanchs.com"
           >
             <input
               id="slug"

@@ -25,20 +25,20 @@ describe("language edition detection", () => {
   });
 
   it("detects English hosts", () => {
-    expect(isEnglishHostname("en.echomanch.com")).toBe(true);
-    expect(isEnglishHostname("english.echomanch.com")).toBe(true);
-    expect(isEnglishHostname("echomanch.com")).toBe(false);
-    expect(isEnglishHostname("www.echomanch.com")).toBe(false);
+    expect(isEnglishHostname("en.echomanchs.com")).toBe(true);
+    expect(isEnglishHostname("english.echomanchs.com")).toBe(true);
+    expect(isEnglishHostname("echomanchs.com")).toBe(false);
+    expect(isEnglishHostname("www.echomanchs.com")).toBe(false);
   });
 
   it("prefers query over host", () => {
-    expect(resolveLanguageEdition("ne", "en.echomanch.com")).toBe("ne");
-    expect(resolveLanguageEdition("en", "echomanch.com")).toBe("en");
+    expect(resolveLanguageEdition("ne", "en.echomanchs.com")).toBe("ne");
+    expect(resolveLanguageEdition("en", "echomanchs.com")).toBe("en");
   });
 
   it("falls back to host then Nepali", () => {
-    expect(resolveLanguageEdition(null, "en.echomanch.com")).toBe("en");
-    expect(resolveLanguageEdition(null, "echomanch.com")).toBe("ne");
+    expect(resolveLanguageEdition(null, "en.echomanchs.com")).toBe("en");
+    expect(resolveLanguageEdition(null, "echomanchs.com")).toBe("ne");
   });
 });
 

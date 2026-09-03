@@ -19,7 +19,7 @@ export function parseLangParam(value?: string | null): LanguageEditionType | nul
 /**
  * Detects the active edition:
  * 1. `?lang=en|ne`
- * 2. Host (en.echomanch.com / english.echomanch.com)
+ * 2. Host (en.echomanchs.com / english.echomanchs.com)
  * 3. Path prefix `/en`
  * Default: Nepali
  */

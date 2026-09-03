@@ -77,11 +77,11 @@ async function main() {
   });
 
   const editor = await prisma.user.upsert({
-    where: { email: "editor@echomanch.com" },
+    where: { email: "editor@echomanchs.com" },
     update: { password: hashedPassword, role: Role.EDITOR },
     create: {
       name: "सम्पादकीय टोली / Desk Editor",
-      email: "editor@echomanch.com",
+      email: "editor@echomanchs.com",
       password: hashedPassword,
       role: Role.EDITOR,
     },
@@ -622,9 +622,9 @@ async function main() {
       titleNp: "द्वैभाषिक संस्करण कसरी पढ्ने — छोटो गाइड",
       slug: "how-to-follow-echomanch-bilingual-editions",
       excerpt:
-        "Use echomanch.com for Nepali and en.echomanch.com for English — one CMS powers both portals.",
+        "Use echomanchs.com for Nepali and en.echomanchs.com for English — one CMS powers both portals.",
       excerptNp:
-        "नेपालीका लागि echomanch.com र अंग्रेजीका लागि en.echomanch.com — एउटै सीएमएसले दुवै पोर्टल चलाउँछ।",
+        "नेपालीका लागि echomanchs.com र अंग्रेजीका लागि en.echomanchs.com — एउटै सीएमएसले दुवै पोर्टल चलाउँछ।",
       content: p(
         "<strong>Guide.</strong> Echo Manch publishes many stories in both languages from a single article record.",
         "Editors choose Nepali only, English only, or Both. Public sites filter automatically by domain.",
@@ -977,19 +977,19 @@ async function main() {
       title: "Header leaderboard demo",
       slot: AdSlot.HEADER_LEADERBOARD,
       imageUrl: "https://placehold.co/728x90/027081/ffffff?text=Echo+Manch+Ad",
-      targetUrl: "https://echomanch.com",
+      targetUrl: "https://echomanchs.com",
     },
     {
       title: "Sidebar promo demo",
       slot: AdSlot.SIDEBAR_TOP,
       imageUrl: "https://placehold.co/300x250/0C4EA0/ffffff?text=Sidebar+Ad",
-      targetUrl: "https://echomanch.com",
+      targetUrl: "https://echomanchs.com",
     },
     {
       title: "In-article demo",
       slot: AdSlot.IN_ARTICLE,
       imageUrl: "https://placehold.co/600x200/C3272E/ffffff?text=In-Article+Ad",
-      targetUrl: "https://en.echomanch.com",
+      targetUrl: "https://en.echomanchs.com",
     },
   ];
 
