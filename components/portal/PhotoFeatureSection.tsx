@@ -1,0 +1,112 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Camera } from "lucide-react";
+import type { LanguageEditionType } from "@/lib/language";
+import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
+import { SectionHeader } from "@/components/portal/SectionHeader";
+import { PORTAL } from "@/constants/portal";
+
+type GalleryCard = {
+  id: string;
+  title: string;
+  titleNp?: string | null;
+  slug: string;
+  description?: string | null;
+  coverUrl?: string | null;
+  createdAt: string;
+  itemCount?: number;
+};
+
+type PhotoFeatureSectionProps = {
+  lang?: LanguageEditionType | string;
+};
+
+export function PhotoFeatureSection({ lang = "ne" }: PhotoFeatureSectionProps) {
+  const isEnglish = lang === "en";
+  const langQ = isEnglish ? "?lang=en" : "";
+  const [galleries, setGalleries] = useState<GalleryCard[]>([]);
+
+  useEffect(() => {
+    fetch("/api/galleries")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setGalleries(json.data.slice(0, 4));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  if (galleries.length === 0) return null;
+
+  return (
+    <section className="py-2">
+      <SectionHeader
+        title={isEnglish ? "Photo Feature" : "फोटो फिचर"}
+        href={`/galleries${langQ}`}
+        linkLabel={isEnglish ? "More photos" : "थप फोटो"}
+      />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {galleries.map((gallery) => {
+          const title =
+            isEnglish
+              ? gallery.title || gallery.titleNp || ""
+              : gallery.titleNp || gallery.title;
+          const cover =
+            optimizeCloudinaryUrl(gallery.coverUrl, "card") || gallery.coverUrl;
+          const when = formatTimeAgoNp(new Date(gallery.createdAt));
+
+          return (
+            <Link
+              key={gallery.id}
+              href={`/gallery/${gallery.slug}${langQ}`}
+              className="group relative block min-h-[220px] overflow-hidden bg-neutral-800 sm:min-h-[260px]"
+            >
+              {cover ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={cover}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                />
+              ) : null}
+
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.25) 45%, rgba(0,0,0,0.05) 100%)",
+                }}
+              />
+
+              <span
+                className="absolute left-0 top-0 z-10 inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white"
+                style={{ backgroundColor: PORTAL.accent }}
+              >
+                <Camera className="h-3 w-3" />
+                {isEnglish ? "Gallery" : "ग्यालेरी"}
+              </span>
+
+              <div className="absolute inset-x-0 bottom-0 z-10 p-3 sm:p-4">
+                {(gallery.itemCount ?? 0) > 0 ? (
+                  <p className="mb-1 text-[10px] font-medium text-white/75">
+                    {gallery.itemCount} {isEnglish ? "photos" : "तस्बिर"} · {when}
+                  </p>
+                ) : (
+                  <p className="mb-1 text-[10px] font-medium text-white/75">{when}</p>
+                )}
+                <h3 className="line-clamp-2 text-sm font-extrabold leading-snug text-white sm:text-base">
+                  {title}
+                </h3>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}

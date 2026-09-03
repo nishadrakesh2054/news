@@ -17,6 +17,9 @@ import { NewsletterMembership } from "@/components/portal/NewsletterMembership";
 import { CategoryGridSection } from "@/components/portal/CategoryGridSection";
 import { OpinionSection } from "@/components/portal/OpinionSection";
 import { ProvinceNewsWidget } from "@/components/portal/ProvinceNewsWidget";
+import { LatestNewsSection } from "@/components/portal/LatestNewsSection";
+import { MediaShowcaseAboveFooter } from "@/components/portal/MediaShowcaseAboveFooter";
+import { RashifalSection } from "@/components/portal/RashifalSection";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { PORTAL } from "@/constants/portal";
@@ -183,7 +186,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
   const rest = publishedArticles.filter((a) => !mainIds.has(a.id));
   const recentSidebar = rest.slice(0, 6);
   const popularSidebar = [...publishedArticles].sort((a, b) => b.views - a.views).slice(0, 6);
-  const latestBelow = rest.slice(0, 10);
+  const latestBelow = rest.slice(0, 6);
 
   const emptyLabel = isEnglish ? "No stories available yet." : "कुनै समाचार उपलब्ध छैन।";
 
@@ -266,35 +269,23 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         </section>
       ) : null}
 
+      {/* Latest news + sidebar ad */}
+      {latestBelow.length > 0 ? (
+        <PortalContainer className="py-6">
+          <LatestNewsSection articles={latestBelow} lang={lang} />
+        </PortalContainer>
+      ) : null}
+
       {/* Province news tabs */}
       <PortalContainer className="py-6">
         <ProvinceNewsWidget articles={provinceArticles} lang={lang} />
       </PortalContainer>
 
-      {/* Latest stream under hero */}
-      {latestBelow.length > 0 ? (
-        <PortalContainer className="py-6">
-          <div className="mb-3 flex items-center justify-between border-b-2 pb-2" style={{ borderColor: PORTAL.accent }}>
-            <h2 className="text-lg font-extrabold" style={{ color: PORTAL.ink }}>
-              {isEnglish ? "Latest News" : "ताजा समाचार"}
-            </h2>
-            <Link href={`/search${langQ}`} className="text-xs font-bold hover:underline" style={{ color: PORTAL.brand }}>
-              {isEnglish ? "More" : "थप"}
-            </Link>
-          </div>
-          <div>
-            {latestBelow.map((art) => (
-              <NewsCard key={art.id} article={art} lang={lang} variant="list" showAuthor />
-            ))}
-          </div>
-        </PortalContainer>
-      ) : null}
-
-      <PortalContainer>
+      <PortalContainer className="py-6">
         <OpinionSection articles={opinionArticles} lang={lang} />
       </PortalContainer>
 
-      <PortalContainer>
+      <PortalContainer className="py-6">
         <CategoryGridSection
           title="Economy & Business"
           titleNp="अर्थतन्त्र"
@@ -304,7 +295,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         />
       </PortalContainer>
 
-      <PortalContainer>
+      <PortalContainer className="py-6">
         <CategoryGridSection
           title="Sports & Entertainment"
           titleNp="खेलकुद र मनोरञ्जन"
@@ -313,6 +304,14 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
           lang={lang}
         />
       </PortalContainer>
+
+      <Suspense fallback={<div className="h-64 bg-white" />}>
+        <MediaShowcaseAboveFooter />
+      </Suspense>
+
+      <Suspense fallback={<div className="h-48" style={{ backgroundColor: "rgba(25, 87, 166, 0.06)" }} />}>
+        <RashifalSection />
+      </Suspense>
     </main>
   );
 }

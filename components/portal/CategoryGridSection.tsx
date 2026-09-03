@@ -1,12 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
-import { resolveArticleExcerpt, resolveArticleTitle } from "@/lib/language";
+import {
+  resolveArticleExcerpt,
+  resolveArticleTitle,
+  type LanguageEditionType,
+} from "@/lib/language";
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
+import { SectionHeader } from "@/components/portal/SectionHeader";
 import { PORTAL } from "@/constants/portal";
 
-interface CategoryArticle {
+type CategoryArticle = {
   id: string;
   title: string;
   titleNp?: string | null;
@@ -14,123 +19,144 @@ interface CategoryArticle {
   excerpt?: string | null;
   excerptNp?: string | null;
   coverImage?: string | null;
-  createdAt: Date;
-  author?: {
-    name: string;
-  };
-}
+  createdAt: Date | string;
+  author?: { name?: string | null } | null;
+  category?: { name?: string; nameNp?: string | null; slug?: string } | null;
+};
 
-interface CategoryGridSectionProps {
+type CategoryGridSectionProps = {
   title: string;
   titleNp: string;
   categorySlug: string;
   articles: CategoryArticle[];
-  lang?: string;
-  accentColor?: string;
-}
+  lang?: LanguageEditionType | string;
+};
 
 export function CategoryGridSection({
   title,
   titleNp,
   categorySlug,
   articles,
-  lang,
+  lang = "ne",
 }: CategoryGridSectionProps) {
   if (!articles || articles.length === 0) return null;
 
   const isEnglish = lang === "en";
-  const edition = isEnglish ? "en" : "ne";
+  const edition: LanguageEditionType = isEnglish ? "en" : "ne";
+  const langQ = isEnglish ? "?lang=en" : "";
+  const sectionTitle = isEnglish ? title : titleNp || title;
+
   const mainArticle = articles[0];
   const secondaryArticles = articles.slice(1, 4);
 
+  const mainImage =
+    optimizeCloudinaryUrl(mainArticle.coverImage, "hero") || mainArticle.coverImage;
+  const mainTitle = resolveArticleTitle(mainArticle, edition);
+  const mainExcerpt = resolveArticleExcerpt(mainArticle, edition);
+  const mainWhen = formatTimeAgoNp(
+    typeof mainArticle.createdAt === "string"
+      ? new Date(mainArticle.createdAt)
+      : mainArticle.createdAt
+  );
+
   return (
-    <section className="space-y-4 my-8">
-      {/* Category Section Header */}
-      <div className="flex items-center justify-between border-b-2 pb-2" style={{ borderColor: PORTAL.accent }}>
-        <h3 className="text-lg font-extrabold tracking-tight text-gray-900 sm:text-xl">
-          {isEnglish ? title : titleNp || title}
-        </h3>
+    <section className="py-2">
+      <SectionHeader
+        title={sectionTitle}
+        href={`/category/${categorySlug}${langQ}`}
+        linkLabel={isEnglish ? "More news" : "थप समाचार"}
+      />
 
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-6">
+        {/* Lead feature — ~70% */}
         <Link
-          href={`/category/${categorySlug}${isEnglish ? "?lang=en" : ""}`}
-          className="flex items-center gap-0.5 text-xs font-bold hover:underline"
-          style={{ color: PORTAL.brand }}
+          href={`/article/${mainArticle.slug}${langQ}`}
+          className="group relative block min-h-[280px] overflow-hidden bg-neutral-800 sm:min-h-[340px] lg:col-span-8"
         >
-          <span>{isEnglish ? "View All" : "सबै हेर्नुहोस्"}</span>
-          <ChevronRight className="h-4 w-4" />
-        </Link>
-      </div>
+          {mainImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={mainImage}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            />
+          ) : null}
 
-      {/* Main 1 Large Left Card + 3 Right Cards Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Large Feature Card (Left 2 Columns) */}
-        {mainArticle && (
-          <Link
-            href={`/article/${mainArticle.slug}${isEnglish ? "?lang=en" : ""}`}
-            className="lg:col-span-2 group border-b border-border pb-4 hover:bg-muted/20 transition-all overflow-hidden flex flex-col sm:flex-row gap-4 rounded-none"
+          <span
+            className="absolute left-0 top-0 z-10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white"
+            style={{ backgroundColor: PORTAL.accent }}
           >
-            {mainArticle.coverImage && (
-              <div className="sm:w-1/2 h-56 sm:h-auto overflow-hidden bg-muted relative shrink-0 rounded-none">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={mainArticle.coverImage}
-                  alt={resolveArticleTitle(mainArticle, edition)}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 rounded-none"
-                />
-              </div>
-            )}
-            <div className="sm:w-1/2 flex flex-col justify-between space-y-3 py-1">
-              <div className="space-y-2">
-                <span className="text-[10px] font-bold font-mono" style={{ color: PORTAL.brand }}>
-                  {formatTimeAgoNp(mainArticle.createdAt)}
-                </span>
-                <h4 className="text-lg font-bold leading-tight text-gray-900 group-hover:underline sm:text-xl">
-                  {resolveArticleTitle(mainArticle, edition)}
-                </h4>
-                {(mainArticle.excerpt || mainArticle.excerptNp) && (
-                  <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-                    {resolveArticleExcerpt(mainArticle, edition)}
-                  </p>
-                )}
-              </div>
+            {sectionTitle}
+          </span>
 
-              {mainArticle.author?.name && (
-                <span className="text-xs text-muted-foreground font-semibold">
-                  {isEnglish ? "By" : "द्वारा:"} {mainArticle.author.name}
-                </span>
-              )}
-            </div>
-          </Link>
-        )}
-
-        {/* 3 Secondary Stacked List Cards (Right 1 Column) */}
-        <div className="space-y-3">
-          {secondaryArticles.map((art) => (
-            <Link
-              key={art.id}
-              href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}
-              className="group flex space-x-3 pb-3 border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors rounded-none"
+          <div
+            className="absolute inset-x-0 bottom-0 z-10 px-4 pb-4 pt-20 sm:px-5 sm:pb-5 sm:pt-28"
+            style={{
+              background:
+                "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0) 100%)",
+            }}
+          >
+            <p className="mb-1.5 text-[10px] font-medium text-white/80">{mainWhen}</p>
+            <h3
+              className="line-clamp-3 text-xl font-extrabold leading-snug text-white sm:text-2xl"
+              style={{ textShadow: "0 1px 3px rgba(0,0,0,0.55)" }}
             >
-              {art.coverImage && (
-                <div className="h-16 w-20 overflow-hidden shrink-0 bg-muted rounded-none">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={art.coverImage}
-                    alt={resolveArticleTitle(art, edition)}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-none"
-                  />
-                </div>
-              )}
-              <div className="flex-1 min-w-0 space-y-1">
-                <h5 className="line-clamp-2 text-xs font-bold leading-snug text-gray-900 group-hover:underline sm:text-sm">
-                  {resolveArticleTitle(art, edition)}
-                </h5>
-                <span className="text-[10px] text-muted-foreground block font-mono">
-                  {formatTimeAgoNp(art.createdAt)}
-                </span>
-              </div>
-            </Link>
-          ))}
+              {mainTitle}
+            </h3>
+            {mainExcerpt ? (
+              <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-white/85 sm:text-[13px]">
+                {mainExcerpt}
+              </p>
+            ) : null}
+            {mainArticle.author?.name ? (
+              <p className="mt-2 text-[11px] text-white/70">
+                {isEnglish ? "By" : "द्वारा"} {mainArticle.author.name}
+              </p>
+            ) : null}
+          </div>
+        </Link>
+
+        {/* Side stack — ~30% */}
+        <div className="flex flex-col divide-y divide-gray-100 border border-gray-200 bg-white lg:col-span-4">
+          {secondaryArticles.length > 0 ? (
+            secondaryArticles.map((art) => {
+              const image =
+                optimizeCloudinaryUrl(art.coverImage, "thumbnail") || art.coverImage;
+              const itemTitle = resolveArticleTitle(art, edition);
+              const when = formatTimeAgoNp(
+                typeof art.createdAt === "string" ? new Date(art.createdAt) : art.createdAt
+              );
+
+              return (
+                <Link
+                  key={art.id}
+                  href={`/article/${art.slug}${langQ}`}
+                  className="group flex flex-1 gap-3 p-3 transition-colors hover:bg-gray-50 sm:p-4"
+                >
+                  <div className="h-[4.5rem] w-24 shrink-0 overflow-hidden bg-gray-200">
+                    {image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={image}
+                        alt=""
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <h4 className="line-clamp-3 text-sm font-bold leading-snug text-gray-900 group-hover:underline">
+                      {itemTitle}
+                    </h4>
+                    <span className="block text-[10px] text-gray-500">{when}</span>
+                  </div>
+                </Link>
+              );
+            })
+          ) : (
+            <div className="flex flex-1 items-center justify-center p-6 text-center text-xs text-gray-400">
+              {isEnglish ? "More stories coming soon." : "थप समाचार चाँडै आउँदैछ।"}
+            </div>
+          )}
         </div>
       </div>
     </section>

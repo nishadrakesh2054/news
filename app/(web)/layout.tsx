@@ -24,7 +24,7 @@ export default function WebLayout({ children }: { children: React.ReactNode }) {
       <div id="main-content" className="flex-1">
         {children}
       </div>
-      <Suspense fallback={<div className="h-40 bg-slate-950" />}>
+      <Suspense fallback={<div className="h-48" style={{ backgroundColor: PORTAL.brand }} />}>
         <PublicFooter />
       </Suspense>
     </div>

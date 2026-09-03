@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
     const galleries = await prisma.gallery.findMany({
       where: { isPublished: true },
       orderBy: { createdAt: "desc" },
+      take: 12,
       select: {
         id: true,
         title: true,
@@ -50,10 +51,28 @@ export async function GET(request: NextRequest) {
         coverUrl: true,
         createdAt: true,
         _count: { select: { items: true } },
+        items: {
+          orderBy: { order: "asc" },
+          take: 1,
+          select: {
+            media: { select: { url: true, altText: true } },
+          },
+        },
       },
     });
 
-    const res = apiSuccess(galleries);
+    const payload = galleries.map((g) => ({
+      id: g.id,
+      title: g.title,
+      titleNp: g.titleNp,
+      slug: g.slug,
+      description: g.description,
+      coverUrl: g.coverUrl || g.items[0]?.media?.url || null,
+      createdAt: g.createdAt,
+      itemCount: g._count.items,
+    }));
+
+    const res = apiSuccess(payload);
     res.headers.set("Cache-Control", "public, s-maxage=120, stale-while-revalidate=300");
     return res;
   } catch (error) {

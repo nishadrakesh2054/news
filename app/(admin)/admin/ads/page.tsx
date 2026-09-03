@@ -43,7 +43,8 @@ interface AdItem {
 
 const SLOT_LABELS: Record<AdSlot, string> = {
   HEADER_LEADERBOARD: "Header leaderboard",
-  SIDEBAR_TOP: "Sidebar top",
+  SIDEBAR_TOP: "Sidebar top (ad 1)",
+  SIDEBAR_BOTTOM: "Sidebar bottom (ad 2)",
   IN_ARTICLE: "In-article",
   STICKY_FOOTER: "Sticky footer",
 };
@@ -226,7 +227,8 @@ export default function AdminAdsPage() {
         >
           <option value="ALL">All placements</option>
           <option value="HEADER_LEADERBOARD">Header leaderboard</option>
-          <option value="SIDEBAR_TOP">Sidebar top</option>
+          <option value="SIDEBAR_TOP">Sidebar top (ad 1)</option>
+          <option value="SIDEBAR_BOTTOM">Sidebar bottom (ad 2)</option>
           <option value="IN_ARTICLE">In-article</option>
           <option value="STICKY_FOOTER">Sticky footer</option>
         </select>
@@ -450,7 +452,8 @@ export default function AdminAdsPage() {
                         className={`${adminSelect} w-full`}
                       >
                         <option value="HEADER_LEADERBOARD">Header leaderboard</option>
-                        <option value="SIDEBAR_TOP">Sidebar top</option>
+                        <option value="SIDEBAR_TOP">Sidebar top (ad 1)</option>
+                        <option value="SIDEBAR_BOTTOM">Sidebar bottom (ad 2)</option>
                         <option value="IN_ARTICLE">In-article inline</option>
                         <option value="STICKY_FOOTER">Sticky footer</option>
                       </select>

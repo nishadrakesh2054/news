@@ -25,6 +25,15 @@ async function main() {
       clicks: 410,
     },
     {
+      title: "Himalayan Airlines Special Domestic Fare Promo",
+      slot: AdSlot.SIDEBAR_BOTTOM,
+      imageUrl: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=1000&auto=format&fit=crop",
+      targetUrl: "https://himalayanairlines.com",
+      isActive: true,
+      impressions: 6400,
+      clicks: 280,
+    },
+    {
       title: "CG Electronics 4K Smart TV New Year Festival Offer",
       slot: AdSlot.IN_ARTICLE,
       imageUrl: "https://images.unsplash.com/photo-1593784991095-a205069470b6?q=80&w=1000&auto=format&fit=crop",

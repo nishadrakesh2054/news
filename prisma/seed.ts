@@ -1045,7 +1045,13 @@ async function main() {
     {
       title: "Sidebar promo demo",
       slot: AdSlot.SIDEBAR_TOP,
-      imageUrl: "https://placehold.co/300x250/0C4EA0/ffffff?text=Sidebar+Ad",
+      imageUrl: "https://placehold.co/300x250/0C4EA0/ffffff?text=Sidebar+Ad+1",
+      targetUrl: "https://echomanchs.com",
+    },
+    {
+      title: "Sidebar bottom demo",
+      slot: AdSlot.SIDEBAR_BOTTOM,
+      imageUrl: "https://placehold.co/300x250/C41E3A/ffffff?text=Sidebar+Ad+2",
       targetUrl: "https://echomanchs.com",
     },
     {

@@ -21,6 +21,7 @@ type VideoItem = {
   url: string;
   mimeType: string;
   size: number;
+  folder?: string;
   caption: string | null;
   altText: string | null;
   uploader?: { name: string };
@@ -36,6 +37,7 @@ export default function AdminVideosPage() {
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [asReel, setAsReel] = useState(true);
 
   const { data, isLoading, refetch, isFetching } = useQuery<{ items: VideoItem[]; total: number }>({
     queryKey: ["admin-videos"],
@@ -52,14 +54,14 @@ export default function AdminVideosPage() {
       const res = await fetch("/api/admin/videos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, youtubeUrl }),
+        body: JSON.stringify({ title, youtubeUrl, asReel }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to add video");
       return json.data;
     },
     onSuccess: () => {
-      toast.success("YouTube video added");
+      toast.success(asReel ? "Reel added" : "YouTube video added");
       setTitle("");
       setYoutubeUrl("");
       queryClient.invalidateQueries({ queryKey: ["admin-videos"] });
@@ -70,6 +72,7 @@ export default function AdminVideosPage() {
   const items = data?.items ?? [];
   const totalSize = items.reduce((sum, item) => sum + (item.size || 0), 0);
   const youtubeCount = items.filter((item) => item.mimeType === "video/youtube").length;
+  const reelCount = items.filter((item) => item.folder === "reels").length;
 
   return (
     <AdminPageShell
@@ -82,15 +85,15 @@ export default function AdminVideosPage() {
         loading={isLoading}
         stats={[
           { label: "Total videos", value: data?.total ?? items.length, icon: Video },
+          { label: "Reels", value: reelCount, icon: Film },
           { label: "YouTube", value: youtubeCount, icon: Link2 },
-          { label: "Uploaded files", value: items.length - youtubeCount, icon: Film },
           { label: "Storage used", value: formatBytes(totalSize), icon: HardDrive },
         ]}
       />
 
       <section className={adminPanel}>
         <div className={adminPanelHeader}>
-          <h2 className={adminPanelTitle}>Add YouTube video</h2>
+          <h2 className={adminPanelTitle}>Add YouTube video / reel</h2>
         </div>
         <div className="grid gap-3 p-3 sm:grid-cols-[1fr_1fr_auto]">
           <input
@@ -102,7 +105,7 @@ export default function AdminVideosPage() {
           />
           <input
             type="url"
-            placeholder="https://youtube.com/watch?v=…"
+            placeholder="https://youtube.com/watch?v=… or Shorts URL"
             value={youtubeUrl}
             onChange={(e) => setYoutubeUrl(e.target.value)}
             className={`${adminInput} font-mono`}
@@ -113,11 +116,20 @@ export default function AdminVideosPage() {
             disabled={!title.trim() || !youtubeUrl.trim() || addMutation.isPending}
             className={adminBtnPrimary}
           >
-            Add video
+            Add
           </button>
         </div>
+        <label className="flex items-center gap-2 border-t border-border/70 px-3 py-2 text-xs text-foreground">
+          <input
+            type="checkbox"
+            checked={asReel}
+            onChange={(e) => setAsReel(e.target.checked)}
+            className="h-3.5 w-3.5"
+          />
+          Show on homepage as Reel
+        </label>
         <p className="border-t border-border/70 px-3 py-2 text-[10px] text-muted-foreground">
-          Upload MP4 files via Media library. Paste YouTube links here for embed videos.
+          Upload MP4 files via Media library. Paste YouTube / Shorts links here for embeds.
         </p>
       </section>
 

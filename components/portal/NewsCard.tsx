@@ -185,11 +185,15 @@ export function NewsCard({
   }
 
   return (
-    <article className={`group flex flex-col gap-3 border-b border-gray-100 py-4 sm:flex-row sm:gap-4 ${className}`}>
+    <article className={`group flex flex-col gap-3 border-b border-gray-100 py-4 transition-colors hover:bg-gray-50/80 sm:flex-row sm:gap-4 sm:py-5 ${className}`}>
       {image ? (
-        <Link href={href} className="block h-44 shrink-0 overflow-hidden bg-gray-200 sm:h-28 sm:w-40">
+        <Link href={href} className="block h-44 shrink-0 overflow-hidden bg-gray-200 sm:h-28 sm:w-44">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={image} alt="" className="h-full w-full object-cover" />
+          <img
+            src={image}
+            alt=""
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          />
         </Link>
       ) : null}
       <div className="min-w-0 flex-1 space-y-1.5">
@@ -197,11 +201,13 @@ export function NewsCard({
           {category ? <span style={{ color: PORTAL.accent }}>{category}</span> : null}
           <span className="font-medium normal-case text-gray-500">{when}</span>
         </div>
-        <h3 className="text-base font-bold leading-snug text-gray-900 group-hover:underline">
-          <Link href={href}>{title}</Link>
+        <h3 className="text-base font-bold leading-snug text-gray-900 sm:text-lg">
+          <Link href={href} className="hover:underline">
+            {title}
+          </Link>
         </h3>
         {showExcerpt && excerpt ? (
-          <p className="line-clamp-2 text-xs leading-relaxed text-gray-600">{excerpt}</p>
+          <p className="line-clamp-2 text-xs leading-relaxed text-gray-600 sm:text-[13px]">{excerpt}</p>
         ) : null}
         {showAuthor && article.author?.name ? (
           <p className="text-[11px] text-gray-500">{article.author.name}</p>

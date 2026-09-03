@@ -6,31 +6,35 @@ type SectionHeaderProps = {
   title: string;
   href?: string;
   linkLabel?: string;
-  accent?: "brand" | "accent";
   className?: string;
 };
 
+/** Title — thin rule — more link (matches प्रदेश समाचार). */
 export function SectionHeader({
   title,
   href,
-  linkLabel,
-  accent = "accent",
+  linkLabel = "थप समाचार",
   className = "",
 }: SectionHeaderProps) {
-  const color = accent === "brand" ? PORTAL.brand : PORTAL.accent;
   return (
-    <div
-      className={`mb-4 flex items-end justify-between gap-3 border-b-2 pb-2 ${className}`}
-      style={{ borderColor: color }}
-    >
-      <h2 className="text-lg font-extrabold tracking-tight text-gray-900 sm:text-xl">{title}</h2>
+    <div className={`mb-4 flex items-center gap-3 ${className}`}>
+      <h2
+        className="shrink-0 text-xl font-extrabold tracking-tight whitespace-nowrap sm:text-2xl"
+        style={{ color: PORTAL.brand }}
+      >
+        {title}
+      </h2>
+      <div
+        className="h-px min-w-4 flex-1"
+        style={{ backgroundColor: PORTAL.accent, opacity: 0.35 }}
+      />
       {href ? (
         <Link
           href={href}
-          className="inline-flex shrink-0 items-center gap-0.5 text-xs font-bold hover:underline"
+          className="inline-flex shrink-0 items-center gap-0.5 text-xs font-bold whitespace-nowrap hover:underline"
           style={{ color: PORTAL.brand }}
         >
-          {linkLabel ?? "सबै"}
+          {linkLabel}
           <ChevronRight className="h-3.5 w-3.5" />
         </Link>
       ) : null}

@@ -15,6 +15,22 @@ export interface DetailedRashi {
   remedy: string; // Astrological tip / Remedy
 }
 
+/** Traditional starting letters for each rashi (for homepage grid). */
+export const RASHI_LETTERS: Record<string, string> = {
+  मेष: "चु, चे, चो, ला, लि, लु, ले, लो, अ",
+  वृष: "इ, उ, ए, ओ, वा, वि, वु, वे, वो",
+  मिथुन: "का, कि, कु, घ, ङ, छ, के, को, हा",
+  कर्कट: "हि, हु, हे, हो, डा, डि, डु, डे, डो",
+  सिंह: "मा, मि, मु, मे, मो, टा, टि, टु, टे",
+  कन्या: "टो, पा, पि, पु, ष, ण, ठ, पे, पो",
+  तुला: "रा, रि, रु, रे, रो, ता, ति, तु, ते",
+  वृश्चिक: "तो, ना, नि, नु, ने, नो, या, यि, यु",
+  धनु: "ये, यो, भा, भि, भु, धा, फा, ढा, भे",
+  मकर: "भो, जा, जि, जु, जे, जो, ख, खि, खु, खे, खो, गा, गि",
+  कुम्भ: "गु, गे, गो, सा, सि, सु, से, सो, दा",
+  मीन: "दि, दु, थ, झ, ञ, दे, दो, चा, चि",
+};
+
 export const DEFAULT_DETAILED_RASHIFAL: DetailedRashi[] = [
   {
     name: "मेष",

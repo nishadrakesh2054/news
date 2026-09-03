@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     const auth = await requireEditor();
     if (auth.error) return auth.error;
 
-    const { title, youtubeUrl } = await request.json();
+    const { title, youtubeUrl, asReel } = await request.json();
 
     if (!title?.trim() || !youtubeUrl?.trim()) {
       return apiError("Title and YouTube URL are required", 400);
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         url: youtubeEmbedUrl(videoId),
         mimeType: "video/youtube",
         size: 0,
-        folder: "videos",
+        folder: asReel ? "reels" : "videos",
         caption: youtubeUrl.trim(),
         altText: youtubeThumbnailUrl(videoId),
         uploaderId: auth.session!.user.id,
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       include: { uploader: { select: { name: true } } },
     });
 
-    return apiSuccess(media, "YouTube video added", 201);
+    return apiSuccess(media, asReel ? "Reel added" : "YouTube video added", 201);
   } catch (error) {
     return handleServerError(error, "Failed to add video");
   }
