@@ -18,17 +18,45 @@ export function getSiteUrlForLang(lang: LanguageEditionType): string {
   return lang === "en" ? getEnglishSiteUrl() : getSiteUrl();
 }
 
-export function absoluteUrl(path: string, lang: LanguageEditionType = "ne"): string {
-  const base = getSiteUrlForLang(lang);
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+function hostsMatch(a: string, b: string): boolean {
+  try {
+    return new URL(a).host === new URL(b).host;
+  } catch {
+    return a.replace(/\/$/, "") === b.replace(/\/$/, "");
+  }
 }
 
-/** Localhost keeps ?lang=; production switches hosts. */
+/** True when both editions share one host (e.g. echomanch.vercel.app). */
+export function isSameHostEditions(): boolean {
+  return hostsMatch(getSiteUrl(), getEnglishSiteUrl());
+}
+
+function withLangQuery(path: string, lang: LanguageEditionType): string {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  if (lang !== "en") return normalized;
+  const [pathname, existing = ""] = normalized.split("?");
+  const params = new URLSearchParams(existing);
+  params.set("lang", "en");
+  const qs = params.toString();
+  return qs ? `${pathname}?${qs}` : pathname;
+}
+
+export function absoluteUrl(path: string, lang: LanguageEditionType = "ne"): string {
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  const base = getSiteUrlForLang(lang);
+  const pathWithLang = isSameHostEditions() ? withLangQuery(path, lang) : path.startsWith("/") ? path : `/${path}`;
+  const normalizedPath = pathWithLang.startsWith("/") ? pathWithLang : `/${pathWithLang}`;
+  return `${base}${normalizedPath}`;
+}
+
+/**
+ * Localhost / same-host Vercel → ?lang=
+ * Separate hosts (echomanch.com / en.echomanch.com) → switch base URL
+ */
 export function editionHomeHref(lang: LanguageEditionType, hostname?: string | null): string {
   const host = hostname?.split(":")[0]?.toLowerCase() ?? "";
   const isLocal = host === "localhost" || host === "127.0.0.1" || host.endsWith(".local");
-  if (isLocal) {
+  if (isLocal || isSameHostEditions()) {
     return lang === "en" ? "/?lang=en" : "/?lang=ne";
   }
   return getSiteUrlForLang(lang);

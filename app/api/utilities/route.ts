@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { apiSuccess } from "@/lib/api-response";
 
-export const revalidate = 1800; // Cache for 30 minutes
+/** Avoid DB access during `next build` static generation. */
+export const dynamic = "force-dynamic";
 
 interface NRBRateItem {
   currency?: { iso3?: string; code?: string; unit?: number; name?: string };
@@ -104,8 +105,8 @@ export async function GET() {
         if (gbpRate) forexSummary.gbp = String(gbpRate.buy);
       }
     }
-  } catch (e) {
-    console.error("NRB Forex fetch error (falling back to standard rates):", e);
+  } catch {
+    // Fall back to standard rates when NRB is unreachable.
   }
 
   // 2. Fetch Admin Managed Gold/Silver & Rashifal from Database
@@ -135,8 +136,8 @@ export async function GET() {
         }
       }
     }
-  } catch (e) {
-    console.error("Settings DB error:", e);
+  } catch {
+    // Fall back to defaults when DB is unavailable (e.g. offline build).
   }
 
   return apiSuccess({

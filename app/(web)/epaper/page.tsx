@@ -6,7 +6,8 @@ import { SITE_CONFIG } from "@/constants/site";
 
 import { EPaper } from "@prisma/client";
 
-export const revalidate = 300; // 5 min ISR
+/** Skip DB at build time when Neon is unreachable. */
+export const dynamic = "force-dynamic";
 
 export default async function PublicEPaperPage() {
   let epapers: EPaper[] = [];
@@ -15,8 +16,8 @@ export default async function PublicEPaperPage() {
       orderBy: { publishDate: "desc" },
       take: 20,
     });
-  } catch (e) {
-    console.error("EPaper fetch error:", e);
+  } catch {
+    // Empty list when DB is unavailable (e.g. offline build).
   }
 
   const latestEPaper = epapers[0];

@@ -7,23 +7,37 @@ import { SITE_CONFIG } from "@/constants/site";
 export const revalidate = 60;
 
 export default async function MediaGalleryPage() {
-  const mediaStories = await prisma.article.findMany({
-    where: {
-      status: ArticleStatus.PUBLISHED,
-      coverImage: { not: null },
-    },
-    select: {
-      id: true,
-      title: true,
-      titleNp: true,
-      slug: true,
-      coverImage: true,
-      excerpt: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: "desc" },
-    take: 12,
-  });
+  let mediaStories: Array<{
+    id: string;
+    title: string;
+    titleNp: string | null;
+    slug: string;
+    coverImage: string | null;
+    excerpt: string | null;
+    createdAt: Date;
+  }> = [];
+
+  try {
+    mediaStories = await prisma.article.findMany({
+      where: {
+        status: ArticleStatus.PUBLISHED,
+        coverImage: { not: null },
+      },
+      select: {
+        id: true,
+        title: true,
+        titleNp: true,
+        slug: true,
+        coverImage: true,
+        excerpt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 12,
+    });
+  } catch {
+    mediaStories = [];
+  }
 
   return (
     <main className="w-full bg-background pb-16">

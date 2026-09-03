@@ -1,19 +1,33 @@
 import { prisma } from "@/lib/prisma";
 
+function isBuildPhase() {
+  return process.env.NEXT_PHASE === "phase-production-build";
+}
+
 export async function getSettings(keys: string[]) {
-  const settings = await prisma.setting.findMany({
-    where: { key: { in: keys } },
-  });
-  const data: Record<string, string> = {};
-  for (const s of settings) {
-    data[s.key] = s.value;
+  if (isBuildPhase()) return {};
+  try {
+    const settings = await prisma.setting.findMany({
+      where: { key: { in: keys } },
+    });
+    const data: Record<string, string> = {};
+    for (const s of settings) {
+      data[s.key] = s.value;
+    }
+    return data;
+  } catch {
+    return {};
   }
-  return data;
 }
 
 export async function getSetting(key: string, fallback = "") {
-  const setting = await prisma.setting.findUnique({ where: { key } });
-  return setting?.value ?? fallback;
+  if (isBuildPhase()) return fallback;
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key } });
+    return setting?.value ?? fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export async function setSettings(entries: Record<string, string | object>) {

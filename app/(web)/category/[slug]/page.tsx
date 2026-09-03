@@ -9,6 +9,7 @@ import { absoluteUrl } from "@/lib/site-url";
 import { SITE_CONFIG, SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
 import {
   languageEditionWhere,
+  resolveArticleExcerpt,
   resolveArticleTitle,
   resolveCategoryName,
   resolveLanguageEdition,

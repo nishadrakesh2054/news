@@ -4,7 +4,7 @@ import { Role } from "@prisma/client";
 
 const STAFF_ROLES = new Set<Role>([Role.ADMIN, Role.EDITOR, Role.AUTHOR]);
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
