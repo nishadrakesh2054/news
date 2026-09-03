@@ -4,7 +4,7 @@ import { ArticleStatus, Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireStaff } from "@/lib/admin-auth";
 import { validateArticleUpdate } from "@/lib/validations/article";
-import { normalizeStatusForSchedule, resolvePublishedAt } from "@/lib/article-scheduling";
+import { normalizeStatusForSchedule, resolvePublishedAt, isFutureScheduledDate } from "@/lib/article-scheduling";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
 import {
   assertArticleStatusPermission,
@@ -108,8 +108,15 @@ export async function PATCH(
       }
     }
 
-    const scheduledAt =
+    const scheduledAtInput =
       data.scheduledAt !== undefined ? data.scheduledAt : existingArticle.scheduledAt;
+
+    // Explicit publish must not bounce back to PENDING because of a future schedule.
+    const scheduledAt =
+      data.status === ArticleStatus.PUBLISHED && isFutureScheduledDate(scheduledAtInput)
+        ? null
+        : scheduledAtInput;
+
     const normalizedStatus = normalizeStatusForSchedule(newStatus, scheduledAt);
 
     const publishedAt = resolvePublishedAt(
@@ -149,13 +156,25 @@ export async function PATCH(
         ...(data.ogImage !== undefined && { ogImage: data.ogImage }),
         ...(data.province !== undefined && { province: data.province }),
         ...(data.district !== undefined && { district: data.district }),
-        ...(data.scheduledAt !== undefined && { scheduledAt: data.scheduledAt }),
+        scheduledAt,
         ...(data.tagIds !== undefined && {
           tags: { set: data.tagIds.map((tagId) => ({ id: tagId })) },
         }),
         publishedAt,
       },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        titleNp: true,
+        slug: true,
+        status: true,
+        type: true,
+        languageEdition: true,
+        isFeatured: true,
+        isBreaking: true,
+        publishedAt: true,
+        scheduledAt: true,
+        updatedAt: true,
         tags: { select: { id: true, name: true, slug: true } },
       },
     });

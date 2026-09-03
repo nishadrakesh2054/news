@@ -173,7 +173,10 @@ export default function AdminArticlesPage() {
       const res = await fetch(`/api/admin/articles/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({
+          status,
+          ...(status === ArticleStatus.PUBLISHED ? { scheduledAt: null } : {}),
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to update article status");

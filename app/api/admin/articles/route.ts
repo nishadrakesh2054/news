@@ -90,78 +90,90 @@ export async function GET(request: NextRequest) {
       where.languageEdition = languageEdition as LanguageEdition;
     }
 
-    const [total, articles, published, draft, pending, archived, viewsAggregate, breakingCount, scheduledCount] =
-      await Promise.all([
-        prisma.article.count({ where }),
-        prisma.article.findMany({
-          where,
-          select: {
-            id: true,
-            title: true,
-            titleNp: true,
-            slug: true,
-            excerpt: true,
-            coverImage: true,
-            status: true,
-            type: true,
-            languageEdition: true,
-            isFeatured: true,
-            isBreaking: true,
-            views: true,
-            publishedAt: true,
-            scheduledAt: true,
-            province: true,
-            district: true,
-            createdAt: true,
-            author: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-            category: {
-              select: {
-                id: true,
-                name: true,
-                nameNp: true,
-                slug: true,
-              },
-            },
-            tags: {
-              select: { id: true, name: true, slug: true },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-          skip: (page - 1) * limit,
-          take: limit,
-        }),
-        prisma.article.count({ where: { ...where, status: ArticleStatus.PUBLISHED } }),
-        prisma.article.count({ where: { ...where, status: ArticleStatus.DRAFT } }),
-        prisma.article.count({ where: { ...where, status: ArticleStatus.PENDING } }),
-        prisma.article.count({ where: { ...where, status: ArticleStatus.ARCHIVED } }),
-        prisma.article.aggregate({
-          where,
-          _sum: { views: true },
-        }),
-        prisma.article.count({ where: { ...where, isBreaking: true } }),
-        prisma.article.count({
-          where: {
-            scheduledAt: { gt: new Date() },
-            status: { in: [ArticleStatus.DRAFT, ArticleStatus.PENDING] },
-          },
-        }),
-      ]);
+    const listSelect = {
+      id: true,
+      title: true,
+      titleNp: true,
+      slug: true,
+      excerpt: true,
+      coverImage: true,
+      status: true,
+      type: true,
+      languageEdition: true,
+      isFeatured: true,
+      isBreaking: true,
+      views: true,
+      publishedAt: true,
+      scheduledAt: true,
+      province: true,
+      district: true,
+      createdAt: true,
+      author: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          name: true,
+          nameNp: true,
+          slug: true,
+        },
+      },
+      tags: {
+        select: { id: true, name: true, slug: true },
+      },
+    } satisfies Prisma.ArticleSelect;
+
+    const total = await prisma.article.count({ where });
+    const articles = await prisma.article.findMany({
+      where,
+      select: listSelect,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const summaryWhere: Prisma.ArticleWhereInput =
+      auth.session!.user.role === Role.AUTHOR
+        ? { authorId: auth.session!.user.id }
+        : {};
+
+    const [statusGroups, viewsAggregate, breakingCount, scheduledCount] = await Promise.all([
+      prisma.article.groupBy({
+        by: ["status"],
+        where: summaryWhere,
+        _count: { _all: true },
+      }),
+      prisma.article.aggregate({
+        where: summaryWhere,
+        _sum: { views: true },
+      }),
+      prisma.article.count({ where: { ...summaryWhere, isBreaking: true } }),
+      prisma.article.count({
+        where: {
+          ...summaryWhere,
+          scheduledAt: { gt: new Date() },
+          status: { in: [ArticleStatus.DRAFT, ArticleStatus.PENDING] },
+        },
+      }),
+    ]);
+
+    const statusCount = (value: ArticleStatus) =>
+      statusGroups.find((group) => group.status === value)?._count._all ?? 0;
 
     return apiSuccess(
       {
         articles,
         summary: {
           total,
-          published,
-          draft,
-          pending,
-          archived,
+          published: statusCount(ArticleStatus.PUBLISHED),
+          draft: statusCount(ArticleStatus.DRAFT),
+          pending: statusCount(ArticleStatus.PENDING),
+          archived: statusCount(ArticleStatus.ARCHIVED),
           breaking: breakingCount,
           scheduled: scheduledCount,
           views: viewsAggregate._sum.views ?? 0,
@@ -170,7 +182,7 @@ export async function GET(request: NextRequest) {
           total,
           page,
           limit,
-          totalPages: Math.ceil(total / limit),
+          totalPages: Math.max(1, Math.ceil(total / limit) || 1),
         },
       },
       "Articles fetched successfully"

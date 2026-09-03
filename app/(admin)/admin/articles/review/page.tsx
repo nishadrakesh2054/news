@@ -58,18 +58,19 @@ export default function AdminArticleReviewPage() {
   const totalPages = data?.pagination?.totalPages ?? 1;
 
   const reviewMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: "PUBLISHED" | "DRAFT" }) => {
-      const res = await fetch(`/api/admin/articles/${id}`, {
-        method: "PATCH",
+    mutationFn: async ({ id, action }: { id: string; action: "approve" | "reject" }) => {
+      const res = await fetch("/api/admin/articles/review", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ id, action }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to update article");
+      return json.data;
     },
     onSuccess: (_data, variables) => {
       toast.success(
-        variables.status === "PUBLISHED" ? "Article approved and published" : "Sent back to draft"
+        variables.action === "approve" ? "Article approved and published" : "Sent back to draft"
       );
       queryClient.invalidateQueries({ queryKey: ["admin-review-queue"] });
       queryClient.invalidateQueries({ queryKey: ["admin-articles"] });
@@ -149,7 +150,7 @@ export default function AdminArticleReviewPage() {
                       <div className="inline-flex items-center gap-1">
                         <button
                           type="button"
-                          onClick={() => reviewMutation.mutate({ id: article.id, status: "PUBLISHED" })}
+                          onClick={() => reviewMutation.mutate({ id: article.id, action: "approve" })}
                           disabled={reviewMutation.isPending}
                           className={adminBtnPrimary}
                           title="Approve & publish"
@@ -159,7 +160,7 @@ export default function AdminArticleReviewPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => reviewMutation.mutate({ id: article.id, status: "DRAFT" })}
+                          onClick={() => reviewMutation.mutate({ id: article.id, action: "reject" })}
                           disabled={reviewMutation.isPending}
                           className={adminBtnSecondary}
                           title="Send back to draft"
