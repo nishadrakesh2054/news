@@ -1,95 +1,146 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Mail, Phone, MapPin, ShieldCheck } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { NewsletterSignup } from "./NewsletterSignup";
 import { PushOptIn } from "./PushOptIn";
 import { SITE_CONFIG } from "@/constants/site";
+import { isEnglishHostname } from "@/lib/language";
+import { PORTAL } from "@/constants/portal";
+
+interface CategoryItem {
+  id: string;
+  name: string;
+  nameNp: string | null;
+  slug: string;
+  displayName?: string;
+}
 
 export function PublicFooter() {
+  const searchParams = useSearchParams();
+  const langParam = searchParams.get("lang");
+  const isEnglish =
+    langParam === "en" ||
+    (typeof window !== "undefined" && isEnglishHostname(window.location.hostname));
+  const langQ = isEnglish ? "?lang=en" : "";
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/categories${isEnglish ? "?lang=en" : ""}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setCategories(json.data.slice(0, 8));
+        }
+      })
+      .catch(() => {});
+  }, [isEnglish]);
+
   return (
-    <footer className="w-full bg-slate-950 text-slate-300 border-t border-slate-800 select-none pt-12 pb-6">
-      <div className="max-w-[1480px] mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-slate-800">
-        {/* Brand & Editorial Registration Info */}
-        <div className="space-y-4 md:col-span-1">
-          <Link href="/" className="inline-block">
+    <footer className="w-full select-none border-t border-slate-800 bg-slate-950 pb-6 pt-12 text-slate-300">
+      <div className={`${PORTAL.container} grid grid-cols-1 gap-8 border-b border-slate-800 pb-10 md:grid-cols-4`}>
+        <div className="space-y-4">
+          <Link href={isEnglish ? "/?lang=en" : "/"} className="inline-block">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/newslogo.png"
               alt={`${SITE_CONFIG.nameNp} (${SITE_CONFIG.name})`}
-              className="h-12 w-auto object-contain brightness-0 invert opacity-90 hover:opacity-100 transition-opacity rounded-none"
+              className="h-12 w-auto object-contain opacity-90 brightness-0 invert transition-opacity hover:opacity-100"
             />
           </Link>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            नेपालको अग्रणी विश्वसनीय डिजिटल समाचार पत्रिका। निष्पक्ष पत्रकारिता र राष्ट्रिय हितप्रति समर्पित।
+          <p className="text-xs leading-relaxed text-slate-400">
+            {isEnglish
+              ? "Independent digital journalism from Nepal — news, analysis, and public-interest reporting."
+              : "नेपालको विश्वसनीय डिजिटल समाचार — निष्पक्ष पत्रकारिता र सार्वजनिक हितप्रति समर्पित।"}
           </p>
-
-          <div className="space-y-1.5 text-xs text-slate-400 pt-2">
-            <div className="flex items-center space-x-2">
-              <ShieldCheck className="h-4 w-4 text-[#027081]" />
-              <span>सूचना विभाग दर्ता नं.: १२३४/०८२-८३</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <ShieldCheck className="h-4 w-4 text-[#027081]" />
-              <span>प्रेस काउन्सिल दर्ता नं.: ५६७/०८२</span>
+          <div className="space-y-1.5 pt-1 text-xs text-slate-400">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4" style={{ color: PORTAL.brand }} />
+              <span>{isEnglish ? "Registered digital publication" : "दर्ता भएको डिजिटल प्रकाशन"}</span>
             </div>
           </div>
         </div>
 
-        {/* Quick Category Links */}
         <div className="space-y-3">
-          <h4 className="text-sm font-bold uppercase tracking-wider text-white border-b border-slate-800 pb-2">
-            मुख्य समाचार वर्ग
+          <h4 className="border-b border-slate-800 pb-2 text-sm font-bold uppercase tracking-wider text-white">
+            {isEnglish ? "Sections" : "वर्गहरू"}
           </h4>
           <ul className="space-y-2 text-xs font-medium">
-            <li><Link href="/category/rajniti" className="hover:text-white transition-colors">राजनीति</Link></li>
-            <li><Link href="/category/arthatantra" className="hover:text-white transition-colors">अर्थतन्त्र</Link></li>
-            <li><Link href="/category/samaj" className="hover:text-white transition-colors">समाज</Link></li>
-            <li><Link href="/category/khelkud" className="hover:text-white transition-colors">खेलकुद</Link></li>
-            <li><Link href="/category/vichar" className="hover:text-white transition-colors">विचार / दृष्टिकोण</Link></li>
+            {categories.length > 0 ? (
+              categories.map((cat) => (
+                <li key={cat.id}>
+                  <Link href={`/category/${cat.slug}${langQ}`} className="hover:text-white">
+                    {cat.displayName ||
+                      (isEnglish ? cat.name || cat.nameNp : cat.nameNp || cat.name)}
+                  </Link>
+                </li>
+              ))
+            ) : (
+              <>
+                <li>
+                  <Link href={`/category/politics${langQ}`} className="hover:text-white">
+                    {isEnglish ? "Politics" : "राजनीति"}
+                  </Link>
+                </li>
+                <li>
+                  <Link href={`/category/economy${langQ}`} className="hover:text-white">
+                    {isEnglish ? "Economy" : "अर्थतन्त्र"}
+                  </Link>
+                </li>
+              </>
+            )}
           </ul>
         </div>
 
-        {/* Editorial Contact Details */}
         <div className="space-y-3">
-          <h4 className="text-sm font-bold uppercase tracking-wider text-white border-b border-slate-800 pb-2">
-            सम्पर्क र ठेगाना
+          <h4 className="border-b border-slate-800 pb-2 text-sm font-bold uppercase tracking-wider text-white">
+            {isEnglish ? "Contact" : "सम्पर्क"}
           </h4>
           <ul className="space-y-2.5 text-xs text-slate-400">
-            <li className="flex items-start space-x-2">
-              <MapPin className="h-4 w-4 text-[#027081] shrink-0 mt-0.5" />
-              <span>काठमाडौँ, नेपाल (Kathmandu, Nepal)</span>
+            <li className="flex items-start gap-2">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" style={{ color: PORTAL.brand }} />
+              <span>Kathmandu, Nepal</span>
             </li>
-            <li className="flex items-center space-x-2">
-              <Phone className="h-4 w-4 text-[#027081] shrink-0" />
-              <span>+९७७ ०१-४५६७८९०</span>
-            </li>
-            <li className="flex items-center space-x-2">
-              <Mail className="h-4 w-4 text-[#027081] shrink-0" />
+            <li className="flex items-center gap-2">
+              <Mail className="h-4 w-4 shrink-0" style={{ color: PORTAL.brand }} />
               <span>{SITE_CONFIG.email}</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <Phone className="h-4 w-4 shrink-0" style={{ color: PORTAL.brand }} />
+              <span>{SITE_CONFIG.domain}</span>
             </li>
           </ul>
         </div>
 
-        {/* Newsletter & Push alerts */}
         <div className="space-y-4">
-          <h4 className="text-sm font-bold uppercase tracking-wider text-white border-b border-slate-800 pb-2">
-            समाचार सदस्यता
+          <h4 className="border-b border-slate-800 pb-2 text-sm font-bold uppercase tracking-wider text-white">
+            {isEnglish ? "Subscribe" : "सदस्यता"}
           </h4>
           <NewsletterSignup source="footer" />
           <PushOptIn />
         </div>
       </div>
 
-      {/* Bottom Copyright Bar */}
-      <div className="max-w-[1480px] mx-auto px-4 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
-        <p>© २०८३ {SITE_CONFIG.domain}। सर्वाधिकार सुरक्षित।</p>
-        <div className="flex flex-wrap items-center space-x-4">
-          <Link href="/editorial-team" className="hover:underline text-amber-400 font-bold">सम्पादकीय टोली तथा दर्ता</Link>
-          <Link href="/epaper" className="hover:underline text-sky-400 font-bold">इ-पत्रिका छापा संस्करण</Link>
-          <Link href="/privacy" className="hover:underline">गोपनीयता नीति</Link>
-          <Link href="/terms" className="hover:underline">सेवाका सर्तहरू</Link>
-          <Link href="/admin" className="hover:underline text-slate-400">एडमिन</Link>
+      <div className={`${PORTAL.container} flex flex-col items-center justify-between gap-3 pt-6 text-xs text-slate-500 sm:flex-row`}>
+        <p>
+          © {new Date().getFullYear()} {SITE_CONFIG.name}
+          {isEnglish ? ". All rights reserved." : "। सर्वाधिकार सुरक्षित।"}
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <Link href={`/editorial-team${langQ}`} className="font-semibold text-amber-400 hover:underline">
+            {isEnglish ? "Editorial team" : "सम्पादकीय टोली"}
+          </Link>
+          <Link href={`/epaper${langQ}`} className="font-semibold text-sky-400 hover:underline">
+            {isEnglish ? "E-Paper" : "इ-पत्रिका"}
+          </Link>
+          <Link href={`/media${langQ}`} className="hover:underline">
+            {isEnglish ? "Media" : "मिडिया"}
+          </Link>
+          <Link href="/admin" className="hover:underline">
+            {isEnglish ? "Admin" : "एडमिन"}
+          </Link>
         </div>
       </div>
     </footer>

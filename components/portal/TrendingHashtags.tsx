@@ -1,36 +1,48 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Hash, TrendingUp } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { isEnglishHostname } from "@/lib/language";
+import { PORTAL } from "@/constants/portal";
 
-const DEFAULT_HASHTAGS = [
-  { name: "#प्रतिनिधिसभा", slug: "pratinidhisabha" },
-  { name: "#बजेट२०८२", slug: "budget-2082" },
-  { name: "#टी२०_विश्वकप", slug: "t20-worldcup" },
-  { name: "#मनसुन_अपडेट", slug: "monsoon-update" },
-  { name: "#शेयर_बजार", slug: "share-bazar" },
-  { name: "#पर्यटन", slug: "tourism" },
-  { name: "#स्थानीय_विकास", slug: "local-development" },
-];
+type TagItem = { id: string; name: string; slug: string; articlesCount?: number };
 
 export function TrendingHashtags() {
-  return (
-    <div className="w-full bg-card border-y border-border py-2.5 px-4 select-none">
-      <div className="max-w-[1480px] mx-auto flex items-center space-x-3 overflow-x-auto scrollbar-none text-xs">
-        <div className="flex items-center space-x-1.5 font-extrabold text-[#027081] shrink-0 bg-[#027081]/10 px-2.5 py-1 rounded-none">
-          <TrendingUp className="h-3.5 w-3.5" />
-          <span>ट्रेन्डिङ विषय:</span>
-        </div>
+  const searchParams = useSearchParams();
+  const isEnglish =
+    searchParams.get("lang") === "en" ||
+    (typeof window !== "undefined" && isEnglishHostname(window.location.hostname));
+  const langQ = isEnglish ? "?lang=en" : "";
+  const [tags, setTags] = useState<TagItem[]>([]);
 
-        <div className="flex items-center space-x-2 whitespace-nowrap">
-          {DEFAULT_HASHTAGS.map((tag) => (
+  useEffect(() => {
+    fetch("/api/tags")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setTags(json.data.slice(0, 10));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  if (tags.length === 0) return null;
+
+  return (
+    <div className="w-full border-b border-gray-200 bg-white py-2.5">
+      <div className={`${PORTAL.container} flex items-center gap-3 overflow-x-auto scrollbar-none text-xs`}>
+        <span className="shrink-0 font-extrabold" style={{ color: PORTAL.brand }}>
+          {isEnglish ? "Trending Topics:" : "ट्रेन्डिङ विषय:"}
+        </span>
+        <div className="flex items-center gap-2 whitespace-nowrap">
+          {tags.map((tag) => (
             <Link
-              key={tag.slug}
-              href={`/tag/${tag.slug}`}
-              className="inline-flex items-center space-x-1 px-3 py-1 rounded-none border border-border/60 bg-background text-foreground hover:bg-[#027081] hover:text-white font-semibold transition-colors shadow-2xs"
+              key={tag.id}
+              href={`/tag/${tag.slug}${langQ}`}
+              className="rounded border border-[#1957A6]/15 px-2.5 py-1 font-medium text-[#1957A6]/80 hover:border-[#1957A6]/35 hover:bg-[#1957A6]/5 hover:text-[#1957A6]"
             >
-              <Hash className="h-3 w-3 text-[#027081] group-hover:text-white" />
-              <span>{tag.name}</span>
+              #{tag.name.replace(/^#/, "")}
             </Link>
           ))}
         </div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
 import { resolveArticleExcerpt, resolveArticleTitle } from "@/lib/language";
+import { PORTAL } from "@/constants/portal";
 
 interface CategoryArticle {
   id: string;
@@ -45,14 +46,15 @@ export function CategoryGridSection({
   return (
     <section className="space-y-4 my-8">
       {/* Category Section Header */}
-      <div className="flex items-center justify-between border-b-2 border-[#027081] pb-2">
-        <h3 className="text-lg sm:text-xl font-extrabold text-foreground font-serif tracking-tight">
+      <div className="flex items-center justify-between border-b-2 pb-2" style={{ borderColor: PORTAL.accent }}>
+        <h3 className="text-lg font-extrabold tracking-tight text-gray-900 sm:text-xl">
           {isEnglish ? title : titleNp || title}
         </h3>
 
         <Link
           href={`/category/${categorySlug}${isEnglish ? "?lang=en" : ""}`}
-          className="text-xs font-bold text-[#027081] hover:underline flex items-center gap-0.5"
+          className="flex items-center gap-0.5 text-xs font-bold hover:underline"
+          style={{ color: PORTAL.brand }}
         >
           <span>{isEnglish ? "View All" : "सबै हेर्नुहोस्"}</span>
           <ChevronRight className="h-4 w-4" />
@@ -79,10 +81,10 @@ export function CategoryGridSection({
             )}
             <div className="sm:w-1/2 flex flex-col justify-between space-y-3 py-1">
               <div className="space-y-2">
-                <span className="text-[10px] font-bold text-[#027081] uppercase font-mono">
+                <span className="text-[10px] font-bold font-mono" style={{ color: PORTAL.brand }}>
                   {formatTimeAgoNp(mainArticle.createdAt)}
                 </span>
-                <h4 className="text-lg sm:text-xl font-bold text-foreground group-hover:text-[#027081] transition-colors leading-tight font-serif">
+                <h4 className="text-lg font-bold leading-tight text-gray-900 group-hover:underline sm:text-xl">
                   {resolveArticleTitle(mainArticle, edition)}
                 </h4>
                 {(mainArticle.excerpt || mainArticle.excerptNp) && (
@@ -120,7 +122,7 @@ export function CategoryGridSection({
                 </div>
               )}
               <div className="flex-1 min-w-0 space-y-1">
-                <h5 className="text-xs sm:text-sm font-bold text-foreground line-clamp-2 group-hover:text-[#027081] transition-colors leading-snug font-serif">
+                <h5 className="line-clamp-2 text-xs font-bold leading-snug text-gray-900 group-hover:underline sm:text-sm">
                   {resolveArticleTitle(art, edition)}
                 </h5>
                 <span className="text-[10px] text-muted-foreground block font-mono">

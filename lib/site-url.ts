@@ -33,12 +33,35 @@ export function isSameHostEditions(): boolean {
 
 function withLangQuery(path: string, lang: LanguageEditionType): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  if (lang !== "en") return normalized;
   const [pathname, existing = ""] = normalized.split("?");
   const params = new URLSearchParams(existing);
-  params.set("lang", "en");
+  if (lang === "en") {
+    params.set("lang", "en");
+  } else {
+    params.delete("lang");
+  }
   const qs = params.toString();
   return qs ? `${pathname}?${qs}` : pathname;
+}
+
+/**
+ * Keep the current path when switching editions on the same host.
+ * Cross-host editions switch origin and keep the path.
+ */
+export function editionPathHref(
+  path: string,
+  lang: LanguageEditionType,
+  hostname?: string | null
+): string {
+  const host = hostname?.split(":")[0]?.toLowerCase() ?? "";
+  const isLocal = host === "localhost" || host === "127.0.0.1" || host.endsWith(".local");
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+
+  if (isLocal || isSameHostEditions()) {
+    return withLangQuery(normalized, lang);
+  }
+
+  return absoluteUrl(normalized.split("?")[0] || "/", lang);
 }
 
 export function absoluteUrl(path: string, lang: LanguageEditionType = "ne"): string {
@@ -51,7 +74,7 @@ export function absoluteUrl(path: string, lang: LanguageEditionType = "ne"): str
 
 /**
  * Localhost / same-host Vercel → ?lang=
- * Separate hosts (echomanchs.com / en.echomanchs.com) → switch base URL
+ * Separate hosts (echomanchnews.com / en.echomanchnews.com) → switch base URL
  */
 export function editionHomeHref(lang: LanguageEditionType, hostname?: string | null): string {
   const host = hostname?.split(":")[0]?.toLowerCase() ?? "";

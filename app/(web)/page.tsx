@@ -1,54 +1,75 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { ArticleStatus, AdSlot, ArticleType, Prisma } from "@prisma/client";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
-import { Flame, Eye, Newspaper, Star, TrendingUp } from "lucide-react";
-import { resolveLanguageEdition, resolveArticleTitle, resolveArticleExcerpt, resolveCategoryName } from "@/lib/language";
+import { ArticleStatus, ArticleType, Prisma } from "@prisma/client";
+import { resolveLanguageEdition, resolveCategoryName } from "@/lib/language";
+import { SITE_CONFIG, SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
 import { TrendingHashtags } from "@/components/portal/TrendingHashtags";
-import { ProvinceNewsWidget } from "@/components/portal/ProvinceNewsWidget";
-import { OpinionSection } from "@/components/portal/OpinionSection";
+import { NewsCard } from "@/components/portal/NewsCard";
+import { HomeSidebarTabs } from "@/components/portal/HomeSidebarTabs";
+import { NewsletterMembership } from "@/components/portal/NewsletterMembership";
 import { CategoryGridSection } from "@/components/portal/CategoryGridSection";
-import { PhotoVideoFeature } from "@/components/portal/PhotoVideoFeature";
-import { NepaliUtilityWidget } from "@/components/portal/NepaliUtilityWidget";
-import { OpinionPollWidget } from "@/components/portal/OpinionPollWidget";
-import { AdUnit } from "@/components/portal/AdUnit";
-import { getCachedActiveAds } from "@/lib/public-cache";
-
-interface HomeArticleItem {
-  id: string;
-  title: string;
-  titleNp?: string | null;
-  slug: string;
-  excerpt?: string | null;
-  excerptNp?: string | null;
-  coverImage?: string | null;
-  createdAt: Date;
-  views: number;
-  isFeatured: boolean;
-  category: {
-    id: string;
-    name: string;
-    nameNp?: string | null;
-    slug: string;
-  };
-}
+import { OpinionSection } from "@/components/portal/OpinionSection";
+import { PortalContainer } from "@/components/portal/SectionHeader";
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
+import { PORTAL } from "@/constants/portal";
 
 interface WebHomeProps {
   searchParams: Promise<{ lang?: string }>;
 }
 
-export const revalidate = 60; // ISR cache revalidation every 60s
+export const revalidate = 60;
+
+export async function generateMetadata({ searchParams }: WebHomeProps): Promise<Metadata> {
+  const params = await searchParams;
+  const headerList = await headers();
+  const lang = resolveLanguageEdition(params.lang, headerList.get("host"));
+  const isEnglish = lang === "en";
+
+  return {
+    title: isEnglish ? `Home ${SITE_TITLE_SUFFIX}` : `गृहपृष्ठ ${SITE_TITLE_SUFFIX_NP}`,
+    description: isEnglish
+      ? SITE_CONFIG.description
+      : "इको माञ्च — नेपालका ताजा समाचार, राजनीति, अर्थतन्त्र, खेलकुद र विचार।",
+    alternates: {
+      canonical: isEnglish ? "/?lang=en" : "/",
+      languages: { "ne-NP": "/", en: "/?lang=en" },
+    },
+  };
+}
+
+const articleSelect = {
+  id: true,
+  title: true,
+  titleNp: true,
+  slug: true,
+  excerpt: true,
+  excerptNp: true,
+  coverImage: true,
+  isFeatured: true,
+  views: true,
+  province: true,
+  district: true,
+  createdAt: true,
+  categoryId: true,
+  category: {
+    select: { id: true, name: true, nameNp: true, slug: true, description: true },
+  },
+  author: {
+    select: { name: true, image: true },
+  },
+} satisfies Prisma.ArticleSelect;
 
 export default async function WebHome({ searchParams }: WebHomeProps) {
   const params = await searchParams;
   const headerList = await headers();
   const host = headerList.get("host");
-
   const lang = resolveLanguageEdition(params.lang, host);
   const isEnglish = lang === "en";
+  const langQ = isEnglish ? "?lang=en" : "";
 
-  // Filter articles for current edition (BOTH or matching edition)
   const whereClause: Prisma.ArticleWhereInput = {
     status: ArticleStatus.PUBLISHED,
     languageEdition: isEnglish
@@ -56,503 +77,210 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
       : { in: ["BOTH", "NEPALI_ONLY"] },
   };
 
-  // Parallel query execution for ultra-fast response times
-  const [
-    publishedArticles,
-    opinionArticles,
-    economyArticles,
-    sportsArticles,
-    photoFeatureArticles,
-    activeAds,
-  ] = await Promise.all([
-    // 1. General Published Stream
-    prisma.article.findMany({
-      where: whereClause,
-      select: {
-        id: true,
-        title: true,
-        titleNp: true,
-        slug: true,
-        excerpt: true,
-        excerptNp: true,
-        coverImage: true,
-        isFeatured: true,
-        views: true,
-        province: true,
-        district: true,
-        createdAt: true,
-        categoryId: true,
-        category: {
-          select: { id: true, name: true, nameNp: true, slug: true },
+  const [publishedArticles, categories, opinionArticles, economyArticles, sportsArticles] =
+    await Promise.all([
+      prisma.article.findMany({
+        where: whereClause,
+        select: articleSelect,
+        orderBy: { publishedAt: "desc" },
+        take: 24,
+      }),
+      prisma.category.findMany({
+        orderBy: { order: "asc" },
+        take: 6,
+        select: {
+          id: true,
+          name: true,
+          nameNp: true,
+          slug: true,
+          description: true,
+          articles: {
+            where: whereClause,
+            orderBy: { publishedAt: "desc" },
+            take: 1,
+            select: { coverImage: true },
+          },
         },
-        author: {
-          select: { name: true, image: true },
+      }),
+      prisma.article.findMany({
+        where: {
+          ...whereClause,
+          OR: [
+            { category: { slug: { in: ["opinion", "vichar"] } } },
+            { type: ArticleType.OPINION },
+          ],
         },
-      },
-      orderBy: { publishedAt: "desc" },
-      take: 24,
-    }),
-    // 2. Opinion Articles ("opinion" category or OPINION type)
-    prisma.article.findMany({
-      where: {
-        ...whereClause,
-        OR: [
-          { category: { slug: { in: ["opinion", "vichar"] } } },
-          { type: ArticleType.OPINION },
-        ],
-      },
-      select: {
-        id: true,
-        title: true,
-        titleNp: true,
-        slug: true,
-        excerpt: true,
-        excerptNp: true,
-        createdAt: true,
-        author: {
-          select: { name: true, image: true },
+        select: {
+          id: true,
+          title: true,
+          titleNp: true,
+          slug: true,
+          excerpt: true,
+          excerptNp: true,
+          createdAt: true,
+          author: { select: { name: true, image: true } },
         },
-      },
-      orderBy: { publishedAt: "desc" },
-      take: 3,
-    }),
-    // 3. Economy Articles ("economy" or "arthatantra" category)
-    prisma.article.findMany({
-      where: {
-        ...whereClause,
-        category: { slug: { in: ["economy", "arthatantra"] } },
-      },
-      select: {
-        id: true,
-        title: true,
-        titleNp: true,
-        slug: true,
-        excerpt: true,
-        excerptNp: true,
-        coverImage: true,
-        createdAt: true,
-        author: {
-          select: { name: true },
+        orderBy: { publishedAt: "desc" },
+        take: 3,
+      }),
+      prisma.article.findMany({
+        where: {
+          ...whereClause,
+          category: { slug: { in: ["economy", "arthatantra"] } },
         },
-      },
-      orderBy: { publishedAt: "desc" },
-      take: 4,
-    }),
-    // 4. Sports & Entertainment Articles
-    prisma.article.findMany({
-      where: {
-        ...whereClause,
-        category: { slug: { in: ["sports", "entertainment", "khelkud", "manoranjan"] } },
-      },
-      select: {
-        id: true,
-        title: true,
-        titleNp: true,
-        slug: true,
-        excerpt: true,
-        excerptNp: true,
-        coverImage: true,
-        createdAt: true,
-        author: {
-          select: { name: true },
+        select: articleSelect,
+        orderBy: { publishedAt: "desc" },
+        take: 4,
+      }),
+      prisma.article.findMany({
+        where: {
+          ...whereClause,
+          category: { slug: { in: ["sports", "entertainment", "khelkud", "manoranjan"] } },
         },
-      },
-      orderBy: { publishedAt: "desc" },
-      take: 4,
-    }),
-    // 5. Multimedia Photo Features
-    prisma.article.findMany({
-      where: {
-        ...whereClause,
-        coverImage: { not: null },
-      },
-      select: {
-        id: true,
-        title: true,
-        titleNp: true,
-        slug: true,
-        coverImage: true,
-        createdAt: true,
-        category: {
-          select: { nameNp: true, name: true },
-        },
-      },
-      orderBy: { views: "desc" },
-      take: 4,
-    }),
-    // 6. Ads (cached)
-    getCachedActiveAds(),
-  ]);
+        select: articleSelect,
+        orderBy: { publishedAt: "desc" },
+        take: 4,
+      }),
+    ]);
 
-  const sidebarAd = activeAds.find((a: { slot: string }) => a.slot === AdSlot.SIDEBAR_TOP);
+  const leadStory =
+    publishedArticles.find((a) => a.isFeatured) || publishedArticles[0] || null;
+  const rest = publishedArticles.filter((a) => a.id !== leadStory?.id);
+  const stackStories = rest.slice(0, 2);
+  const recentSidebar = rest.slice(0, 6);
+  const popularSidebar = [...publishedArticles].sort((a, b) => b.views - a.views).slice(0, 6);
+  const latestBelow = rest.slice(2, 10);
 
-  // Partition articles into Lead Story, Sub-featured, and Latest Stream
-  const leadStory = (publishedArticles as HomeArticleItem[]).find((a) => a.isFeatured) || (publishedArticles as HomeArticleItem[])[0];
-  const secondaryFeatured = (publishedArticles as HomeArticleItem[]).filter((a) => a.id !== leadStory?.id).slice(0, 4);
-  const latestList = (publishedArticles as HomeArticleItem[]).filter((a) => a.id !== leadStory?.id).slice(4, 12);
-  const trendingList = [...(publishedArticles as HomeArticleItem[])].sort((a, b) => b.views - a.views).slice(0, 5);
-  const topStories = secondaryFeatured.slice(0, 4);
-  const editorPick = (publishedArticles as HomeArticleItem[]).filter((a) => a.id !== leadStory?.id).slice(0, 3);
-  const mostRead = [...(publishedArticles as HomeArticleItem[])].sort((a, b) => b.views - a.views).slice(0, 4);
+  const emptyLabel = isEnglish ? "No stories available yet." : "कुनै समाचार उपलब्ध छैन।";
 
   return (
-    <main className="w-full bg-background pb-16">
-      {/* TRENDING HASHTAGS BAR */}
-      <TrendingHashtags />
+    <main className="w-full bg-white pb-12 text-gray-900">
+      <Suspense fallback={<div className="h-10 border-b border-gray-200 bg-white" />}>
+        <TrendingHashtags />
+      </Suspense>
 
-      {/* Top Editorial Highlights */}
-      <section className="max-w-[1480px] mx-auto px-4 pt-6 pb-2">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="border-t-2 border-amber-500 pt-3">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h3 className="text-base font-extrabold text-foreground flex items-center gap-2 font-serif uppercase tracking-wider">
-                <Star className="h-4 w-4 text-amber-500" />
-                <span>{isEnglish ? "Top Stories" : "शीर्ष समाचार"}</span>
-              </h3>
+      {/* Hero: lead + 2 stack + sidebar */}
+      <PortalContainer className="py-4 sm:py-5">
+        {!leadStory ? (
+          <div className="border border-dashed border-gray-300 px-6 py-16 text-center text-sm text-gray-500">
+            {emptyLabel}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+            <div className="lg:col-span-5">
+              <NewsCard
+                article={leadStory}
+                lang={lang}
+                variant="lead"
+                badge={isEnglish ? "Main News" : "मुख्य समाचार"}
+              />
             </div>
 
-            <div className="mt-3 space-y-3">
-              {topStories.map((art: HomeArticleItem) => (
-                <Link
-                  key={art.id}
-                  href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}
-                  className="group block border-b border-border/50 pb-2.5 last:border-0"
-                >
-                  <div className="flex items-center justify-between gap-2 pb-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#027081]">
-                      {resolveCategoryName(art.category, lang)}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground font-mono">
-                      {formatTimeAgoNp(art.createdAt)}
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
-                    {resolveArticleTitle(art, lang)}
-                  </h4>
-                </Link>
+            <div className="flex flex-col gap-4 lg:col-span-3">
+              {stackStories.map((art) => (
+                <NewsCard key={art.id} article={art} lang={lang} variant="stack" className="flex-1" />
               ))}
-            </div>
-          </div>
-
-          <div className="border-t-2 border-[#027081] pt-3">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h3 className="text-base font-extrabold text-foreground flex items-center gap-2 font-serif uppercase tracking-wider">
-                <Newspaper className="h-4 w-4 text-[#027081]" />
-                <span>{isEnglish ? "Editor’s Pick" : "सम्पादकको छनोट"}</span>
-              </h3>
-            </div>
-
-            <div className="mt-3 space-y-3">
-              {editorPick.map((art: HomeArticleItem) => (
-                <Link
-                  key={art.id}
-                  href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}
-                  className="group flex items-start gap-3 border-b border-border/50 pb-2.5 last:border-0"
-                >
-                  {art.coverImage && (
-                    <div className="h-16 w-20 shrink-0 bg-muted overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={art.coverImage}
-                        alt={art.title}
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-none"
-                      />
-                    </div>
-                  )}
-                  <div className="min-w-0 space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#027081]">
-                      {resolveCategoryName(art.category, lang)}
-                    </span>
-                    <h4 className="text-sm font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
-                      {resolveArticleTitle(art, lang)}
-                    </h4>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className="border-t-2 border-emerald-600 pt-3">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h3 className="text-base font-extrabold text-foreground flex items-center gap-2 font-serif uppercase tracking-wider">
-                <TrendingUp className="h-4 w-4 text-emerald-600" />
-                <span>{isEnglish ? "Most Read" : "सर्वाधिक पढिएको"}</span>
-              </h3>
-            </div>
-
-            <div className="mt-3 space-y-3">
-              {mostRead.map((art: HomeArticleItem, index: number) => (
-                <Link
-                  key={art.id}
-                  href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}
-                  className="group flex items-start gap-3 border-b border-border/50 pb-2.5 last:border-0"
-                >
-                  <span className="text-base font-black text-[#027081] font-mono shrink-0 w-6">
-                    0{index + 1}
-                  </span>
-                  <div className="min-w-0 space-y-0.5">
-                    <h4 className="text-sm font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
-                      {resolveArticleTitle(art, lang)}
-                    </h4>
-                    <span className="text-[10px] text-muted-foreground font-mono block">
-                      {art.views} {isEnglish ? "reads" : "पढिएको"}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 1. HERO LEAD NEWS SECTION */}
-      <section className="max-w-[1480px] mx-auto px-4 pt-6 pb-8 border-b border-border">
-        <div className="flex items-center justify-between pb-4">
-          <div className="flex items-center space-x-2 border-l-4 border-rose-600 pl-3">
-            <h2 className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight font-serif uppercase">
-              {isEnglish ? "Lead Stories" : "मुख्य समाचार (Lead Stories)"}
-            </h2>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Large Feature Card (Left 2 Columns) */}
-          {leadStory ? (
-            <Link
-              href={`/article/${leadStory.slug}${isEnglish ? "?lang=en" : ""}`}
-              className="lg:col-span-2 group relative overflow-hidden bg-slate-950 flex flex-col justify-end min-h-[380px] sm:min-h-[440px] rounded-none"
-            >
-              {leadStory.coverImage ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={leadStory.coverImage}
-                  alt={leadStory.title}
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 rounded-none"
-                />
-              ) : (
-                <div className="absolute inset-0 bg-slate-900" />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-
-              <div className="relative z-10 p-6 sm:p-8 space-y-3">
-                <div className="flex items-center space-x-2">
-                  <span className="bg-[#027081] text-white text-xs font-bold px-3 py-1 uppercase rounded-none">
-                    {resolveCategoryName(leadStory.category, lang)}
-                  </span>
-                  <span className="text-white/80 text-xs font-mono">
-                    {formatTimeAgoNp(leadStory.createdAt)}
-                  </span>
+              {stackStories.length === 0 ? (
+                <div className="flex flex-1 items-center justify-center border border-dashed border-gray-300 text-xs text-gray-500">
+                  {emptyLabel}
                 </div>
-
-                <h1 className="text-2xl sm:text-4xl font-extrabold text-white leading-tight group-hover:text-amber-300 transition-colors font-serif">
-                  {resolveArticleTitle(leadStory, lang)}
-                </h1>
-
-                {(leadStory.excerpt || leadStory.excerptNp) && (
-                  <p className="text-sm text-white/85 line-clamp-2 leading-relaxed max-w-3xl font-sans">
-                    {resolveArticleExcerpt(leadStory, lang)}
-                  </p>
-                )}
-              </div>
-            </Link>
-          ) : (
-            <div className="lg:col-span-2 border border-dashed p-12 text-center text-muted-foreground rounded-none">
-              कुनै समाचार उपलब्ध छैन।
+              ) : null}
             </div>
-          )}
 
-          {/* 4 Side Secondary Featured Cards (Right 1 Column) */}
-          <div className="grid grid-cols-1 gap-4">
-            {secondaryFeatured.map((art: HomeArticleItem) => (
-              <Link
-                key={art.id}
-                href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}
-                className="group flex space-x-3.5 p-3 border-b border-border/60 hover:bg-muted/40 transition-colors rounded-none"
+            <aside className="flex flex-col gap-4 lg:col-span-4">
+              <HomeSidebarTabs recent={recentSidebar} popular={popularSidebar} lang={lang} />
+              <NewsletterMembership isEnglish={isEnglish} />
+            </aside>
+          </div>
+        )}
+      </PortalContainer>
+
+      {/* News categories strip */}
+      {categories.length > 0 ? (
+        <section className="border-y border-gray-200 bg-white py-5">
+          <PortalContainer>
+            <div className="mb-4 flex items-center gap-2">
+              <span
+                className="px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide text-white"
+                style={{ backgroundColor: PORTAL.accent }}
               >
-                {art.coverImage && (
-                  <div className="h-20 w-24 overflow-hidden shrink-0 bg-muted rounded-none">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={art.coverImage}
-                      alt={art.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-none"
-                    />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0 space-y-1">
-                  <span className="text-[11px] font-bold text-[#027081] uppercase tracking-wider">
-                    {resolveCategoryName(art.category, lang)}
-                  </span>
-                  <h3 className="text-xs sm:text-sm font-bold text-foreground line-clamp-2 group-hover:text-[#027081] transition-colors leading-snug font-serif">
-                    {resolveArticleTitle(art, lang)}
-                  </h3>
-                  <span className="text-[10px] text-muted-foreground block font-mono">
-                    {formatTimeAgoNp(art.createdAt)}
-                  </span>
-                </div>
-              </Link>
+                {isEnglish ? "News Categories" : "समाचार श्रेणी"}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              {categories.map((cat) => {
+                const cover =
+                  optimizeCloudinaryUrl(cat.articles[0]?.coverImage, "card") ||
+                  cat.articles[0]?.coverImage;
+                const name = resolveCategoryName(cat, lang);
+                return (
+                  <Link
+                    key={cat.id}
+                    href={`/category/${cat.slug}${langQ}`}
+                    className="group block space-y-2"
+                  >
+                    <div className="aspect-[16/10] overflow-hidden bg-gray-200">
+                      {cover ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={cover} alt="" className="h-full w-full object-cover" />
+                      ) : null}
+                    </div>
+                    <h3 className="text-sm font-bold group-hover:underline" style={{ color: PORTAL.brand }}>
+                      {name}
+                    </h3>
+                    {cat.description ? (
+                      <p className="line-clamp-2 text-[11px] leading-snug text-gray-500">{cat.description}</p>
+                    ) : null}
+                  </Link>
+                );
+              })}
+            </div>
+          </PortalContainer>
+        </section>
+      ) : null}
+
+      {/* Latest stream under hero */}
+      {latestBelow.length > 0 ? (
+        <PortalContainer className="py-6">
+          <div className="mb-3 flex items-center justify-between border-b-2 pb-2" style={{ borderColor: PORTAL.accent }}>
+            <h2 className="text-lg font-extrabold" style={{ color: PORTAL.ink }}>
+              {isEnglish ? "Latest News" : "ताजा समाचार"}
+            </h2>
+            <Link href={`/search${langQ}`} className="text-xs font-bold hover:underline" style={{ color: PORTAL.brand }}>
+              {isEnglish ? "More" : "थप"}
+            </Link>
+          </div>
+          <div>
+            {latestBelow.map((art) => (
+              <NewsCard key={art.id} article={art} lang={lang} variant="list" showAuthor />
             ))}
           </div>
-        </div>
-      </section>
+        </PortalContainer>
+      ) : null}
 
-      {/* 2. OPINION & COLUMNISTS SHOWCASE */}
-      <div className="max-w-[1480px] mx-auto px-4">
+      <PortalContainer>
         <OpinionSection articles={opinionArticles} lang={lang} />
-      </div>
+      </PortalContainer>
 
-      {/* 3. LATEST NEWS STREAM & TRENDING SIDEBAR */}
-      <section className="max-w-[1480px] mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Stream: Latest Headlines (2 Columns) */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center justify-between border-b-2 border-[#027081] pb-3">
-              <h3 className="text-lg sm:text-xl font-extrabold text-foreground flex items-center gap-2 font-serif uppercase tracking-wider">
-                <Newspaper className="h-5 w-5 text-[#027081]" />
-                <span>{isEnglish ? "Latest Headlines" : "ताजा तथा भर्खरका समाचार"}</span>
-              </h3>
-            </div>
-
-            <div className="space-y-4">
-              {latestList.map((art: HomeArticleItem) => (
-                <article
-                  key={art.id}
-                  className="group flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 p-4 border-b border-border hover:bg-muted/30 transition-colors rounded-none"
-                >
-                  {art.coverImage && (
-                    <div className="h-44 sm:h-32 sm:w-44 overflow-hidden shrink-0 bg-muted rounded-none">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={art.coverImage}
-                        alt={art.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-none"
-                      />
-                    </div>
-                  )}
-                  <div className="flex-1 space-y-2 flex flex-col justify-between">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center space-x-2 text-[11px] font-bold uppercase tracking-wider">
-                        <span className="text-[#027081]">
-                          {resolveCategoryName(art.category, lang)}
-                        </span>
-                        <span className="text-muted-foreground">•</span>
-                        <span className="text-muted-foreground font-mono">
-                          {formatTimeAgoNp(art.createdAt)}
-                        </span>
-                      </div>
-                      <h3 className="text-base font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif">
-                        <Link href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}>
-                          {resolveArticleTitle(art, lang)}
-                        </Link>
-                      </h3>
-                      {(art.excerpt || art.excerptNp) && (
-                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                          {resolveArticleExcerpt(art, lang)}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/30">
-                      <span>द्वारा: {"सम्पादकीय टोली"}</span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="h-3 w-3 text-[#027081]" />
-                        <span>{art.views}</span>
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Sidebar: Trending & Monetization Banner */}
-          <div className="space-y-8">
-            {/* Sidebar Ad Placement */}
-            {sidebarAd ? (
-              <AdUnit
-                ad={sidebarAd}
-                path="/"
-                className="w-full h-62.5 border border-border rounded-none"
-              />
-            ) : (
-              <div className="w-full h-62.5 border border-dashed border-border/80 bg-muted/20 flex items-center justify-center text-xs text-muted-foreground font-medium rounded-none">
-                विज्ञापन स्थान (Sidebar Ad - 300x250)
-              </div>
-            )}
-
-            {/* Trending News Block */}
-            <div className="border-t-2 border-amber-500 pt-4 space-y-4">
-              <div className="flex items-center justify-between border-b border-border pb-3">
-                <h4 className="text-base font-extrabold text-foreground flex items-center gap-2 font-serif uppercase tracking-wider">
-                  <Flame className="h-4 w-4 text-amber-500" />
-                  <span>{isEnglish ? "Trending Stories" : "सर्वाधिक पढिएका समाचार"}</span>
-                </h4>
-              </div>
-
-              <div className="space-y-3.5">
-                {trendingList.map((art: HomeArticleItem, index: number) => (
-                  <Link
-                    key={art.id}
-                    href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}
-                    className="group flex items-start space-x-3 pb-3 border-b border-border/30 last:border-0 last:pb-0"
-                  >
-                    <span className="text-xl font-extrabold text-[#027081] font-mono shrink-0 w-5">
-                      0{index + 1}
-                    </span>
-                    <div className="space-y-1">
-                      <h5 className="text-xs sm:text-sm font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug line-clamp-2 font-serif">
-                        {resolveArticleTitle(art, lang)}
-                      </h5>
-                      <span className="text-[10px] text-muted-foreground font-mono block">
-                        {art.views} पटक पढिएको
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Public Opinion Poll Widget */}
-            <OpinionPollWidget />
-
-            {/* Nepali Utility Notice Board Widget */}
-            <NepaliUtilityWidget />
-          </div>
-        </div>
-      </section>
-
-      {/* 4. PROVINCE NEWS MAP & WIDGET */}
-      <section className="max-w-[1480px] mx-auto px-4 py-4">
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <ProvinceNewsWidget articles={publishedArticles as any} />
-      </section>
-
-      {/* 5. ECONOMY & BUSINESS SECTION */}
-      <div className="max-w-[1480px] mx-auto px-4">
+      <PortalContainer>
         <CategoryGridSection
           title="Economy & Business"
-          titleNp="अर्थतन्त्र र सेयर बजार (Economy)"
+          titleNp="अर्थतन्त्र"
           categorySlug="economy"
           articles={economyArticles}
           lang={lang}
         />
-      </div>
+      </PortalContainer>
 
-      {/* 6. SPORTS & ENTERTAINMENT SECTION */}
-      <div className="max-w-[1480px] mx-auto px-4">
+      <PortalContainer>
         <CategoryGridSection
           title="Sports & Entertainment"
-          titleNp="खेलकुद र मनोरञ्जन (Sports & Lifestyle)"
+          titleNp="खेलकुद र मनोरञ्जन"
           categorySlug="sports"
           articles={sportsArticles}
           lang={lang}
         />
-      </div>
-
-      {/* 7. MULTIMEDIA PHOTO & VIDEO FEATURE */}
-      <div className="max-w-[1480px] mx-auto px-4">
-        <PhotoVideoFeature articles={photoFeatureArticles} lang={lang} />
-      </div>
+      </PortalContainer>
     </main>
   );
 }

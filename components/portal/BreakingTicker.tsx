@@ -73,10 +73,10 @@ export function BreakingTicker() {
 
   return (
     <div className="w-full bg-linear-to-r from-rose-700 via-rose-600 to-red-500 text-white text-xs font-semibold select-none border-b border-rose-800 shadow-[0_2px_12px_rgba(225,29,72,0.18)]">
-      <div className="max-w-7xl mx-auto flex items-center h-11 px-4 gap-3">
-        <div className="flex items-center gap-1.5 bg-rose-950/30 px-2.5 py-1.5 rounded-md border border-white/10 text-white font-black uppercase shrink-0">
+      <div className="mx-auto flex h-11 max-w-[1280px] items-center gap-3 px-4 sm:px-5">
+        <div className="flex shrink-0 items-center gap-1.5 border border-white/15 bg-black/20 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wide text-white">
           <Zap className="h-3.5 w-3.5 fill-white animate-pulse" />
-          <span>LIVE</span>
+          <span>{isEnglish ? "Breaking" : "ब्रेकिङ"}</span>
         </div>
 
         <div

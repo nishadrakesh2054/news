@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { Globe, Search, Calendar, Radio } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Globe, Calendar } from "lucide-react";
 import { FacebookIcon, TwitterIcon, YoutubeIcon } from "./SocialIcons";
 import { getFormattedNepaliDate } from "@/lib/nepaliDate";
-import { useRouter, useSearchParams } from "next/navigation";
-import { NepaliUtilityBar } from "./NepaliUtilityBar";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AdUnit, type AdUnitData } from "@/components/portal/AdUnit";
+import { TopbarUtilitiesMenu } from "@/components/portal/TopbarUtilitiesMenu";
 import { SITE_CONFIG } from "@/constants/site";
-import { editionHomeHref } from "@/lib/site-url";
+import { editionPathHref } from "@/lib/site-url";
 import { isEnglishHostname } from "@/lib/language";
+import { PORTAL } from "@/constants/portal";
 
 interface AdItem extends AdUnitData {
   slot?: string;
@@ -19,13 +20,17 @@ interface AdItem extends AdUnitData {
 
 export function PublicHeader() {
   const [nepaliDateStr] = useState(() => getFormattedNepaliDate());
-  const [englishDateStr] = useState(() => {
-    const today = new Date();
-    return today.toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
-  });
-  const [searchQuery, setSearchQuery] = useState("");
+  const [englishDateStr] = useState(() =>
+    new Date().toLocaleDateString("en-US", {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  );
   const [leaderboardAd, setLeaderboardAd] = useState<AdItem | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const langParam = searchParams.get("lang");
@@ -33,7 +38,6 @@ export function PublicHeader() {
   const isEnglish = langParam === "en" || isEnglishHostname(hostname);
 
   useEffect(() => {
-    // Fetch Leaderboard Ad
     fetch("/api/ads")
       .then((res) => res.json())
       .then((json) => {
@@ -45,16 +49,13 @@ export function PublicHeader() {
       .catch(() => {});
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}${isEnglish ? "&lang=en" : ""}`);
-    }
-  };
-
   const toggleLanguage = () => {
     const target = isEnglish ? "ne" : "en";
-    const href = editionHomeHref(target, hostname);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("lang");
+    const qs = params.toString();
+    const path = qs ? `${pathname}?${qs}` : pathname;
+    const href = editionPathHref(path, target, hostname);
     if (href.startsWith("http")) {
       window.location.href = href;
       return;
@@ -62,93 +63,65 @@ export function PublicHeader() {
     router.push(href);
   };
 
+  const homeHref = isEnglish ? "/?lang=en" : "/";
+
   return (
-    <header className="w-full bg-background border-b border-border/40 select-none">
-      {/* Topmost Utility Bar */}
-      <div className="bg-[#027081] text-white py-1.5 px-4 text-xs font-medium">
-        <div className="max-w-[1480px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="flex items-center space-x-3">
-            <span className="flex items-center gap-1.5 font-semibold text-white/95">
-              <Calendar className="h-3.5 w-3.5 text-white/80" />
-              <span>{isEnglish ? englishDateStr : (nepaliDateStr || "नेपाली मिति...")}</span>
-            </span>
-            <span className="hidden md:inline text-white/40">•</span>
-            <span className="hidden md:inline-flex items-center gap-1 text-emerald-300 font-semibold">
-              <Radio className="h-3 w-3 animate-pulse" />
-              <span>{isEnglish ? "Live News 24/7" : "अनलाइन लाइभ २५/७"}</span>
-            </span>
-          </div>
+    <header className="w-full select-none bg-white">
+      <div className="py-1.5 text-xs font-medium text-white" style={{ backgroundColor: PORTAL.brand }}>
+        <div className={`${PORTAL.container} flex flex-col items-center justify-between gap-1.5 sm:flex-row`}>
+          <span className="inline-flex items-center gap-1.5 font-semibold">
+            <Calendar className="h-3.5 w-3.5" />
+            {isEnglish ? englishDateStr : nepaliDateStr || "नेपाली मिति"}
+          </span>
 
-          <div className="flex items-center space-x-4">
-            {/* Language Edition Switcher Button */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <TopbarUtilitiesMenu isEnglish={isEnglish} />
             <button
+              type="button"
               onClick={toggleLanguage}
-              className="inline-flex items-center space-x-1.5 bg-amber-400 text-slate-950 px-2.5 py-1 rounded-none text-[11px] font-extrabold hover:bg-amber-300 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 bg-white px-2 py-0.5 text-[11px] font-bold"
+              style={{ color: PORTAL.brand }}
             >
-              <Globe className="h-3.5 w-3.5" />
-              <span>{isEnglish ? "नेपाली संस्करण 🇳🇵" : "English Edition 🌐"}</span>
+              <Globe className="h-3 w-3" />
+              {isEnglish ? "नेपाली" : "English"}
             </button>
-
-            <div className="flex items-center space-x-2.5">
-              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="text-white/80 hover:text-white transition-colors" title="Facebook">
-                <FacebookIcon className="h-3.5 w-3.5" />
-              </a>
-              <a href="https://twitter.com" target="_blank" rel="noreferrer" className="text-white/80 hover:text-white transition-colors" title="Twitter">
-                <TwitterIcon className="h-3.5 w-3.5" />
-              </a>
-              <a href="https://youtube.com" target="_blank" rel="noreferrer" className="text-white/80 hover:text-white transition-colors" title="YouTube">
-                <YoutubeIcon className="h-3.5 w-3.5" />
-              </a>
-            </div>
-            <span className="text-white/40">|</span>
-            <Link href="/admin" className="text-white/90 hover:underline text-[11px] font-semibold">
-              {isEnglish ? "CMS Login" : "एडमिन लगइन"}
-            </Link>
+            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="text-white hover:opacity-80" title="Facebook">
+              <FacebookIcon className="h-3.5 w-3.5" />
+            </a>
+            <a href="https://twitter.com" target="_blank" rel="noreferrer" className="text-white hover:opacity-80" title="X">
+              <TwitterIcon className="h-3.5 w-3.5" />
+            </a>
+            <a href="https://youtube.com" target="_blank" rel="noreferrer" className="text-white hover:opacity-80" title="YouTube">
+              <YoutubeIcon className="h-3.5 w-3.5" />
+            </a>
           </div>
         </div>
       </div>
 
-      {/* Nepali Utility Bar (Gold/Silver, Forex & Rashifal) */}
-      <NepaliUtilityBar />
-
-      {/* Main Brand Logo & Leaderboard Ad Container */}
-      <div className="max-w-[1480px] mx-auto px-4 py-4 flex flex-col lg:flex-row items-center justify-between gap-6">
-        {/* Brand Logo Image */}
-        <Link href={isEnglish ? "/?lang=en" : "/"} className="flex items-center group shrink-0">
+      <div className={`${PORTAL.container} flex items-center justify-between gap-3 py-2.5 sm:gap-4 sm:py-3`}>
+        <Link href={homeHref} className="shrink-0 overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/newslogo.png"
             alt={`${SITE_CONFIG.nameNp} (${SITE_CONFIG.name})`}
-            className="h-14 sm:h-16 md:h-20 w-auto object-contain rounded-none group-hover:opacity-95 transition-opacity py-1"
+            className="h-14 w-auto object-contain object-left sm:h-16 md:h-[4.75rem]"
           />
         </Link>
 
-        {/* Top Header Leaderboard Ad Banner (728x90 standard) */}
         {leaderboardAd ? (
           <AdUnit
             ad={leaderboardAd}
             path="/"
-            className="w-full max-w-182 h-22.5 border border-border rounded-none"
+            className="hidden h-[72px] w-full max-w-[728px] border border-gray-200 lg:block xl:h-[90px]"
           />
         ) : (
-          <div className="hidden lg:flex w-182 h-22.5 border border-dashed border-border/80 bg-muted/20 items-center justify-center text-xs text-muted-foreground font-medium rounded-none">
-            विज्ञापन स्थान (Header Leaderboard Ad - 728x90)
+          <div
+            className="hidden h-[72px] w-full max-w-[728px] items-center justify-center border border-gray-200 text-xs font-medium text-gray-500 xl:h-[90px] lg:flex"
+            style={{ backgroundColor: PORTAL.surface }}
+          >
+            {SITE_CONFIG.name} Ad · 728×90
           </div>
         )}
-      </div>
-
-      {/* Search Input Bar for Mobile / Tablet */}
-      <div className="max-w-[1480px] mx-auto px-4 pb-3 lg:hidden">
-        <form onSubmit={handleSearch} className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="समाचार खोज्नुहोस्..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-none border border-slate-300 dark:border-slate-700 bg-background pl-9 pr-4 py-2 text-xs outline-none focus:border-[#027081] transition-colors"
-          />
-        </form>
       </div>
     </header>
   );

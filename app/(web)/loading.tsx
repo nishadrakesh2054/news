@@ -1,11 +1,21 @@
-import { SITE_CONFIG } from "@/constants/site";
+import { PORTAL } from "@/constants/portal";
 
 export default function WebLoading() {
   return (
-    <div className="flex min-h-[40vh] items-center justify-center">
-      <div className="text-center">
-        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[#0C4EA0] border-t-transparent" />
-        <p className="mt-4 text-sm text-muted-foreground">Loading {SITE_CONFIG.name}…</p>
+    <div className={`${PORTAL.container} space-y-6 py-8`}>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+        <div className="h-[300px] animate-pulse bg-muted lg:col-span-8 sm:h-[420px]" />
+        <div className="space-y-3 lg:col-span-4">
+          <div className="h-16 animate-pulse bg-muted" />
+          <div className="h-16 animate-pulse bg-muted" />
+          <div className="h-16 animate-pulse bg-muted" />
+          <div className="h-16 animate-pulse bg-muted" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="h-40 animate-pulse bg-muted" />
+        <div className="h-40 animate-pulse bg-muted" />
+        <div className="h-40 animate-pulse bg-muted" />
       </div>
     </div>
   );
