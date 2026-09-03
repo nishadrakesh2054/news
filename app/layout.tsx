@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Sans_Devanagari, Geist_Mono } from "next/font/google";
+import { headers } from "next/headers";
 import { SITE_CONFIG } from "@/constants/site";
+import { htmlLang, resolveLanguageEdition } from "@/lib/language";
+import { SessionProvider } from "@/components/providers/SessionProvider";
+import { QueryProvider } from "@/components/providers/QueryProvider";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const inter = Inter({
@@ -42,6 +47,10 @@ export const metadata: Metadata = {
   ],
   alternates: {
     canonical: "/",
+    languages: {
+      "ne-NP": SITE_CONFIG.url,
+      en: SITE_CONFIG.englishUrl,
+    },
   },
   openGraph: {
     siteName: SITE_CONFIG.name,
@@ -50,6 +59,7 @@ export const metadata: Metadata = {
     url: SITE_CONFIG.url,
     type: "website",
     locale: "ne_NP",
+    alternateLocale: ["en_US"],
     images: [
       {
         url: "/logo/logo.png",
@@ -80,14 +90,14 @@ export const metadata: Metadata = {
   },
 };
 
-import { SessionProvider } from "@/components/providers/SessionProvider";
-import { QueryProvider } from "@/components/providers/QueryProvider";
-import { Toaster } from "sonner";
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") || headerList.get("host");
+  const lang = resolveLanguageEdition(null, host);
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
-      lang="ne"
+      lang={htmlLang(lang)}
       className={`${inter.variable} ${notoSansDevanagari.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >

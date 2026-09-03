@@ -9,6 +9,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { NepaliUtilityBar } from "./NepaliUtilityBar";
 import { AdUnit, type AdUnitData } from "@/components/portal/AdUnit";
 import { SITE_CONFIG } from "@/constants/site";
+import { editionHomeHref } from "@/lib/site-url";
+import { isEnglishHostname } from "@/lib/language";
 
 interface AdItem extends AdUnitData {
   slot?: string;
@@ -27,8 +29,8 @@ export function PublicHeader() {
   const searchParams = useSearchParams();
 
   const langParam = searchParams.get("lang");
-  const isEnHost = typeof window !== "undefined" && (window.location.hostname.startsWith("english.") || window.location.hostname.startsWith("en."));
-  const isEnglish = langParam === "en" || isEnHost;
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const isEnglish = langParam === "en" || isEnglishHostname(hostname);
 
   useEffect(() => {
     // Fetch Leaderboard Ad
@@ -51,11 +53,13 @@ export function PublicHeader() {
   };
 
   const toggleLanguage = () => {
-    if (isEnglish) {
-      router.push("/?lang=ne");
-    } else {
-      router.push("/?lang=en");
+    const target = isEnglish ? "ne" : "en";
+    const href = editionHomeHref(target, hostname);
+    if (href.startsWith("http")) {
+      window.location.href = href;
+      return;
     }
+    router.push(href);
   };
 
   return (

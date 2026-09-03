@@ -27,6 +27,7 @@ model Article {
   content         String          @db.Text
   contentNp       String?         @db.Text
   excerpt         String?         @db.Text
+  excerptNp       String?         @db.Text
   coverImage      String?
   caption         String?
   status          ArticleStatus   @default(DRAFT)
@@ -37,8 +38,11 @@ model Article {
   isBreaking      Boolean         @default(false)
   views           Int             @default(0)
   metaTitle       String?
+  metaTitleNp     String?
   metaDescription String?
+  metaDescriptionNp String?
   keywords        String?
+  keywordsNp      String?
   ogImage         String?
   authorId        String
   author          User            @relation(fields: [authorId], references: [id], onDelete: Cascade)

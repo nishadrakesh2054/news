@@ -6,47 +6,85 @@ import { ArticleStatus } from "@prisma/client";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
 import { FolderTree, ChevronRight } from "lucide-react";
 import { absoluteUrl } from "@/lib/site-url";
-import { SITE_CONFIG, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
+import { SITE_CONFIG, SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
+import {
+  languageEditionWhere,
+  resolveArticleTitle,
+  resolveCategoryName,
+  resolveLanguageEdition,
+} from "@/lib/language";
+import { headers } from "next/headers";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ lang?: string }>;
 }
 
-export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+async function resolvePageLang(searchParamsLang?: string) {
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") || headerList.get("host");
+  return resolveLanguageEdition(searchParamsLang, host);
+}
+
+export async function generateMetadata({ params, searchParams }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params;
+  const query = await searchParams;
+  const lang = await resolvePageLang(query.lang);
   const category = await prisma.category.findUnique({
     where: { slug },
   });
 
   if (!category) {
-    return { title: `श्रेणी भेटिएन ${SITE_TITLE_SUFFIX_NP}` };
+    return {
+      title:
+        lang === "en"
+          ? `Category not found ${SITE_TITLE_SUFFIX}`
+          : `श्रेणी भेटिएन ${SITE_TITLE_SUFFIX_NP}`,
+    };
   }
 
-  const name = category.nameNp || category.name;
+  const name = resolveCategoryName(category, lang);
+  const suffix = lang === "en" ? SITE_TITLE_SUFFIX : SITE_TITLE_SUFFIX_NP;
   return {
-    title: `${name} समाचार`,
-    description: `${name} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | ${SITE_CONFIG.nameNp}`,
+    title: lang === "en" ? `${name} news` : `${name} समाचार`,
+    description:
+      lang === "en"
+        ? `${name} news and updates | ${SITE_CONFIG.name}`
+        : `${name} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | ${SITE_CONFIG.nameNp}`,
     alternates: {
       canonical: `/category/${category.slug}`,
+      languages: {
+        "ne-NP": absoluteUrl(`/category/${category.slug}`, "ne"),
+        en: absoluteUrl(`/category/${category.slug}`, "en"),
+      },
     },
     openGraph: {
-      title: `${name} समाचार | ${SITE_CONFIG.nameNp}`,
-      description: `${name} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | ${SITE_CONFIG.nameNp}`,
-      url: absoluteUrl(`/category/${category.slug}`),
+      title: `${name} ${suffix}`,
+      description:
+        lang === "en"
+          ? `${name} news and updates | ${SITE_CONFIG.name}`
+          : `${name} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | ${SITE_CONFIG.nameNp}`,
+      url: absoluteUrl(`/category/${category.slug}`, lang),
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: `${name} समाचार | ${SITE_CONFIG.nameNp}`,
-      description: `${name} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | ${SITE_CONFIG.nameNp}`,
+      title: `${name} ${suffix}`,
+      description:
+        lang === "en"
+          ? `${name} news and updates | ${SITE_CONFIG.name}`
+          : `${name} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | ${SITE_CONFIG.nameNp}`,
     },
   };
 }
 
 export const revalidate = 60; // ISR cache revalidation every 60s
 
-export default async function CategoryArchivePage({ params }: CategoryPageProps) {
+export default async function CategoryArchivePage({ params, searchParams }: CategoryPageProps) {
   const { slug } = await params;
+  const query = await searchParams;
+  const lang = await resolvePageLang(query.lang);
+  const langQuery = lang === "en" ? "?lang=en" : "";
 
   const category = await prisma.category.findUnique({
     where: { slug },
@@ -56,13 +94,17 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
       nameNp: true,
       slug: true,
       articles: {
-        where: { status: ArticleStatus.PUBLISHED },
+        where: {
+          status: ArticleStatus.PUBLISHED,
+          ...languageEditionWhere(lang),
+        },
         select: {
           id: true,
           title: true,
           titleNp: true,
           slug: true,
           excerpt: true,
+          excerptNp: true,
           coverImage: true,
           createdAt: true,
           views: true,
@@ -79,7 +121,7 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
     notFound();
   }
 
-  const categoryName = category.nameNp || category.name;
+  const categoryName = resolveCategoryName(category, lang);
   const latestArticles = [...category.articles].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const popularArticles = [...category.articles].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 4);
   const featuredArticles = category.articles.filter((article) => article.isFeatured).slice(0, 3);
@@ -88,18 +130,35 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "गृहपृष्ठ", item: absoluteUrl("/") },
-      { "@type": "ListItem", position: 2, name: categoryName, item: absoluteUrl(`/category/${category.slug}`) },
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: lang === "en" ? "Home" : "गृहपृष्ठ",
+        item: absoluteUrl("/", lang),
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: categoryName,
+        item: absoluteUrl(`/category/${category.slug}`, lang),
+      },
     ],
   };
 
   const collectionSchema = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: `${categoryName} समाचार`,
-    description: `${categoryName} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | ${SITE_CONFIG.nameNp}`,
-    url: absoluteUrl(`/category/${category.slug}`),
-    isPartOf: { "@type": "WebSite", name: SITE_CONFIG.name, url: absoluteUrl("/") },
+    name: lang === "en" ? `${categoryName} news` : `${categoryName} समाचार`,
+    description:
+      lang === "en"
+        ? `${categoryName} news and updates | ${SITE_CONFIG.name}`
+        : `${categoryName} श्रेणीका सबै समाचार, अपडेट र विशेष रिपोर्टहरू | ${SITE_CONFIG.nameNp}`,
+    url: absoluteUrl(`/category/${category.slug}`, lang),
+    isPartOf: {
+      "@type": "WebSite",
+      name: SITE_CONFIG.name,
+      url: absoluteUrl("/", lang),
+    },
   };
 
   return (
@@ -119,9 +178,11 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
           <div className="border-b-2 border-[#027081] pb-4 flex items-center justify-between gap-4">
             <div className="space-y-1">
               <nav className="flex items-center space-x-2 text-xs text-muted-foreground pb-1">
-                <Link href="/" className="hover:text-[#027081]">गृह</Link>
+                <Link href={`/${langQuery}`} className="hover:text-[#027081]">
+                  {lang === "en" ? "Home" : "गृह"}
+                </Link>
                 <ChevronRight className="h-3 w-3" />
-                <span>श्रेणी</span>
+                <span>{lang === "en" ? "Category" : "श्रेणी"}</span>
               </nav>
               <h1 className="text-3xl font-extrabold text-[#027081] font-serif flex items-center gap-2">
                 <FolderTree className="h-7 w-7" />
@@ -130,7 +191,7 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
             </div>
 
             <span className="bg-[#027081]/10 text-[#027081] text-xs font-bold px-3 py-1.5 rounded-lg font-mono">
-              {category.articles.length} समाचार
+              {category.articles.length} {lang === "en" ? "articles" : "समाचार"}
             </span>
           </div>
 
@@ -155,7 +216,7 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
                 {featuredArticles.map((art) => (
                   <Link
                     key={art.id}
-                    href={`/article/${art.slug}`}
+                    href={`/article/${art.slug}${langQuery}`}
                     className="group block rounded-xl border border-border/40 bg-muted/20 hover:bg-muted/40 transition-colors overflow-hidden"
                   >
                     {art.coverImage && (
@@ -163,7 +224,7 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={art.coverImage}
-                          alt={art.title}
+                          alt={resolveArticleTitle(art, lang)}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       </div>
@@ -173,7 +234,7 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
                         Featured
                       </span>
                       <h3 className="mt-2 text-sm font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
-                        {art.titleNp || art.title}
+                        {resolveArticleTitle(art, lang)}
                       </h3>
                     </div>
                   </Link>
@@ -192,7 +253,7 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
                 {latestArticles.slice(0, 4).map((art) => (
                   <Link
                     key={art.id}
-                    href={`/article/${art.slug}`}
+                    href={`/article/${art.slug}${langQuery}`}
                     className="group flex flex-col sm:flex-row gap-3 rounded-xl border border-border/40 bg-muted/20 hover:bg-muted/40 transition-colors p-3"
                   >
                     {art.coverImage && (
@@ -200,7 +261,7 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={art.coverImage}
-                          alt={art.title}
+                          alt={resolveArticleTitle(art, lang)}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       </div>
@@ -210,7 +271,7 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
                         {formatTimeAgoNp(art.createdAt)}
                       </span>
                       <h3 className="text-sm sm:text-base font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
-                        {art.titleNp || art.title}
+                        {resolveArticleTitle(art, lang)}
                       </h3>
                     </div>
                   </Link>
@@ -227,7 +288,7 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
                 {popularArticles.map((art, index) => (
                   <Link
                     key={art.id}
-                    href={`/article/${art.slug}`}
+                    href={`/article/${art.slug}${langQuery}`}
                     className="group flex items-start gap-3 border-b border-border/30 pb-3 last:border-0 last:pb-0"
                   >
                     <span className="text-lg font-black text-[#027081]/40 group-hover:text-[#027081] transition-colors font-mono shrink-0 w-6">
@@ -235,10 +296,10 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
                     </span>
                     <div className="min-w-0 space-y-1">
                       <h3 className="text-sm font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
-                        {art.titleNp || art.title}
+                        {resolveArticleTitle(art, lang)}
                       </h3>
                       <span className="text-[10px] text-muted-foreground font-mono block">
-                        {art.views || 0} पटक पढिएको
+                        {art.views || 0} {lang === "en" ? "reads" : "पटक पढिएको"}
                       </span>
                     </div>
                   </Link>
@@ -261,7 +322,7 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={art.coverImage}
-                          alt={art.title}
+                          alt={resolveArticleTitle(art, lang)}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       </div>
@@ -273,20 +334,20 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
                         </span>
 
                         <h2 className="text-base font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif">
-                          <Link href={`/article/${art.slug}`}>
-                            {art.titleNp || art.title}
+                          <Link href={`/article/${art.slug}${langQuery}`}>
+                            {resolveArticleTitle(art, lang)}
                           </Link>
                         </h2>
 
-                        {art.excerpt && (
+                        {(art.excerpt || art.excerptNp) && (
                           <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                            {art.excerpt}
+                            {resolveArticleExcerpt(art, lang)}
                           </p>
                         )}
                       </div>
 
                       <div className="pt-2 border-t border-border/30 text-[11px] font-semibold text-[#027081] flex items-center gap-1">
-                        <span>थप पढ्नुहोस्</span>
+                        <span>{lang === "en" ? "Read more" : "थप पढ्नुहोस्"}</span>
                         <ChevronRight className="h-3 w-3" />
                       </div>
                     </div>
@@ -295,7 +356,9 @@ export default async function CategoryArchivePage({ params }: CategoryPageProps)
               </div>
             ) : (
               <div className="p-12 text-center text-muted-foreground rounded-2xl border border-dashed">
-                यस श्रेणीमा हाल कुनै प्रकाशित समाचार उपलब्ध छैन।
+                {lang === "en"
+                  ? "No published articles in this category yet."
+                  : "यस श्रेणीमा हाल कुनै प्रकाशित समाचार उपलब्ध छैन।"}
               </div>
             )}
           </div>

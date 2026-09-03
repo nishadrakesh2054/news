@@ -63,9 +63,18 @@ const FORMAT_OPTIONS: { value: ArticleType; label: string }[] = [
 ];
 
 const LANGUAGE_OPTIONS: { value: LanguageEdition; label: string }[] = [
-  { value: LanguageEdition.BOTH, label: "Both editions" },
-  { value: LanguageEdition.NEPALI_ONLY, label: "Nepali only" },
-  { value: LanguageEdition.ENGLISH_ONLY, label: "English only" },
+  {
+    value: LanguageEdition.NEPALI_ONLY,
+    label: "Nepali only → echomanch.com",
+  },
+  {
+    value: LanguageEdition.ENGLISH_ONLY,
+    label: "English only → en.echomanch.com",
+  },
+  {
+    value: LanguageEdition.BOTH,
+    label: "Both editions (Nepali + English)",
+  },
 ];
 
 const STATUS_BADGE: Record<ArticleStatus, string> = {
@@ -86,6 +95,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
   const [content, setContent] = useState<string>((initialData?.content as string) || "");
   const [contentNp, setContentNp] = useState<string>((initialData?.contentNp as string) || "");
   const [excerpt, setExcerpt] = useState<string>((initialData?.excerpt as string) || "");
+  const [excerptNp, setExcerptNp] = useState<string>((initialData?.excerptNp as string) || "");
   const [coverImage, setCoverImage] = useState<string>((initialData?.coverImage as string) || "");
   const [caption, setCaption] = useState<string>((initialData?.caption as string) || "");
   const [status, setStatus] = useState<ArticleStatus>(initialData?.status || ArticleStatus.DRAFT);
@@ -102,10 +112,17 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
   );
   const [categoryId, setCategoryId] = useState<string>((initialData?.categoryId as string) || "");
   const [metaTitle, setMetaTitle] = useState<string>((initialData?.metaTitle as string) || "");
+  const [metaTitleNp, setMetaTitleNp] = useState<string>(
+    (initialData?.metaTitleNp as string) || ""
+  );
   const [metaDescription, setMetaDescription] = useState<string>(
     (initialData?.metaDescription as string) || ""
   );
+  const [metaDescriptionNp, setMetaDescriptionNp] = useState<string>(
+    (initialData?.metaDescriptionNp as string) || ""
+  );
   const [keywords, setKeywords] = useState<string>((initialData?.keywords as string) || "");
+  const [keywordsNp, setKeywordsNp] = useState<string>((initialData?.keywordsNp as string) || "");
   const [ogImage, setOgImage] = useState<string>((initialData?.ogImage as string) || "");
   const [coverGallery, setCoverGallery] = useState<Array<{ id: string; url: string; name: string }>>(
     []
@@ -130,6 +147,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
         content,
         contentNp,
         excerpt,
+        excerptNp,
         coverImage,
         caption,
         status,
@@ -140,8 +158,11 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
         scheduledAt,
         categoryId,
         metaTitle,
+        metaTitleNp,
         metaDescription,
+        metaDescriptionNp,
         keywords,
+        keywordsNp,
         ogImage,
         province,
         district,
@@ -154,6 +175,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       content,
       contentNp,
       excerpt,
+      excerptNp,
       coverImage,
       caption,
       status,
@@ -164,8 +186,11 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       scheduledAt,
       categoryId,
       metaTitle,
+      metaTitleNp,
       metaDescription,
+      metaDescriptionNp,
       keywords,
+      keywordsNp,
       ogImage,
       province,
       district,
@@ -279,8 +304,13 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
         toast.error("English title and body are required for English-only articles");
         return;
       }
-    } else if (!title.trim() || !hasEnglishBody) {
-      toast.error("English title and body are required for bilingual articles");
+    } else if (
+      !title.trim() ||
+      !hasEnglishBody ||
+      !titleNp.trim() ||
+      !hasNepaliBody
+    ) {
+      toast.error("Both English and Nepali title and body are required for bilingual articles");
       return;
     }
 
@@ -295,6 +325,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       content: hasEnglishBody ? content : contentNp,
       contentNp: contentNp || undefined,
       excerpt: excerpt || undefined,
+      excerptNp: excerptNp || undefined,
       coverImage: coverImage || undefined,
       caption: caption || undefined,
       status,
@@ -308,8 +339,11 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       isBreaking,
       categoryId,
       metaTitle: metaTitle || undefined,
+      metaTitleNp: metaTitleNp || undefined,
       metaDescription: metaDescription || undefined,
+      metaDescriptionNp: metaDescriptionNp || undefined,
       keywords: keywords || undefined,
+      keywordsNp: keywordsNp || undefined,
       ogImage: ogImage || undefined,
     });
   };
@@ -366,12 +400,47 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       </div>
 
       <form id={FORM_ID} onSubmit={handleSubmit} className="space-y-4">
-        <AdminFormSection number={1} title="Article information">
-          <AdminFormRow serial={1} label="Nepali headline (शीर्षक)">
+        <AdminFormSection
+          number={1}
+          title="Article information"
+          hint={
+            languageEdition === LanguageEdition.BOTH
+              ? "Both editions selected — fill Nepali + English title, body, and excerpt. One save publishes to echomanch.com and en.echomanch.com."
+              : languageEdition === LanguageEdition.ENGLISH_ONLY
+                ? "English only — this article appears on en.echomanch.com only."
+                : "Nepali only — this article appears on echomanch.com only. Change Language edition below to publish in both languages."
+          }
+        >
+          <AdminFormRow
+            serial={1}
+            label="Language edition"
+            required
+            hint="Choose first. Both = one article, two languages (same slug on both sites)."
+          >
+            <select
+              id="language"
+              value={languageEdition}
+              onChange={(e) => setLanguageEdition(e.target.value as LanguageEdition)}
+              className={`${adminSelect} w-full max-w-sm`}
+            >
+              {LANGUAGE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </AdminFormRow>
+
+          <AdminFormRow
+            serial={2}
+            label="Nepali headline (शीर्षक)"
+            required={languageEdition !== LanguageEdition.ENGLISH_ONLY}
+          >
             <div className="w-full max-w-2xl space-y-2">
               <input
                 id="title-np"
                 type="text"
+                required={languageEdition !== LanguageEdition.ENGLISH_ONLY}
                 placeholder="नेपाली मुख्य शीर्षक…"
                 value={titleNp}
                 onChange={(e) => setTitleNp(e.target.value)}
@@ -381,7 +450,11 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
             </div>
           </AdminFormRow>
 
-          <AdminFormRow serial={2} label="English title" required={languageEdition !== LanguageEdition.NEPALI_ONLY}>
+          <AdminFormRow
+            serial={3}
+            label="English title"
+            required={languageEdition !== LanguageEdition.NEPALI_ONLY}
+          >
             <input
               id="title-en"
               type="text"
@@ -394,43 +467,68 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
           </AdminFormRow>
 
           <AdminFormRow
-            serial={3}
-            label="URL slug"
+            serial={4}
+            label="URL slug (shared)"
             required
-            hint={`Permalink: /articles/${slug || "your-slug"}`}
+            hint="One latin slug for both sites — same path on echomanch.com and en.echomanch.com"
           >
             <input
               id="slug"
               type="text"
               required
-              placeholder="url-slug"
+              placeholder="url-slug-in-english-letters"
               value={slug}
               onChange={(e) => setSlug(autoSlug(e.target.value))}
               className={`${adminInput} w-full max-w-md font-mono`}
             />
           </AdminFormRow>
 
-          <AdminFormRow
-            serial={4}
-            label="Excerpt / summary"
-            hint="Short text shown on homepage cards and article listings"
-          >
-            <textarea
-              id="excerpt"
-              rows={2}
-              placeholder="Brief summary of the story…"
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              className={`${adminInput} min-h-14 w-full max-w-2xl resize-y py-2`}
-            />
-          </AdminFormRow>
+          {(languageEdition === LanguageEdition.ENGLISH_ONLY ||
+            languageEdition === LanguageEdition.BOTH) && (
+            <AdminFormRow
+              serial={5}
+              label="Excerpt (English)"
+              hint="Short summary on English cards and listings"
+            >
+              <textarea
+                id="excerpt"
+                rows={2}
+                placeholder="Brief English summary…"
+                value={excerpt}
+                onChange={(e) => setExcerpt(e.target.value)}
+                className={`${adminInput} min-h-14 w-full max-w-2xl resize-y py-2`}
+              />
+            </AdminFormRow>
+          )}
+
+          {(languageEdition === LanguageEdition.NEPALI_ONLY ||
+            languageEdition === LanguageEdition.BOTH) && (
+            <AdminFormRow
+              serial={languageEdition === LanguageEdition.BOTH ? 6 : 5}
+              label="Excerpt (Nepali / सारांश)"
+              hint="Short summary on Nepali cards and listings"
+            >
+              <textarea
+                id="excerpt-np"
+                rows={2}
+                placeholder="छोटो नेपाली सारांश…"
+                value={excerptNp}
+                onChange={(e) => setExcerptNp(e.target.value)}
+                className={`${adminInput} min-h-14 w-full max-w-2xl resize-y py-2`}
+              />
+            </AdminFormRow>
+          )}
         </AdminFormSection>
 
         <AdminFormBodySection
           number={2}
           title="Article body (English)"
           required={languageEdition !== LanguageEdition.NEPALI_ONLY}
-          hint="Write the full story in English. Use Expand for distraction-free writing."
+          hint={
+            languageEdition === LanguageEdition.NEPALI_ONLY
+              ? "Optional for Nepali-only articles."
+              : "Write the full English story. Required for English-only and Both editions."
+          }
         >
           <TipTapEditor
             value={content}
@@ -443,8 +541,12 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
         <AdminFormBodySection
           number={3}
           title="Article body (Nepali / नेपाली)"
-          required={languageEdition === LanguageEdition.NEPALI_ONLY}
-          hint="Write the Nepali version of the story. Required for Nepali-only editions."
+          required={languageEdition !== LanguageEdition.ENGLISH_ONLY}
+          hint={
+            languageEdition === LanguageEdition.ENGLISH_ONLY
+              ? "Optional for English-only articles."
+              : "Write the full Nepali story. Required for Nepali-only and Both editions."
+          }
         >
           <TipTapEditor
             value={contentNp}
@@ -487,22 +589,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
             </select>
           </AdminFormRow>
 
-          <AdminFormRow serial={3} label="Language edition">
-            <select
-              id="language"
-              value={languageEdition}
-              onChange={(e) => setLanguageEdition(e.target.value as LanguageEdition)}
-              className={`${adminSelect} w-full max-w-sm`}
-            >
-              {LANGUAGE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </AdminFormRow>
-
-          <AdminFormRow serial={4} label="Province">
+          <AdminFormRow serial={3} label="Province">
             <select
               id="province"
               value={province || ""}
@@ -518,7 +605,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
             </select>
           </AdminFormRow>
 
-          <AdminFormRow serial={5} label="District">
+          <AdminFormRow serial={4} label="District">
             <input
               id="district"
               type="text"
@@ -529,7 +616,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
             />
           </AdminFormRow>
 
-          <AdminFormRow serial={6} label="Tags">
+          <AdminFormRow serial={5} label="Tags">
             {tags.length > 0 ? (
               <div className="flex flex-wrap gap-2 max-w-2xl">
                 {tags.map((tag) => {
@@ -708,48 +795,119 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
           </AdminFormRow>
         </AdminFormSection>
 
-        <AdminFormSection number={7} title="SEO & social metadata">
+        <AdminFormSection
+          number={7}
+          title="SEO & social metadata"
+          hint="Fill SEO for each edition you publish. Leave blank to fall back to the headline / excerpt for that language. OG image is shared."
+        >
+          {(languageEdition === LanguageEdition.ENGLISH_ONLY ||
+            languageEdition === LanguageEdition.BOTH) && (
+            <AdminFormRow
+              serial={1}
+              label="Meta title (English)"
+              hint="Leave blank to use the English headline"
+            >
+              <input
+                id="meta-title"
+                type="text"
+                placeholder="Custom English search title…"
+                value={metaTitle}
+                onChange={(e) => setMetaTitle(e.target.value)}
+                className={`${adminInput} w-full max-w-2xl`}
+              />
+            </AdminFormRow>
+          )}
+
+          {(languageEdition === LanguageEdition.ENGLISH_ONLY ||
+            languageEdition === LanguageEdition.BOTH) && (
+            <AdminFormRow serial={2} label="Meta description (English)">
+              <textarea
+                id="meta-description"
+                rows={2}
+                placeholder="English search result snippet…"
+                value={metaDescription}
+                onChange={(e) => setMetaDescription(e.target.value)}
+                className={`${adminInput} min-h-14 w-full max-w-2xl resize-y py-2`}
+              />
+            </AdminFormRow>
+          )}
+
+          {(languageEdition === LanguageEdition.ENGLISH_ONLY ||
+            languageEdition === LanguageEdition.BOTH) && (
+            <AdminFormRow serial={3} label="Keywords (English)">
+              <input
+                id="keywords"
+                type="text"
+                placeholder="nepal, politics, parliament…"
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+                className={`${adminInput} w-full max-w-2xl`}
+              />
+            </AdminFormRow>
+          )}
+
+          {(languageEdition === LanguageEdition.NEPALI_ONLY ||
+            languageEdition === LanguageEdition.BOTH) && (
+            <AdminFormRow
+              serial={languageEdition === LanguageEdition.BOTH ? 4 : 1}
+              label="Meta title (Nepali)"
+              hint="Leave blank to use the Nepali headline"
+            >
+              <input
+                id="meta-title-np"
+                type="text"
+                placeholder="नेपाली खोज शीर्षक…"
+                value={metaTitleNp}
+                onChange={(e) => setMetaTitleNp(e.target.value)}
+                className={`${adminInput} w-full max-w-2xl`}
+              />
+            </AdminFormRow>
+          )}
+
+          {(languageEdition === LanguageEdition.NEPALI_ONLY ||
+            languageEdition === LanguageEdition.BOTH) && (
+            <AdminFormRow
+              serial={languageEdition === LanguageEdition.BOTH ? 5 : 2}
+              label="Meta description (Nepali)"
+            >
+              <textarea
+                id="meta-description-np"
+                rows={2}
+                placeholder="नेपाली खोज परिणाम विवरण…"
+                value={metaDescriptionNp}
+                onChange={(e) => setMetaDescriptionNp(e.target.value)}
+                className={`${adminInput} min-h-14 w-full max-w-2xl resize-y py-2`}
+              />
+            </AdminFormRow>
+          )}
+
+          {(languageEdition === LanguageEdition.NEPALI_ONLY ||
+            languageEdition === LanguageEdition.BOTH) && (
+            <AdminFormRow
+              serial={languageEdition === LanguageEdition.BOTH ? 6 : 3}
+              label="Keywords (Nepali)"
+            >
+              <input
+                id="keywords-np"
+                type="text"
+                placeholder="नेपाल, राजनीति, संसद…"
+                value={keywordsNp}
+                onChange={(e) => setKeywordsNp(e.target.value)}
+                className={`${adminInput} w-full max-w-2xl`}
+              />
+            </AdminFormRow>
+          )}
+
           <AdminFormRow
-            serial={1}
-            label="Meta title"
-            hint="Leave blank to use the article headline"
-          >
-            <input
-              id="meta-title"
-              type="text"
-              placeholder="Custom search engine title…"
-              value={metaTitle}
-              onChange={(e) => setMetaTitle(e.target.value)}
-              className={`${adminInput} w-full max-w-2xl`}
-            />
-          </AdminFormRow>
-
-          <AdminFormRow serial={2} label="Meta description">
-            <textarea
-              id="meta-description"
-              rows={2}
-              placeholder="Search result snippet description…"
-              value={metaDescription}
-              onChange={(e) => setMetaDescription(e.target.value)}
-              className={`${adminInput} min-h-14 w-full max-w-2xl resize-y py-2`}
-            />
-          </AdminFormRow>
-
-          <AdminFormRow serial={3} label="Keywords">
-            <input
-              id="keywords"
-              type="text"
-              placeholder="नेपाल, राजनीति, संसद…"
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              className={`${adminInput} w-full max-w-2xl`}
-            />
-          </AdminFormRow>
-
-          <AdminFormRow
-            serial={4}
-            label="Open Graph image URL"
-            hint="Social share image — leave empty to use cover image"
+            serial={
+              languageEdition === LanguageEdition.BOTH
+                ? 7
+                : languageEdition === LanguageEdition.ENGLISH_ONLY
+                  ? 4
+                  : 4
+            }
+            label="Open Graph image URL (shared)"
+            hint="Social share image for both editions — leave empty to use cover image"
           >
             <input
               id="og-image"

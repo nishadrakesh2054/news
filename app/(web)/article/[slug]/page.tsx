@@ -12,15 +12,37 @@ import { AudioNewsPlayer } from "@/components/portal/AudioNewsPlayer";
 import { ArticleViewTracker } from "@/components/portal/ArticleViewTracker";
 import { AdUnit } from "@/components/portal/AdUnit";
 import { absoluteUrl } from "@/lib/site-url";
-import { SITE_CONFIG, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
+import { SITE_CONFIG, SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
+import {
+  articleMatchesLang,
+  languageEditionWhere,
+  resolveArticleContent,
+  resolveArticleExcerpt,
+  resolveArticleTitle,
+  resolveCategoryName,
+  resolveKeywords,
+  resolveLanguageEdition,
+  resolveMetaDescription,
+  resolveMetaTitle,
+} from "@/lib/language";
+import { headers } from "next/headers";
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ lang?: string }>;
+}
+
+async function resolvePageLang(searchParamsLang?: string) {
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") || headerList.get("host");
+  return resolveLanguageEdition(searchParamsLang, host);
 }
 
 // 1. Dynamic SEO Metadata Generator for Social Previews (Facebook/Viber/Twitter)
-export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
+  const query = await searchParams;
+  const lang = await resolvePageLang(query.lang);
   const article = await prisma.article.findUnique({
     where: { slug },
     include: { category: true },
@@ -28,23 +50,32 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 
   if (!article) {
     return {
-      title: `समाचार भेटिएन ${SITE_TITLE_SUFFIX_NP}`,
+      title: lang === "en" ? `Article not found ${SITE_TITLE_SUFFIX}` : `समाचार भेटिएन ${SITE_TITLE_SUFFIX_NP}`,
     };
   }
 
-  const title = article.metaTitle || article.titleNp || article.title;
-  const description = article.metaDescription || article.excerpt || SITE_CONFIG.domain;
+  const title = resolveMetaTitle(article, lang);
+  const description = resolveMetaDescription(article, lang) || SITE_CONFIG.domain;
   const image = article.ogImage || article.coverImage || "/favicon.ico";
+  const suffix = lang === "en" ? SITE_TITLE_SUFFIX : SITE_TITLE_SUFFIX_NP;
+  const keywords = resolveKeywords(article, lang);
 
   return {
-    title: `${title} ${SITE_TITLE_SUFFIX_NP}`,
+    title: `${title} ${suffix}`,
     description,
-    keywords: article.keywords ? article.keywords.split(",") : undefined,
+    keywords: keywords ? keywords.split(",").map((k) => k.trim()).filter(Boolean) : undefined,
+    alternates: {
+      languages: {
+        "ne-NP": absoluteUrl(`/article/${article.slug}`, "ne"),
+        "en": absoluteUrl(`/article/${article.slug}`, "en"),
+      },
+    },
     openGraph: {
       title,
       description,
-      url: absoluteUrl(`/article/${article.slug}`),
+      url: absoluteUrl(`/article/${article.slug}`, lang),
       siteName: SITE_CONFIG.name,
+      locale: lang === "en" ? "en_US" : "ne_NP",
       images: [
         {
           url: image,
@@ -66,8 +97,12 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 
 export const revalidate = 60; // ISR cache revalidation every 60s
 
-export default async function ArticleDetailPage({ params }: ArticlePageProps) {
+export default async function ArticleDetailPage({ params, searchParams }: ArticlePageProps) {
   const { slug } = await params;
+  const query = await searchParams;
+  const lang = await resolvePageLang(query.lang);
+  const isEnglish = lang === "en";
+  const langQuery = isEnglish ? "?lang=en" : "";
 
   // Increment view counter & fetch article
   const article = await prisma.article.findUnique({
@@ -84,6 +119,10 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
     return notFound();
   }
 
+  if (!articleMatchesLang(article.languageEdition, lang)) {
+    return notFound();
+  }
+
   const [inArticleAd, relatedArticles] = await Promise.all([
     prisma.ad.findFirst({
       where: { slot: AdSlot.IN_ARTICLE, isActive: true },
@@ -94,6 +133,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
         categoryId: article.categoryId,
         id: { not: article.id },
         status: ArticleStatus.PUBLISHED,
+        ...languageEditionWhere(lang),
       },
       select: {
         id: true,
@@ -112,7 +152,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
-    headline: article.titleNp || article.title,
+    headline: resolveArticleTitle(article, lang),
     image: article.coverImage ? [article.coverImage] : [],
     datePublished: article.createdAt.toISOString(),
     dateModified: article.updatedAt.toISOString(),
@@ -128,11 +168,15 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
         url: absoluteUrl("/logo.png"),
       },
     },
-    description: article.excerpt || article.metaDescription || "",
+    description: resolveArticleExcerpt(article, lang) || article.metaDescription || "",
   };
 
-  const articleTitle = article.titleNp || article.title;
-  const shareUrl = absoluteUrl(`/article/${article.slug}`);
+  const articleTitle = resolveArticleTitle(article, lang);
+  const articleBody = resolveArticleContent(article, lang);
+  const articleExcerpt = resolveArticleExcerpt(article, lang);
+  const categoryName = resolveCategoryName(article.category, lang);
+  const shareUrl = absoluteUrl(`/article/${article.slug}`, lang);
+  const homeHref = isEnglish ? "/?lang=en" : "/";
 
   return (
     <>
@@ -147,26 +191,31 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
         <div className="max-w-[1480px] mx-auto px-4 py-8 space-y-8">
           {/* Breadcrumb Navigation */}
           <nav className="flex items-center space-x-2 text-xs font-semibold text-muted-foreground border-b border-border/40 pb-3">
-            <Link href="/" className="hover:text-[#027081]">गृह</Link>
+            <Link href={homeHref} className="hover:text-[#027081]">
+              {isEnglish ? "Home" : "गृह"}
+            </Link>
             <ChevronRight className="h-3 w-3" />
-            <Link href={`/category/${article.category.slug}`} className="text-[#027081] hover:underline">
-              {article.category.nameNp || article.category.name}
+            <Link
+              href={`/category/${article.category.slug}${langQuery}`}
+              className="text-[#027081] hover:underline"
+            >
+              {categoryName}
             </Link>
           </nav>
 
           {/* Article Header & Headline */}
           <header className="space-y-4">
             <span className="inline-block bg-[#027081] text-white text-xs font-bold px-3 py-1 uppercase rounded-none">
-              {article.category.nameNp || article.category.name}
+              {categoryName}
             </span>
 
             <h1 className="text-3xl sm:text-5xl font-extrabold text-foreground leading-tight tracking-tight font-serif">
               {articleTitle}
             </h1>
 
-            {article.excerpt && (
+            {(article.excerpt || article.excerptNp) && (
               <p className="text-base sm:text-lg text-muted-foreground leading-relaxed font-serif">
-                {article.excerpt}
+                {articleExcerpt}
               </p>
             )}
 
@@ -262,7 +311,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
 
           {/* AI Audio News Reader Player (समाचार सुन्नुहोस्) */}
           <AudioNewsPlayer
-            textToRead={article.contentNp || article.content}
+            textToRead={articleBody}
             title={articleTitle}
           />
 
@@ -297,7 +346,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
           {/* Interactive Article Content with Font Resizer & Audio Reader */}
           <ArticleBodyClient
             title={articleTitle}
-            content={article.content}
+            content={articleBody}
             shareUrl={shareUrl}
           />
 
@@ -312,7 +361,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                 {relatedArticles.map((rel) => (
                   <Link
                     key={rel.id}
-                    href={`/article/${rel.slug}`}
+                    href={`/article/${rel.slug}${langQuery}`}
                     className="group flex space-x-3.5 p-3 border-b border-border/50 hover:bg-muted/40 transition-colors rounded-none"
                   >
                     {rel.coverImage && (
@@ -327,7 +376,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                     )}
                     <div className="flex-1 min-w-0 space-y-1">
                       <h4 className="text-xs sm:text-sm font-bold text-foreground line-clamp-2 group-hover:text-[#027081] transition-colors leading-snug font-serif">
-                        {rel.titleNp || rel.title}
+                        {resolveArticleTitle(rel, lang)}
                       </h4>
                       <span className="text-[10px] text-muted-foreground font-mono block">
                         {formatTimeAgoNp(rel.createdAt)}

@@ -16,6 +16,8 @@ type AdminFormSectionProps = {
   showColumnHeader?: boolean;
   /** Use inside modals — table only, no outer section header */
   embedded?: boolean;
+  /** Shown under the section title, above the field table */
+  hint?: string;
 };
 
 export function AdminFormSection({
@@ -25,6 +27,7 @@ export function AdminFormSection({
   className = "",
   showColumnHeader = true,
   embedded = false,
+  hint,
 }: AdminFormSectionProps) {
   const table = (
     <table className={adminFormTable}>
@@ -43,7 +46,14 @@ export function AdminFormSection({
 
   if (embedded) {
     return (
-      <div className={`${adminFormSection} overflow-hidden ${className}`}>{table}</div>
+      <div className={`${adminFormSection} overflow-hidden ${className}`}>
+        {hint ? (
+          <p className="border-b border-border/70 bg-muted/15 px-3 py-2 text-[10px] leading-relaxed text-muted-foreground">
+            {hint}
+          </p>
+        ) : null}
+        {table}
+      </div>
     );
   }
 
@@ -53,6 +63,11 @@ export function AdminFormSection({
         {number !== undefined ? `${number}. ` : ""}
         {title}
       </div>
+      {hint ? (
+        <p className="border-b border-border/70 bg-muted/15 px-3 py-2 text-[10px] leading-relaxed text-muted-foreground">
+          {hint}
+        </p>
+      ) : null}
       {table}
     </section>
   );

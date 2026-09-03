@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ArticleStatus, AdSlot, ArticleType, Prisma } from "@prisma/client";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
 import { Flame, Eye, Newspaper, Star, TrendingUp } from "lucide-react";
-import { resolveLanguageEdition, resolveArticleTitle, resolveCategoryName } from "@/lib/language";
+import { resolveLanguageEdition, resolveArticleTitle, resolveArticleExcerpt, resolveCategoryName } from "@/lib/language";
 import { TrendingHashtags } from "@/components/portal/TrendingHashtags";
 import { ProvinceNewsWidget } from "@/components/portal/ProvinceNewsWidget";
 import { OpinionSection } from "@/components/portal/OpinionSection";
@@ -21,6 +21,7 @@ interface HomeArticleItem {
   titleNp?: string | null;
   slug: string;
   excerpt?: string | null;
+  excerptNp?: string | null;
   coverImage?: string | null;
   createdAt: Date;
   views: number;
@@ -73,6 +74,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         titleNp: true,
         slug: true,
         excerpt: true,
+        excerptNp: true,
         coverImage: true,
         isFeatured: true,
         views: true,
@@ -105,6 +107,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         titleNp: true,
         slug: true,
         excerpt: true,
+        excerptNp: true,
         createdAt: true,
         author: {
           select: { name: true, image: true },
@@ -125,6 +128,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         titleNp: true,
         slug: true,
         excerpt: true,
+        excerptNp: true,
         coverImage: true,
         createdAt: true,
         author: {
@@ -146,6 +150,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         titleNp: true,
         slug: true,
         excerpt: true,
+        excerptNp: true,
         coverImage: true,
         createdAt: true,
         author: {
@@ -343,9 +348,9 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
                   {resolveArticleTitle(leadStory, lang)}
                 </h1>
 
-                {leadStory.excerpt && (
+                {(leadStory.excerpt || leadStory.excerptNp) && (
                   <p className="text-sm text-white/85 line-clamp-2 leading-relaxed max-w-3xl font-sans">
-                    {leadStory.excerpt}
+                    {resolveArticleExcerpt(leadStory, lang)}
                   </p>
                 )}
               </div>
@@ -440,9 +445,9 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
                           {resolveArticleTitle(art, lang)}
                         </Link>
                       </h3>
-                      {art.excerpt && (
+                      {(art.excerpt || art.excerptNp) && (
                         <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                          {art.excerpt}
+                          {resolveArticleExcerpt(art, lang)}
                         </p>
                       )}
                     </div>

@@ -3,10 +3,12 @@ import { apiSuccess, handleServerError } from "@/lib/api-response";
 import { mapArticleListItem } from "@/lib/article-selects";
 import { parseSearchPagination } from "@/lib/search";
 import { searchPublishedArticles } from "@/lib/article-search";
+import { resolveLanguageFromRequest } from "@/lib/language";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const lang = resolveLanguageFromRequest(request);
     const query = searchParams.get("q") || "";
     const categorySlug = searchParams.get("category") || "";
     const tagSlug = searchParams.get("tag") || "";
@@ -24,10 +26,12 @@ export async function GET(request: NextRequest) {
       sort,
       page,
       limit,
+      lang,
     });
 
     const response = apiSuccess({
-      articles: articles.map((a) => mapArticleListItem(a)),
+      lang,
+      articles: articles.map((a) => mapArticleListItem(a, "card", lang)),
       pagination: {
         total,
         page,
@@ -39,6 +43,7 @@ export async function GET(request: NextRequest) {
     });
 
     response.headers.set("Cache-Control", "public, s-maxage=30, stale-while-revalidate=300");
+    response.headers.set("Content-Language", lang === "en" ? "en" : "ne");
     return response;
   } catch (error) {
     return handleServerError(error, "खोज नतिजा प्राप्त गर्न सकिएन (Search failed)");

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ArticleStatus, ArticleType, Prisma, Role } from "@prisma/client";
+import { ArticleStatus, ArticleType, LanguageEdition, Prisma, Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireStaff } from "@/lib/admin-auth";
 import { validateArticleCreate } from "@/lib/validations/article";
@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     const province = searchParams.get("province") || "";
     const district = searchParams.get("district") || "";
     const scheduled = searchParams.get("scheduled") === "true";
+    const languageEdition = searchParams.get("languageEdition") || "";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
 
@@ -79,6 +80,13 @@ export async function GET(request: NextRequest) {
       where.status = { in: [ArticleStatus.DRAFT, ArticleStatus.PENDING] };
     }
 
+    if (
+      languageEdition &&
+      Object.values(LanguageEdition).includes(languageEdition as LanguageEdition)
+    ) {
+      where.languageEdition = languageEdition as LanguageEdition;
+    }
+
     const [total, articles, statusGroups, viewsAggregate, breakingCount, scheduledCount] = await Promise.all([
       prisma.article.count({ where }),
       prisma.article.findMany({
@@ -92,6 +100,7 @@ export async function GET(request: NextRequest) {
           coverImage: true,
           status: true,
           type: true,
+          languageEdition: true,
           isFeatured: true,
           isBreaking: true,
           views: true,
@@ -220,6 +229,7 @@ export async function POST(request: NextRequest) {
         content: sanitizeArticleHtml(data.content!),
         contentNp: data.contentNp ? sanitizeArticleHtml(data.contentNp) : null,
         excerpt: data.excerpt ?? null,
+        excerptNp: data.excerptNp ?? null,
         coverImage: data.coverImage ?? null,
         caption: data.caption ?? null,
         status: articleStatus,
@@ -230,8 +240,11 @@ export async function POST(request: NextRequest) {
         categoryId: data.categoryId!,
         authorId: auth.session!.user.id,
         metaTitle: data.metaTitle ?? null,
+        metaTitleNp: data.metaTitleNp ?? null,
         metaDescription: data.metaDescription ?? null,
+        metaDescriptionNp: data.metaDescriptionNp ?? null,
         keywords: data.keywords ?? null,
+        keywordsNp: data.keywordsNp ?? null,
         ogImage: data.ogImage ?? null,
         province: data.province ?? null,
         district: data.district ?? null,

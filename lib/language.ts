@@ -1,35 +1,85 @@
+import { LanguageEdition, Prisma } from "@prisma/client";
+
 export type LanguageEditionType = "ne" | "en";
 
+const ENGLISH_HOST_PREFIXES = ["en.", "english."];
+
+export function isEnglishHostname(hostname?: string | null): boolean {
+  if (!hostname) return false;
+  const host = hostname.toLowerCase().split(":")[0];
+  return ENGLISH_HOST_PREFIXES.some((prefix) => host.startsWith(prefix));
+}
+
+export function parseLangParam(value?: string | null): LanguageEditionType | null {
+  if (value === "en" || value === "english") return "en";
+  if (value === "ne" || value === "np" || value === "nepali") return "ne";
+  return null;
+}
+
 /**
- * Detects the active Language Edition ("ne" for Nepali, "en" for English)
- * Checks:
- * 1. searchParams `lang` (e.g. ?lang=en or ?lang=ne)
- * 2. Host header / domain name (e.g. english.echomanch.com or en.echomanch.com)
- * 3. Path prefix (e.g. /en/...)
+ * Detects the active edition:
+ * 1. `?lang=en|ne`
+ * 2. Host (en.echomanch.com / english.echomanch.com)
+ * 3. Path prefix `/en`
+ * Default: Nepali
  */
 export function resolveLanguageEdition(
   searchParamsLang?: string | null,
   hostname?: string | null,
   pathname?: string | null
 ): LanguageEditionType {
-  if (searchParamsLang === "en") return "en";
-  if (searchParamsLang === "ne") return "ne";
+  const fromQuery = parseLangParam(searchParamsLang);
+  if (fromQuery) return fromQuery;
 
-  if (pathname?.startsWith("/en")) return "en";
+  if (pathname?.startsWith("/en/") || pathname === "/en") return "en";
 
-  if (hostname) {
-    const host = hostname.toLowerCase();
-    if (host.startsWith("english.") || host.startsWith("en.")) {
-      return "en";
-    }
-  }
+  if (isEnglishHostname(hostname)) return "en";
 
-  return "ne"; // Default edition is Nepali
+  return "ne";
 }
 
-/**
- * Resolves headline for an article depending on active edition
- */
+export function resolveLanguageFromRequest(request: {
+  nextUrl: { searchParams: URLSearchParams; pathname: string };
+  headers: Headers;
+}): LanguageEditionType {
+  const host =
+    request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
+    request.headers.get("host");
+
+  return resolveLanguageEdition(
+    request.nextUrl.searchParams.get("lang"),
+    host,
+    request.nextUrl.pathname
+  );
+}
+
+export function languageEditionsForLang(lang: LanguageEditionType): LanguageEdition[] {
+  return lang === "en"
+    ? [LanguageEdition.ENGLISH_ONLY, LanguageEdition.BOTH]
+    : [LanguageEdition.NEPALI_ONLY, LanguageEdition.BOTH];
+}
+
+export function languageEditionWhere(
+  lang: LanguageEditionType
+): Prisma.ArticleWhereInput {
+  return { languageEdition: { in: languageEditionsForLang(lang) } };
+}
+
+export function articleMatchesLang(
+  edition: LanguageEdition | null | undefined,
+  lang: LanguageEditionType
+): boolean {
+  if (!edition) return true;
+  return languageEditionsForLang(lang).includes(edition);
+}
+
+export function languageEditionSql(lang: LanguageEditionType): Prisma.Sql {
+  if (lang === "en") {
+    return Prisma.sql`AND a."languageEdition" IN ('ENGLISH_ONLY'::"LanguageEdition", 'BOTH'::"LanguageEdition")`;
+  }
+  return Prisma.sql`AND a."languageEdition" IN ('NEPALI_ONLY'::"LanguageEdition", 'BOTH'::"LanguageEdition")`;
+}
+
 export function resolveArticleTitle(
   article: { title: string; titleNp?: string | null },
   lang: LanguageEditionType = "ne"
@@ -40,9 +90,6 @@ export function resolveArticleTitle(
   return article.titleNp || article.title;
 }
 
-/**
- * Resolves body content for an article depending on active edition
- */
 export function resolveArticleContent(
   article: { content: string; contentNp?: string | null },
   lang: LanguageEditionType = "ne"
@@ -53,9 +100,79 @@ export function resolveArticleContent(
   return article.content;
 }
 
-/**
- * Resolves category name depending on active edition
- */
+export function resolveArticleExcerpt(
+  article: {
+    excerpt?: string | null;
+    excerptNp?: string | null;
+    title?: string;
+    titleNp?: string | null;
+  },
+  lang: LanguageEditionType = "ne"
+): string {
+  if (lang === "en") {
+    return (
+      article.excerpt?.trim() ||
+      article.excerptNp?.trim() ||
+      resolveArticleTitle({ title: article.title || "", titleNp: article.titleNp }, lang)
+    );
+  }
+  return (
+    article.excerptNp?.trim() ||
+    article.excerpt?.trim() ||
+    resolveArticleTitle({ title: article.title || "", titleNp: article.titleNp }, lang)
+  );
+}
+
+export function resolveMetaTitle(
+  article: {
+    metaTitle?: string | null;
+    metaTitleNp?: string | null;
+    title: string;
+    titleNp?: string | null;
+  },
+  lang: LanguageEditionType = "ne"
+): string {
+  if (lang === "en") {
+    return article.metaTitle?.trim() || article.metaTitleNp?.trim() || resolveArticleTitle(article, lang);
+  }
+  return article.metaTitleNp?.trim() || article.metaTitle?.trim() || resolveArticleTitle(article, lang);
+}
+
+export function resolveMetaDescription(
+  article: {
+    metaDescription?: string | null;
+    metaDescriptionNp?: string | null;
+    excerpt?: string | null;
+    excerptNp?: string | null;
+    title?: string;
+    titleNp?: string | null;
+  },
+  lang: LanguageEditionType = "ne"
+): string {
+  if (lang === "en") {
+    return (
+      article.metaDescription?.trim() ||
+      article.metaDescriptionNp?.trim() ||
+      resolveArticleExcerpt(article, lang)
+    );
+  }
+  return (
+    article.metaDescriptionNp?.trim() ||
+    article.metaDescription?.trim() ||
+    resolveArticleExcerpt(article, lang)
+  );
+}
+
+export function resolveKeywords(
+  article: { keywords?: string | null; keywordsNp?: string | null },
+  lang: LanguageEditionType = "ne"
+): string | null {
+  if (lang === "en") {
+    return article.keywords?.trim() || article.keywordsNp?.trim() || null;
+  }
+  return article.keywordsNp?.trim() || article.keywords?.trim() || null;
+}
+
 export function resolveCategoryName(
   category?: { name: string; nameNp?: string | null } | null,
   lang: LanguageEditionType = "ne"
@@ -65,4 +182,8 @@ export function resolveCategoryName(
     return category.name || category.nameNp || "General";
   }
   return category.nameNp || category.name;
+}
+
+export function htmlLang(lang: LanguageEditionType): string {
+  return lang === "en" ? "en" : "ne";
 }

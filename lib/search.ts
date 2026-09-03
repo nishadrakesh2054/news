@@ -13,7 +13,9 @@ export function buildArticleSearchOr(
     { title: { contains: q, mode: "insensitive" } },
     { titleNp: { contains: q, mode: "insensitive" } },
     { excerpt: { contains: q, mode: "insensitive" } },
+    { excerptNp: { contains: q, mode: "insensitive" } },
     { keywords: { contains: q, mode: "insensitive" } },
+    { keywordsNp: { contains: q, mode: "insensitive" } },
     { district: { contains: q, mode: "insensitive" } },
     { tags: { some: { name: { contains: q, mode: "insensitive" } } } },
   ];

@@ -4,10 +4,12 @@ import { ArticleStatus, ArticleType, Prisma } from "@prisma/client";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
 import { MESSAGES } from "@/constants/messages";
 import { articleListSelect, mapArticleListItem } from "@/lib/article-selects";
+import { languageEditionWhere, resolveLanguageFromRequest } from "@/lib/language";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const lang = resolveLanguageFromRequest(request);
     const categorySlug = searchParams.get("category") || "";
     const tagSlug = searchParams.get("tag") || "";
     const province = searchParams.get("province") || "";
@@ -19,6 +21,7 @@ export async function GET(request: NextRequest) {
 
     const where: Prisma.ArticleWhereInput = {
       status: ArticleStatus.PUBLISHED,
+      ...languageEditionWhere(lang),
     };
 
     if (categorySlug) {
@@ -65,7 +68,8 @@ export async function GET(request: NextRequest) {
     const nextCursor = hasMore ? pageArticles[pageArticles.length - 1]?.id ?? null : null;
 
     const res = apiSuccess({
-      articles: pageArticles.map((a) => mapArticleListItem(a)),
+      lang,
+      articles: pageArticles.map((a) => mapArticleListItem(a, "card", lang)),
       pagination: useCursor
         ? { limit, nextCursor, hasMore }
         : {
@@ -76,6 +80,7 @@ export async function GET(request: NextRequest) {
           },
     });
     res.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+    res.headers.set("Content-Language", lang === "en" ? "en" : "ne");
     return res;
   } catch (error) {
     return handleServerError(error, MESSAGES.ARTICLES.FETCH_ERROR);

@@ -15,7 +15,9 @@ export default function WebLayout({ children }: { children: React.ReactNode }) {
       <Suspense fallback={<div className="h-16 bg-[#027081]" />}>
         <PublicHeader />
       </Suspense>
-      <BreakingTicker />
+      <Suspense fallback={<div className="h-11 bg-rose-600" />}>
+        <BreakingTicker />
+      </Suspense>
       <Suspense fallback={<div className="h-10 bg-background border-b-2 border-[#027081]" />}>
         <CategoryNavbar />
       </Suspense>

@@ -14,6 +14,7 @@ export type ArticleInput = {
   content?: string;
   contentNp?: string | null;
   excerpt?: string | null;
+  excerptNp?: string | null;
   coverImage?: string | null;
   caption?: string | null;
   status?: ArticleStatus;
@@ -23,8 +24,11 @@ export type ArticleInput = {
   isBreaking?: boolean;
   categoryId?: string;
   metaTitle?: string | null;
+  metaTitleNp?: string | null;
   metaDescription?: string | null;
+  metaDescriptionNp?: string | null;
   keywords?: string | null;
+  keywordsNp?: string | null;
   ogImage?: string | null;
   province?: number | null;
   district?: string | null;
@@ -108,8 +112,24 @@ function validateBilingualFields(
     return { ok: true, data: { title, titleNp: titleNp || null, content, contentNp: contentNp || null } };
   }
 
+  if (languageEdition === LanguageEdition.BOTH) {
+    if (!titleNp) {
+      return { ok: false, error: "Nepali headline is required for bilingual articles" };
+    }
+    if (!hasTextContent(contentNp)) {
+      return { ok: false, error: "Nepali article body is required for bilingual articles" };
+    }
+    if (!title) {
+      return { ok: false, error: "English title is required for bilingual articles" };
+    }
+    if (!hasTextContent(content)) {
+      return { ok: false, error: "English article body is required for bilingual articles" };
+    }
+    return { ok: true, data: { title, titleNp, content, contentNp } };
+  }
+
   if (isCreate && (!title || !hasTextContent(content))) {
-    return { ok: false, error: "English title and body are required for bilingual articles" };
+    return { ok: false, error: "English title and body are required" };
   }
 
   if (!isCreate && fields.title !== undefined && !title) {
@@ -194,6 +214,7 @@ export function validateArticleCreate(body: unknown): ArticleValidationResult {
       ...bilingual.data,
       slug,
       excerpt: parseOptionalString(input.excerpt),
+      excerptNp: parseOptionalString(input.excerptNp),
       coverImage: parseOptionalString(input.coverImage),
       caption: parseOptionalString(input.caption),
       status: normalizedStatus,
@@ -203,8 +224,11 @@ export function validateArticleCreate(body: unknown): ArticleValidationResult {
       isBreaking: Boolean(input.isBreaking),
       categoryId,
       metaTitle: parseOptionalString(input.metaTitle),
+      metaTitleNp: parseOptionalString(input.metaTitleNp),
       metaDescription: parseOptionalString(input.metaDescription),
+      metaDescriptionNp: parseOptionalString(input.metaDescriptionNp),
       keywords: parseOptionalString(input.keywords),
+      keywordsNp: parseOptionalString(input.keywordsNp),
       ogImage: parseOptionalString(input.ogImage),
       province,
       district: parseOptionalString(input.district),
@@ -267,11 +291,15 @@ export function validateArticleUpdate(body: unknown): ArticleValidationResult {
     "titleNp",
     "contentNp",
     "excerpt",
+    "excerptNp",
     "coverImage",
     "caption",
     "metaTitle",
+    "metaTitleNp",
     "metaDescription",
+    "metaDescriptionNp",
     "keywords",
+    "keywordsNp",
     "ogImage",
     "district",
   ] as const;

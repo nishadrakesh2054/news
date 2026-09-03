@@ -44,7 +44,7 @@ import {
   adminToolbarSelectSm,
   adminToolbarSelectStatus,
 } from "@/constants/admin-layout";
-import { ArticleStatus, ArticleType } from "@prisma/client";
+import { ArticleStatus, ArticleType, LanguageEdition } from "@prisma/client";
 import { NEPAL_PROVINCES, getProvinceLabel } from "@/constants/provinces";
 
 interface ArticleItem {
@@ -56,6 +56,7 @@ interface ArticleItem {
   coverImage: string | null;
   status: ArticleStatus;
   type: ArticleType;
+  languageEdition?: LanguageEdition;
   isFeatured: boolean;
   isBreaking: boolean;
   views: number;
@@ -99,6 +100,7 @@ export default function AdminArticlesPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [tagFilter, setTagFilter] = useState<string>("ALL");
   const [provinceFilter, setProvinceFilter] = useState<string>("ALL");
+  const [languageFilter, setLanguageFilter] = useState<string>("ALL");
   const [districtFilter, setDistrictFilter] = useState<string>("");
   const [scheduledOnly, setScheduledOnly] = useState(false);
   const [limit, setLimit] = useState<number>(10);
@@ -137,6 +139,7 @@ export default function AdminArticlesPage() {
       categoryFilter,
       tagFilter,
       provinceFilter,
+      languageFilter,
       districtFilter,
       scheduledOnly,
       page,
@@ -153,6 +156,7 @@ export default function AdminArticlesPage() {
       if (categoryFilter !== "ALL") params.append("categoryId", categoryFilter);
       if (tagFilter !== "ALL") params.append("tagId", tagFilter);
       if (provinceFilter !== "ALL") params.append("province", provinceFilter);
+      if (languageFilter !== "ALL") params.append("languageEdition", languageFilter);
       if (districtFilter.trim()) params.append("district", districtFilter.trim());
       if (scheduledOnly) params.append("scheduled", "true");
 
@@ -236,6 +240,7 @@ export default function AdminArticlesPage() {
     setCategoryFilter("ALL");
     setTagFilter("ALL");
     setProvinceFilter("ALL");
+    setLanguageFilter("ALL");
     setDistrictFilter("");
     setScheduledOnly(false);
     setPage(1);
@@ -249,12 +254,24 @@ export default function AdminArticlesPage() {
     categoryFilter !== "ALL" ||
     tagFilter !== "ALL" ||
     provinceFilter !== "ALL" ||
+    languageFilter !== "ALL" ||
     districtFilter.trim() !== "" ||
     scheduledOnly;
 
   const pagination = data?.pagination;
   const summary = data?.summary;
   const filteredHint = isFiltered ? "Matching filters" : "All articles";
+
+  const formatLanguageLabel = (edition?: LanguageEdition) => {
+    switch (edition) {
+      case LanguageEdition.ENGLISH_ONLY:
+        return "EN";
+      case LanguageEdition.BOTH:
+        return "NE+EN";
+      default:
+        return "NE";
+    }
+  };
 
   const formatTypeLabel = (type: ArticleType) => {
     switch (type) {
@@ -479,6 +496,20 @@ export default function AdminArticlesPage() {
             ))}
           </select>
 
+          <select
+            value={languageFilter}
+            onChange={(e) => {
+              setLanguageFilter(e.target.value);
+              setPage(1);
+            }}
+            className={adminToolbarSelectMd}
+          >
+            <option value="ALL">All languages</option>
+            <option value="NEPALI_ONLY">Nepali only</option>
+            <option value="ENGLISH_ONLY">English only</option>
+            <option value="BOTH">Both editions</option>
+          </select>
+
           <input
             type="text"
             placeholder="District…"
@@ -604,6 +635,7 @@ export default function AdminArticlesPage() {
                                 Breaking
                               </span>
                             ) : null}
+                            <span className={adminBadgeMuted}>{formatLanguageLabel(art.languageEdition)}</span>
                             {isScheduledPending(art) ? (
                               <span className="inline-flex items-center rounded-sm border border-[#0C4EA0]/30 bg-[#0C4EA0]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#0C4EA0]">
                                 Scheduled

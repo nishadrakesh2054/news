@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Zap } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { isEnglishHostname } from "@/lib/language";
 
 interface BreakingItem {
   id: string;
@@ -14,6 +16,7 @@ interface RawBreakingItem {
   id: string;
   title: string;
   titleNp?: string | null;
+  displayTitle?: string;
   slug: string;
 }
 
@@ -21,39 +24,40 @@ export function BreakingTicker() {
   const [breakingList, setBreakingList] = useState<BreakingItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const searchParams = useSearchParams();
+
+  const langParam = searchParams.get("lang");
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const isEnglish = langParam === "en" || isEnglishHostname(hostname);
+  const langQuery = isEnglish ? "?lang=en" : "";
+  const langQs = isEnglish ? "?lang=en" : "";
 
   useEffect(() => {
-    fetch("/api/breaking")
+    const mapItems = (items: RawBreakingItem[]) =>
+      items.map((item) => ({
+        id: item.id,
+        title: item.displayTitle || item.titleNp || item.title,
+        slug: item.slug,
+      }));
+
+    fetch(`/api/breaking${langQs}`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          setBreakingList(
-            json.data.map((item: RawBreakingItem) => ({
-              id: item.id,
-              title: item.titleNp || item.title,
-              slug: item.slug,
-            }))
-          );
+          setBreakingList(mapItems(json.data));
         } else {
-          // Fallback to breaking articles
-          fetch("/api/articles?type=BREAKING&limit=5")
+          fetch(`/api/articles?type=BREAKING&limit=5${isEnglish ? "&lang=en" : ""}`)
             .then((r) => r.json())
             .then((j) => {
               if (j.success && Array.isArray(j.data.articles)) {
-                setBreakingList(
-                  j.data.articles.map((art: RawBreakingItem) => ({
-                    id: art.id,
-                    title: art.titleNp || art.title,
-                    slug: art.slug,
-                  }))
-                );
+                setBreakingList(mapItems(j.data.articles));
               }
             })
-            .catch(() => { });
+            .catch(() => {});
         }
       })
-      .catch(() => { });
-  }, []);
+      .catch(() => {});
+  }, [isEnglish, langQs]);
 
   useEffect(() => {
     if (breakingList.length <= 1 || isPaused) return;
@@ -81,7 +85,7 @@ export function BreakingTicker() {
           onMouseLeave={() => setIsPaused(false)}
         >
           <Link
-            href={`/article/${currentStory.slug}`}
+            href={`/article/${currentStory.slug}${langQuery}`}
             className="truncate hover:underline text-white/95 font-medium transition-all duration-300"
           >
             {currentStory.title}

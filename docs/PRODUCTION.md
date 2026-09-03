@@ -22,12 +22,28 @@ Required for production:
 | `DATABASE_URL` | Neon pooler URL |
 | `NEXTAUTH_SECRET` | Session signing (long random string) |
 | `NEXTAUTH_URL` | `https://echomanch.com` |
-| `NEXT_PUBLIC_SITE_URL` | `https://echomanch.com` |
+| `NEXT_PUBLIC_SITE_URL` | `https://echomanch.com` (Nepali public) |
+| `NEXT_PUBLIC_ENGLISH_SITE_URL` | `https://en.echomanch.com` (English public) |
 | `CLOUDINARY_*` | Media uploads |
 | `CRON_SECRET` | Protects `/api/cron/*` |
 | `RESEND_API_KEY` | Password reset + newsletter emails |
 | `MAIL_FROM_EMAIL` | `info@echomanch.com` |
 | `SENTRY_DSN` | Error monitoring (optional) |
+
+## Bilingual editions (one CMS / one API)
+
+Point both domains at the same Next.js deployment:
+
+| Host | Edition |
+|------|---------|
+| `echomanch.com` | Nepali (`NEPALI_ONLY` + `BOTH`) |
+| `en.echomanch.com` | English (`ENGLISH_ONLY` + `BOTH`) |
+
+- CMS: set each article’s **Language edition** (Nepali only / English only / Both).
+- Public APIs honor `Host` and optional `?lang=en|ne` (e.g. `GET /api/articles?lang=en`).
+- Localhost: use `/?lang=en` instead of a subdomain.
+
+On Vercel: add both domains to the project. Set `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_ENGLISH_SITE_URL`.
 
 ## Deployment checklist
 
@@ -36,6 +52,7 @@ Required for production:
 - [ ] `pnpm db:push` on production DB
 - [ ] `pnpm db:search-indexes` on production DB
 - [ ] All env vars set on Vercel (not in git)
+- [ ] Both `echomanch.com` and `en.echomanch.com` attached to the same project
 - [ ] `CRON_SECRET` set — Vercel cron sends `Authorization: Bearer $CRON_SECRET`
 - [ ] Security headers active (`next.config.ts`)
 - [ ] Rotate secrets if `.env` was ever pushed to GitHub

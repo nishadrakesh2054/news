@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { resolveArticleExcerpt, resolveArticleTitle } from "@/lib/language";
 
 interface CategoryArticle {
   id: string;
@@ -10,6 +11,7 @@ interface CategoryArticle {
   titleNp?: string | null;
   slug: string;
   excerpt?: string | null;
+  excerptNp?: string | null;
   coverImage?: string | null;
   createdAt: Date;
   author?: {
@@ -36,6 +38,7 @@ export function CategoryGridSection({
   if (!articles || articles.length === 0) return null;
 
   const isEnglish = lang === "en";
+  const edition = isEnglish ? "en" : "ne";
   const mainArticle = articles[0];
   const secondaryArticles = articles.slice(1, 4);
 
@@ -69,7 +72,7 @@ export function CategoryGridSection({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={mainArticle.coverImage}
-                  alt={mainArticle.title}
+                  alt={resolveArticleTitle(mainArticle, edition)}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 rounded-none"
                 />
               </div>
@@ -80,18 +83,18 @@ export function CategoryGridSection({
                   {formatTimeAgoNp(mainArticle.createdAt)}
                 </span>
                 <h4 className="text-lg sm:text-xl font-bold text-foreground group-hover:text-[#027081] transition-colors leading-tight font-serif">
-                  {mainArticle.titleNp || mainArticle.title}
+                  {resolveArticleTitle(mainArticle, edition)}
                 </h4>
-                {mainArticle.excerpt && (
+                {(mainArticle.excerpt || mainArticle.excerptNp) && (
                   <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-                    {mainArticle.excerpt}
+                    {resolveArticleExcerpt(mainArticle, edition)}
                   </p>
                 )}
               </div>
 
               {mainArticle.author?.name && (
                 <span className="text-xs text-muted-foreground font-semibold">
-                  द्वारा: {mainArticle.author.name}
+                  {isEnglish ? "By" : "द्वारा:"} {mainArticle.author.name}
                 </span>
               )}
             </div>
@@ -111,14 +114,14 @@ export function CategoryGridSection({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={art.coverImage}
-                    alt={art.title}
+                    alt={resolveArticleTitle(art, edition)}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-none"
                   />
                 </div>
               )}
               <div className="flex-1 min-w-0 space-y-1">
                 <h5 className="text-xs sm:text-sm font-bold text-foreground line-clamp-2 group-hover:text-[#027081] transition-colors leading-snug font-serif">
-                  {art.titleNp || art.title}
+                  {resolveArticleTitle(art, edition)}
                 </h5>
                 <span className="text-[10px] text-muted-foreground block font-mono">
                   {formatTimeAgoNp(art.createdAt)}

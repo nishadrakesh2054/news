@@ -2,6 +2,7 @@ import { ArticleStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { articleListSelect } from "@/lib/article-selects";
 import { buildArticleSearchOr } from "@/lib/search";
+import { languageEditionSql, languageEditionWhere } from "@/lib/language";
 
 export type ArticleSearchFilters = {
   query: string;
@@ -13,6 +14,7 @@ export type ArticleSearchFilters = {
   sort: "recent" | "views";
   page: number;
   limit: number;
+  lang?: "ne" | "en";
 };
 
 export type ArticleSearchResult = {
@@ -40,6 +42,10 @@ export async function isPgTrgmAvailable(): Promise<boolean> {
 
 function buildPrismaWhere(filters: ArticleSearchFilters): Prisma.ArticleWhereInput {
   const where: Prisma.ArticleWhereInput = { status: ArticleStatus.PUBLISHED };
+
+  if (filters.lang) {
+    Object.assign(where, languageEditionWhere(filters.lang));
+  }
 
   if (filters.query.trim()) {
     where.OR = buildArticleSearchOr(filters.query, filters.deep);
@@ -102,15 +108,19 @@ async function searchWithTrgm(filters: ArticleSearchFilters): Promise<ArticleSea
   const districtFilter = filters.district?.trim()
     ? Prisma.sql`AND a.district ILIKE ${`%${filters.district.trim()}%`}`
     : Prisma.empty;
+  const langFilter = filters.lang ? languageEditionSql(filters.lang) : Prisma.empty;
 
   const textMatch = Prisma.sql`(
     a.title ILIKE ${pattern}
     OR a."titleNp" ILIKE ${pattern}
     OR a.excerpt ILIKE ${pattern}
+    OR COALESCE(a."excerptNp", '') ILIKE ${pattern}
     OR a.keywords ILIKE ${pattern}
+    OR COALESCE(a."keywordsNp", '') ILIKE ${pattern}
     OR a.title % ${q}
     OR COALESCE(a."titleNp", '') % ${q}
     OR COALESCE(a.excerpt, '') % ${q}
+    OR COALESCE(a."excerptNp", '') % ${q}
   )`;
 
   const countRows = await prisma.$queryRaw<{ count: bigint }[]>`
@@ -122,13 +132,15 @@ async function searchWithTrgm(filters: ArticleSearchFilters): Promise<ArticleSea
       ${tagFilter}
       ${provinceFilter}
       ${districtFilter}
+      ${langFilter}
       AND ${textMatch}
   `;
 
   const rankExpr = Prisma.sql`GREATEST(
     similarity(a.title, ${q}),
     similarity(COALESCE(a."titleNp", ''), ${q}),
-    similarity(COALESCE(a.excerpt, ''), ${q})
+    similarity(COALESCE(a.excerpt, ''), ${q}),
+    similarity(COALESCE(a."excerptNp", ''), ${q})
   )`;
 
   const idRows =
@@ -142,6 +154,7 @@ async function searchWithTrgm(filters: ArticleSearchFilters): Promise<ArticleSea
             ${tagFilter}
             ${provinceFilter}
             ${districtFilter}
+            ${langFilter}
             AND ${textMatch}
           ORDER BY a.views DESC, ${rankExpr} DESC
           LIMIT ${filters.limit}
@@ -156,6 +169,7 @@ async function searchWithTrgm(filters: ArticleSearchFilters): Promise<ArticleSea
             ${tagFilter}
             ${provinceFilter}
             ${districtFilter}
+            ${langFilter}
             AND ${textMatch}
           ORDER BY a."publishedAt" DESC NULLS LAST, ${rankExpr} DESC
           LIMIT ${filters.limit}

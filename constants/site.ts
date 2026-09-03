@@ -5,7 +5,11 @@ export const SITE_CONFIG = {
   description:
     "Echo Manch delivers breaking news, politics, economy, sports, culture, and in-depth reporting from Nepal.",
   url: (process.env.NEXT_PUBLIC_SITE_URL || "https://echomanch.com").replace(/\/$/, ""),
+  englishUrl: (
+    process.env.NEXT_PUBLIC_ENGLISH_SITE_URL || "https://en.echomanch.com"
+  ).replace(/\/$/, ""),
   domain: "echomanch.com",
+  englishDomain: "en.echomanch.com",
   email: "info@echomanch.com",
   twitter: "@echomanch",
 } as const;

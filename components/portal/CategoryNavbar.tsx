@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Home, Search, Sparkles } from "lucide-react";
+import { isEnglishHostname } from "@/lib/language";
 
 interface CategoryItem {
   id: string;
   name: string;
   nameNp: string | null;
   slug: string;
+  displayName?: string;
 }
 
 export function CategoryNavbar() {
@@ -18,11 +20,12 @@ export function CategoryNavbar() {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
 
   const langParam = searchParams.get("lang");
-  const isEnHost = typeof window !== "undefined" && (window.location.hostname.startsWith("english.") || window.location.hostname.startsWith("en."));
-  const isEnglish = langParam === "en" || isEnHost;
+  const isEnglish =
+    langParam === "en" ||
+    (typeof window !== "undefined" && isEnglishHostname(window.location.hostname));
 
   useEffect(() => {
-    fetch("/api/categories")
+    fetch(`/api/categories${isEnglish ? "?lang=en" : ""}`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success && Array.isArray(json.data)) {
@@ -30,7 +33,7 @@ export function CategoryNavbar() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [isEnglish]);
 
   const langQuery = isEnglish ? "?lang=en" : "";
 
@@ -68,7 +71,8 @@ export function CategoryNavbar() {
           {categories.map((cat) => {
             const catHref = `/category/${cat.slug}${langQuery}`;
             const isActive = pathname === `/category/${cat.slug}`;
-            const displayName = isEnglish ? (cat.name || cat.nameNp) : (cat.nameNp || cat.name);
+            const displayName =
+              cat.displayName || (isEnglish ? cat.name || cat.nameNp : cat.nameNp || cat.name);
 
             return (
               <Link
