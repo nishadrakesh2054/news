@@ -2,31 +2,31 @@
 
 import { useState } from "react";
 import { Volume2, Pause, Play, RotateCcw } from "lucide-react";
+import { PORTAL } from "@/constants/portal";
 
 interface AudioNewsPlayerProps {
   title: string;
   content: string;
+  isEnglish?: boolean;
 }
 
-export function AudioNewsPlayer({ title, content }: AudioNewsPlayerProps) {
+export function AudioNewsPlayer({ title, content, isEnglish = false }: AudioNewsPlayerProps) {
   const [isSupported] = useState<boolean>(
     () => typeof window !== "undefined" && "speechSynthesis" in window
   );
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [rate, setRate] = useState<number>(1);
+  const [rate, setRate] = useState(1);
 
   const getPlainText = () => {
-    // Strip HTML tags to get clean article text
     const tmp = document.createElement("DIV");
     tmp.innerHTML = content;
     const textContent = tmp.textContent || tmp.innerText || "";
-    return `${title}। ${textContent.slice(0, 1500)}`; // Read title + first 1500 chars
+    return `${title}। ${textContent.slice(0, 1500)}`;
   };
 
   const handlePlay = () => {
     if (!isSupported) return;
-
     const synth = window.speechSynthesis;
 
     if (isPaused) {
@@ -36,23 +36,18 @@ export function AudioNewsPlayer({ title, content }: AudioNewsPlayerProps) {
       return;
     }
 
-    synth.cancel(); // Stop any active speech
-
-    const textToRead = getPlainText();
-    const utterance = new SpeechSynthesisUtterance(textToRead);
+    synth.cancel();
+    const utterance = new SpeechSynthesisUtterance(getPlainText());
     utterance.rate = rate;
-    utterance.lang = "ne-NP"; // Set language to Nepali
-
+    utterance.lang = "ne-NP";
     utterance.onend = () => {
       setIsPlaying(false);
       setIsPaused(false);
     };
-
     utterance.onerror = () => {
       setIsPlaying(false);
       setIsPaused(false);
     };
-
     synth.speak(utterance);
     setIsPlaying(true);
     setIsPaused(false);
@@ -60,16 +55,14 @@ export function AudioNewsPlayer({ title, content }: AudioNewsPlayerProps) {
 
   const handlePause = () => {
     if (!isSupported) return;
-    const synth = window.speechSynthesis;
-    synth.pause();
+    window.speechSynthesis.pause();
     setIsPlaying(false);
     setIsPaused(true);
   };
 
   const handleStop = () => {
     if (!isSupported) return;
-    const synth = window.speechSynthesis;
-    synth.cancel();
+    window.speechSynthesis.cancel();
     setIsPlaying(false);
     setIsPaused(false);
   };
@@ -77,60 +70,82 @@ export function AudioNewsPlayer({ title, content }: AudioNewsPlayerProps) {
   if (!isSupported) return null;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-[#027081]/20 bg-[#027081]/5 my-6">
-      <div className="flex items-center space-x-3">
-        <div className="h-10 w-10 rounded-full bg-[#027081] text-white flex items-center justify-center shrink-0">
-          <Volume2 className="h-5 w-5 animate-pulse" />
-        </div>
+    <div
+      className="flex flex-wrap items-center justify-between gap-3 py-3"
+      style={{ borderBottom: `1px solid ${PORTAL.rule}` }}
+    >
+      <div className="flex items-center gap-2.5">
+        <Volume2 className="h-4 w-4 shrink-0" style={{ color: PORTAL.brand }} />
         <div>
-          <h4 className="text-xs sm:text-sm font-bold text-foreground">
-            समाचार सुन्नुहोस् (Listen to Article)
-          </h4>
-          <p className="text-[11px] text-muted-foreground">
-            {isPlaying ? "समाचार बाचन हुँदैछ..." : isPaused ? "रोकिएको छ" : "अडियो सुन्न प्ले थिच्नुहोस्"}
+          <p className="text-[13px] font-semibold" style={{ color: PORTAL.brand }}>
+            {isEnglish ? "Listen to article" : "समाचार सुन्नुहोस्"}
+          </p>
+          <p className="text-[11px] text-gray-400">
+            {isPlaying
+              ? isEnglish
+                ? "Playing…"
+                : "बाचन हुँदैछ…"
+              : isPaused
+                ? isEnglish
+                  ? "Paused"
+                  : "रोकिएको"
+                : isEnglish
+                  ? "Text-to-speech"
+                  : "अडियो बाचन"}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center gap-2">
         {!isPlaying ? (
           <button
+            type="button"
             onClick={handlePlay}
-            className="inline-flex items-center space-x-1.5 px-4 py-2 bg-[#027081] hover:bg-[#025a68] text-white text-xs font-bold rounded-lg transition-colors"
+            className="inline-flex h-8 items-center gap-1.5 px-3 text-[12px] font-bold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: PORTAL.brand }}
           >
-            <Play className="h-4 w-4 fill-white" />
-            <span>{isPaused ? "पुनः सुरु गर्नुहोस्" : "सुन्नुहोस्"}</span>
+            <Play className="h-3.5 w-3.5 fill-white" />
+            {isPaused
+              ? isEnglish
+                ? "Resume"
+                : "पुनः सुरु"
+              : isEnglish
+                ? "Play"
+                : "सुन्नुहोस्"}
           </button>
         ) : (
           <button
+            type="button"
             onClick={handlePause}
-            className="inline-flex items-center space-x-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-colors"
+            className="inline-flex h-8 items-center gap-1.5 px-3 text-[12px] font-bold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: PORTAL.accent }}
           >
-            <Pause className="h-4 w-4 fill-white" />
-            <span>रोक्नुहोस्</span>
+            <Pause className="h-3.5 w-3.5 fill-white" />
+            {isEnglish ? "Pause" : "रोक्नुहोस्"}
           </button>
         )}
 
         {(isPlaying || isPaused) && (
           <button
+            type="button"
             onClick={handleStop}
-            className="p-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg transition-colors"
-            title="बन्द गर्नुहोस्"
+            className="inline-flex h-8 w-8 items-center justify-center text-gray-500 transition-colors hover:text-gray-800"
+            title={isEnglish ? "Stop" : "बन्द"}
           >
-            <RotateCcw className="h-4 w-4" />
+            <RotateCcw className="h-3.5 w-3.5" />
           </button>
         )}
 
         <select
           value={rate}
           onChange={(e) => setRate(parseFloat(e.target.value))}
-          className="h-8 text-xs font-mono rounded-md border border-border bg-background px-2 text-foreground"
-          title="गति (Speech Speed)"
+          className="h-8 border-0 bg-transparent px-1 text-[12px] text-gray-500 outline-none"
+          title={isEnglish ? "Speed" : "गति"}
         >
-          <option value={0.8}>0.8x</option>
-          <option value={1}>1.0x</option>
-          <option value={1.2}>1.2x</option>
-          <option value={1.5}>1.5x</option>
+          <option value={0.8}>0.8×</option>
+          <option value={1}>1×</option>
+          <option value={1.2}>1.2×</option>
+          <option value={1.5}>1.5×</option>
         </select>
       </div>
     </div>

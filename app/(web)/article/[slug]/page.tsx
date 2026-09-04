@@ -1,16 +1,17 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus, AdSlot } from "@prisma/client";
 import { formatTimeAgoNp, getFormattedNepaliDate } from "@/lib/nepaliDate";
-import { Calendar, Eye, User, ChevronRight } from "lucide-react";
-import { FacebookIcon, TwitterIcon } from "@/components/portal/SocialIcons";
 import { ArticleBodyClient } from "@/components/web/ArticleBodyClient";
 import { CommentsSection } from "@/components/web/CommentsSection";
-import { AudioNewsPlayer } from "@/components/portal/AudioNewsPlayer";
 import { ArticleViewTracker } from "@/components/portal/ArticleViewTracker";
-import { AdUnit } from "@/components/portal/AdUnit";
+import { ArticleAdSlot } from "@/components/portal/ArticleAdSlot";
+import { ArticleSidebar } from "@/components/portal/ArticleSidebar";
+import { PortalContainer } from "@/components/portal/SectionHeader";
+import { PORTAL } from "@/constants/portal";
 import { absoluteUrl } from "@/lib/site-url";
 import { SITE_CONFIG, SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
 import {
@@ -25,7 +26,7 @@ import {
   resolveMetaDescription,
   resolveMetaTitle,
 } from "@/lib/language";
-import { headers } from "next/headers";
+import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -38,7 +39,6 @@ async function resolvePageLang(searchParamsLang?: string) {
   return resolveLanguageEdition(searchParamsLang, host);
 }
 
-// 1. Dynamic SEO Metadata Generator for Social Previews (Facebook/Viber/Twitter)
 export async function generateMetadata({ params, searchParams }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
   const query = await searchParams;
@@ -50,7 +50,10 @@ export async function generateMetadata({ params, searchParams }: ArticlePageProp
 
   if (!article) {
     return {
-      title: lang === "en" ? `Article not found ${SITE_TITLE_SUFFIX}` : `समाचार भेटिएन ${SITE_TITLE_SUFFIX_NP}`,
+      title:
+        lang === "en"
+          ? `Article not found ${SITE_TITLE_SUFFIX}`
+          : `समाचार भेटिएन ${SITE_TITLE_SUFFIX_NP}`,
     };
   }
 
@@ -67,7 +70,7 @@ export async function generateMetadata({ params, searchParams }: ArticlePageProp
     alternates: {
       languages: {
         "ne-NP": absoluteUrl(`/article/${article.slug}`, "ne"),
-        "en": absoluteUrl(`/article/${article.slug}`, "en"),
+        en: absoluteUrl(`/article/${article.slug}`, "en"),
       },
     },
     openGraph: {
@@ -76,14 +79,7 @@ export async function generateMetadata({ params, searchParams }: ArticlePageProp
       url: absoluteUrl(`/article/${article.slug}`, lang),
       siteName: SITE_CONFIG.name,
       locale: lang === "en" ? "en_US" : "ne_NP",
-      images: [
-        {
-          url: image,
-          width: 1200,
-          height: 630,
-          alt: title,
-        },
-      ],
+      images: [{ url: image, width: 1200, height: 630, alt: title }],
       type: "article",
     },
     twitter: {
@@ -95,7 +91,7 @@ export async function generateMetadata({ params, searchParams }: ArticlePageProp
   };
 }
 
-export const revalidate = 60; // ISR cache revalidation every 60s
+export const revalidate = 60;
 
 export default async function ArticleDetailPage({ params, searchParams }: ArticlePageProps) {
   const { slug } = await params;
@@ -104,7 +100,6 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
   const isEnglish = lang === "en";
   const langQuery = isEnglish ? "?lang=en" : "";
 
-  // Increment view counter & fetch article
   const article = await prisma.article.findUnique({
     where: { slug },
     include: {
@@ -123,10 +118,23 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
     return notFound();
   }
 
-  const [inArticleAd, relatedArticles] = await Promise.all([
-    prisma.ad.findFirst({
-      where: { slot: AdSlot.IN_ARTICLE, isActive: true },
-      select: { id: true, title: true, imageUrl: true, targetUrl: true, scriptCode: true },
+  const [articleAds, relatedArticles, latestArticles, trendingArticles] = await Promise.all([
+    prisma.ad.findMany({
+      where: {
+        isActive: true,
+        slot: {
+          in: [AdSlot.IN_ARTICLE, AdSlot.SIDEBAR_TOP, AdSlot.SIDEBAR_BOTTOM],
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        imageUrl: true,
+        targetUrl: true,
+        scriptCode: true,
+        slot: true,
+      },
+      orderBy: { createdAt: "desc" },
     }),
     prisma.article.findMany({
       where: {
@@ -146,30 +154,51 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
       orderBy: { createdAt: "desc" },
       take: 4,
     }),
+    prisma.article.findMany({
+      where: {
+        id: { not: article.id },
+        status: ArticleStatus.PUBLISHED,
+        ...languageEditionWhere(lang),
+      },
+      select: {
+        id: true,
+        title: true,
+        titleNp: true,
+        slug: true,
+        coverImage: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    }),
+    prisma.article.findMany({
+      where: {
+        id: { not: article.id },
+        status: ArticleStatus.PUBLISHED,
+        ...languageEditionWhere(lang),
+      },
+      select: {
+        id: true,
+        title: true,
+        titleNp: true,
+        slug: true,
+        coverImage: true,
+        createdAt: true,
+        views: true,
+      },
+      orderBy: { views: "desc" },
+      take: 5,
+    }),
   ]);
 
-  // Google NewsArticle JSON-LD Structured Data
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "NewsArticle",
-    headline: resolveArticleTitle(article, lang),
-    image: article.coverImage ? [article.coverImage] : [],
-    datePublished: article.createdAt.toISOString(),
-    dateModified: article.updatedAt.toISOString(),
-    author: {
-      "@type": "Person",
-      name: article.author.name || "सम्पादकीय प्रतिनिधि",
-    },
-    publisher: {
-      "@type": "Organization",
-      name: SITE_CONFIG.name,
-      logo: {
-        "@type": "ImageObject",
-        url: absoluteUrl("/logo.png"),
-      },
-    },
-    description: resolveArticleExcerpt(article, lang) || article.metaDescription || "",
-  };
+  const inArticleAds = articleAds.filter((a) => a.slot === AdSlot.IN_ARTICLE);
+  const inArticleAdTop = inArticleAds[0] ?? null;
+  const inArticleAdMid = inArticleAds[1] ?? null;
+  const sidebarAdTop =
+    articleAds.find((a) => a.slot === AdSlot.SIDEBAR_TOP) ?? null;
+  const sidebarAdBottom =
+    articleAds.find((a) => a.slot === AdSlot.SIDEBAR_BOTTOM) ?? null;
+  const articlePath = `/article/${article.slug}`;
 
   const articleTitle = resolveArticleTitle(article, lang);
   const articleBody = resolveArticleContent(article, lang);
@@ -177,220 +206,223 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
   const categoryName = resolveCategoryName(article.category, lang);
   const shareUrl = absoluteUrl(`/article/${article.slug}`, lang);
   const homeHref = isEnglish ? "/?lang=en" : "/";
+  const coverSrc =
+    optimizeCloudinaryUrl(article.coverImage || undefined, "hero") || article.coverImage;
+  const authorName = article.author.name || (isEnglish ? "Editorial desk" : "सम्पादकीय टोली");
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: articleTitle,
+    image: article.coverImage ? [article.coverImage] : [],
+    datePublished: article.createdAt.toISOString(),
+    dateModified: article.updatedAt.toISOString(),
+    author: { "@type": "Person", name: authorName },
+    publisher: {
+      "@type": "Organization",
+      name: SITE_CONFIG.name,
+      logo: { "@type": "ImageObject", url: absoluteUrl("/logo.png") },
+    },
+    description: articleExcerpt || article.metaDescription || "",
+  };
 
   return (
     <>
       <ArticleViewTracker articleId={article.id} path={`/article/${article.slug}`} />
-      {/* 2. Injected Google NewsArticle JSON-LD Schema */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <main className="w-full bg-background pb-16">
-        <div className="max-w-[1480px] mx-auto px-4 py-8 space-y-8">
-          {/* Breadcrumb Navigation */}
-          <nav className="flex items-center space-x-2 text-xs font-semibold text-muted-foreground border-b border-border/40 pb-3">
-            <Link href={homeHref} className="hover:text-[#027081]">
+      <main className="w-full bg-white pb-16 text-gray-900">
+        <PortalContainer className="py-8 sm:py-10">
+          <nav className="mb-8 flex flex-wrap items-center gap-1.5 text-[12px] text-gray-400">
+            <Link
+              href={homeHref}
+              className="transition-colors hover:underline"
+              style={{ color: PORTAL.brand }}
+            >
               {isEnglish ? "Home" : "गृह"}
             </Link>
-            <ChevronRight className="h-3 w-3" />
+            <span aria-hidden className="text-gray-300">
+              /
+            </span>
             <Link
               href={`/category/${article.category.slug}${langQuery}`}
-              className="text-[#027081] hover:underline"
+              className="transition-colors hover:underline"
+              style={{ color: PORTAL.brand }}
             >
               {categoryName}
             </Link>
           </nav>
 
-          {/* Article Header & Headline */}
-          <header className="space-y-4">
-            <span className="inline-block bg-[#027081] text-white text-xs font-bold px-3 py-1 uppercase rounded-none">
-              {categoryName}
-            </span>
-
-            <h1 className="text-3xl sm:text-5xl font-extrabold text-foreground leading-tight tracking-tight font-serif">
-              {articleTitle}
-            </h1>
-
-            {(article.excerpt || article.excerptNp) && (
-              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed font-serif">
-                {articleExcerpt}
-              </p>
-            )}
-
-            {/* Author, Date & View Count Meta */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-y border-border/40 py-3 text-xs text-muted-foreground font-mono">
-              <div className="flex items-center space-x-4">
-                <span className="flex items-center gap-1.5 font-bold text-foreground">
-                  <User className="h-3.5 w-3.5 text-[#027081]" />
-                  <span>{article.author.name || "सम्पादकीय टोली"}</span>
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5 text-[#027081]" />
-                  <span>{getFormattedNepaliDate(article.createdAt)}</span>
-                </span>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <span className="flex items-center gap-1">
-                  <Eye className="h-3.5 w-3.5 text-[#027081]" />
-                  <span>{article.views.toLocaleString()} पढिएको</span>
-                </span>
-              </div>
-            </div>
-
-            {/* Social Share Bar */}
-            <div className="flex items-center space-x-2 pt-1">
-              <span className="text-xs font-bold text-muted-foreground mr-2">सेयर गर्नुहोस्:</span>
-              <a
-                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center space-x-1.5 bg-[#1877F2] text-white px-3 py-1.5 text-xs font-bold hover:opacity-90 transition-opacity rounded-none"
-              >
-                <FacebookIcon className="h-3.5 w-3.5" />
-                <span>फेसबुक</span>
-              </a>
-              <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(articleTitle)}&url=${encodeURIComponent(shareUrl)}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center space-x-1.5 bg-sky-500 text-white px-3 py-1.5 text-xs font-bold hover:opacity-90 transition-opacity rounded-none"
-              >
-                <TwitterIcon className="h-3.5 w-3.5" />
-                <span>ट्विटर</span>
-              </a>
-              <a
-                href={`viber://forward?text=${encodeURIComponent(articleTitle + " " + shareUrl)}`}
-                className="flex items-center space-x-1.5 bg-purple-600 text-white px-3 py-1.5 text-xs font-bold hover:opacity-90 transition-opacity rounded-none"
-              >
-                <span>भाइबर</span>
-              </a>
-            </div>
-
-          </header>
-
-          {/* Author profile card */}
-          {article.author && (
-            <section className="border-l-4 border-[#027081] bg-card p-5 border-y border-r border-border rounded-none">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center bg-[#027081]/10 text-[#027081] text-lg font-extrabold rounded-none">
-                    {article.author.image ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={article.author.image}
-                        alt={article.author.name || "Author"}
-                        className="h-full w-full object-cover rounded-none"
-                      />
-                    ) : (
-                      (article.author.name || "ए").charAt(0).toUpperCase()
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">लेखक</p>
-                    <h2 className="text-lg font-extrabold text-foreground font-serif">
-                      {article.author.name || "सम्पादकीय टोली"}
-                    </h2>
-                    <p className="text-xs text-muted-foreground">{SITE_CONFIG.nameNp} समाचार टोली</p>
-                  </div>
-                </div>
-
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:gap-12">
+            <article className="min-w-0">
+            <header className="mb-8">
+              <div className="mb-4 flex items-center gap-3">
                 <Link
-                  href={`/author/${article.author.id}`}
-                  className="inline-flex items-center gap-2 border border-[#027081]/30 bg-[#027081]/5 px-3 py-2 text-xs font-bold text-[#027081] hover:bg-[#027081]/10 transition-colors rounded-none"
+                  href={`/category/${article.category.slug}${langQuery}`}
+                  className="shrink-0 text-[11px] font-bold uppercase tracking-[0.14em] hover:underline"
+                  style={{ color: PORTAL.accent }}
                 >
-                  प्रोफाइल हेर्नुहोस्
-                  <ChevronRight className="h-3.5 w-3.5" />
+                  {categoryName}
                 </Link>
-              </div>
-            </section>
-          )}
-
-          {/* AI Audio News Reader Player (समाचार सुन्नुहोस्) */}
-          <AudioNewsPlayer
-            textToRead={articleBody}
-            title={articleTitle}
-          />
-
-          {/* Featured Cover Image */}
-          {article.coverImage && (
-            <figure className="space-y-2">
-              <div className="overflow-hidden border border-border rounded-none">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={article.coverImage}
-                  alt={articleTitle}
-                  className="w-full h-auto max-h-125 object-cover rounded-none"
+                <div
+                  className="h-px min-w-4 flex-1 max-w-[3.5rem]"
+                  style={{ backgroundColor: PORTAL.accent, opacity: 0.45 }}
                 />
               </div>
-              {article.caption && (
-                <figcaption className="text-xs text-muted-foreground text-center font-serif italic">
-                  तस्बिर: {article.caption}
-                </figcaption>
-              )}
-            </figure>
-          )}
 
-          {/* In-Article Monetization Banner */}
-          {inArticleAd ? (
-            <AdUnit
-              ad={inArticleAd}
-              path={`/article/${article.slug}`}
-              className="w-full h-30 border border-border rounded-none"
-            />
-          ) : null}
+              <h1
+                className="text-[1.75rem] font-extrabold leading-[1.25] tracking-tight sm:text-4xl sm:leading-[1.2]"
+                style={{ color: PORTAL.brand }}
+              >
+                {articleTitle}
+              </h1>
 
-          {/* Interactive Article Content with Font Resizer & Audio Reader */}
-          <ArticleBodyClient
-            title={articleTitle}
-            content={articleBody}
-            shareUrl={shareUrl}
-          />
+              {articleExcerpt ? (
+                <p className="mt-4 text-base leading-relaxed text-gray-600 sm:text-lg">
+                  {articleExcerpt}
+                </p>
+              ) : null}
 
-          {/* Related Articles Recommendation Grid */}
-          {relatedArticles.length > 0 && (
-            <section className="pt-10 border-t-2 border-[#027081] space-y-6">
-              <h3 className="text-xl font-extrabold text-[#027081] font-serif uppercase tracking-wider">
-                यस श्रेणीका थप समाचार
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {relatedArticles.map((rel) => (
-                  <Link
-                    key={rel.id}
-                    href={`/article/${rel.slug}${langQuery}`}
-                    className="group flex space-x-3.5 p-3 border-b border-border/50 hover:bg-muted/40 transition-colors rounded-none"
-                  >
-                    {rel.coverImage && (
-                      <div className="h-20 w-24 overflow-hidden shrink-0 bg-muted rounded-none">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={rel.coverImage}
-                          alt={rel.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-none"
-                        />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <h4 className="text-xs sm:text-sm font-bold text-foreground line-clamp-2 group-hover:text-[#027081] transition-colors leading-snug font-serif">
-                        {resolveArticleTitle(rel, lang)}
-                      </h4>
-                      <span className="text-[10px] text-muted-foreground font-mono block">
-                        {formatTimeAgoNp(rel.createdAt)}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
+              <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-gray-500">
+                <Link
+                  href={`/author/${article.author.id}${langQuery}`}
+                  className="font-semibold hover:underline"
+                  style={{ color: PORTAL.brand }}
+                >
+                  {authorName}
+                </Link>
+                <span className="text-gray-300" aria-hidden>
+                  ·
+                </span>
+                <time dateTime={article.createdAt.toISOString()}>
+                  {getFormattedNepaliDate(article.createdAt)}
+                </time>
+                <span className="text-gray-300" aria-hidden>
+                  ·
+                </span>
+                <span>
+                  {article.views.toLocaleString()}{" "}
+                  {isEnglish ? "views" : "पढिएको"}
+                </span>
               </div>
-            </section>
-          )}
+            </header>
 
-          {/* Interactive Comments & Reader Discussion */}
-          <CommentsSection articleId={article.id} />
-        </div>
+            {coverSrc ? (
+              <figure className="mb-8">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={coverSrc}
+                  alt={articleTitle}
+                  className="aspect-[16/10] w-full object-cover bg-gray-100"
+                />
+                {article.caption ? (
+                  <figcaption className="mt-2.5 text-[13px] leading-relaxed text-gray-500">
+                    {isEnglish ? "Photo: " : "तस्बिर: "}
+                    {article.caption}
+                  </figcaption>
+                ) : null}
+              </figure>
+            ) : null}
+
+            <ArticleAdSlot
+              ad={inArticleAdTop}
+              path={articlePath}
+              isEnglish={isEnglish}
+              className="mb-8"
+            />
+
+            <ArticleBodyClient
+              title={articleTitle}
+              content={articleBody}
+              shareUrl={shareUrl}
+              isEnglish={isEnglish}
+            />
+
+            <ArticleAdSlot
+              ad={inArticleAdMid}
+              path={articlePath}
+              isEnglish={isEnglish}
+              className="mt-8"
+            />
+
+            {relatedArticles.length > 0 ? (
+              <section
+                className="mt-12 border-t pt-8"
+                style={{ borderColor: PORTAL.rule }}
+              >
+                <div className="mb-5 flex items-center gap-3">
+                  <h2
+                    className="shrink-0 text-sm font-extrabold sm:text-base"
+                    style={{ color: PORTAL.brand }}
+                  >
+                    {isEnglish ? "More in this category" : "यस श्रेणीका थप समाचार"}
+                  </h2>
+                  <div
+                    className="h-px min-w-4 flex-1"
+                    style={{ backgroundColor: PORTAL.accent, opacity: 0.35 }}
+                  />
+                </div>
+
+                <ul className="divide-y divide-gray-100">
+                  {relatedArticles.map((rel) => {
+                    const relTitle = resolveArticleTitle(rel, lang);
+                    const thumb =
+                      optimizeCloudinaryUrl(rel.coverImage || undefined, "thumbnail") ||
+                      rel.coverImage;
+                    return (
+                      <li key={rel.id}>
+                        <Link
+                          href={`/article/${rel.slug}${langQuery}`}
+                          className="group flex gap-4 py-4"
+                        >
+                          {thumb ? (
+                            <div className="h-16 w-24 shrink-0 overflow-hidden bg-gray-100 sm:h-[4.5rem] sm:w-28">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={thumb}
+                                alt=""
+                                className="h-full w-full object-cover transition-opacity group-hover:opacity-90"
+                              />
+                            </div>
+                          ) : null}
+                          <div className="min-w-0 flex-1">
+                            <h3
+                              className="text-sm font-bold leading-snug transition-colors group-hover:underline sm:text-[15px]"
+                              style={{ color: PORTAL.ink }}
+                            >
+                              {relTitle}
+                            </h3>
+                            <span className="mt-1.5 block text-[12px] text-gray-400">
+                              {formatTimeAgoNp(rel.createdAt)}
+                            </span>
+                          </div>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ) : null}
+
+            <CommentsSection articleId={article.id} isEnglish={isEnglish} />
+            </article>
+
+            <div className="min-w-0 border-t pt-8 lg:border-t-0 lg:pt-0" style={{ borderColor: PORTAL.rule }}>
+              <ArticleSidebar
+                latest={latestArticles}
+                trending={trendingArticles}
+                lang={lang}
+                langQuery={langQuery}
+                path={articlePath}
+                adTop={sidebarAdTop}
+                adBottom={sidebarAdBottom}
+              />
+            </div>
+          </div>
+        </PortalContainer>
       </main>
     </>
   );

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { apiSuccess } from "@/lib/api-response";
+import { normalizeRashifalList } from "@/lib/rashifal";
 
 /** Avoid DB access during `next build` static generation. */
 export const dynamic = "force-dynamic";
@@ -113,7 +114,7 @@ export async function GET() {
   let goldFine = "१,६०,५००"; // छापावाल सुन (24K)
   let goldTejabi = "१,५९,८००"; // तेजाबी सुन (22K)
   let silver = "१,९५०"; // चाँदी
-  let rashifal: unknown = null;
+  let rashifalRaw: unknown = null;
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -131,7 +132,7 @@ export async function GET() {
         if (s.key === "silver") silver = s.value;
         if (s.key === "rashifal_json") {
           try {
-            rashifal = JSON.parse(s.value);
+            rashifalRaw = JSON.parse(s.value);
           } catch {}
         }
       }
@@ -139,6 +140,8 @@ export async function GET() {
   } catch {
     // Fall back to defaults when DB is unavailable (e.g. offline build).
   }
+
+  const rashifal = normalizeRashifalList(rashifalRaw);
 
   return apiSuccess({
     forex: forexSummary,

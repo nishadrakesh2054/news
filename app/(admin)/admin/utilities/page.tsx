@@ -6,7 +6,14 @@ import { toast } from "sonner";
 import { ChevronDown, ChevronUp, RotateCcw, Save, Search, X } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
-import { DEFAULT_DETAILED_RASHIFAL, DetailedRashi } from "@/lib/rashifal";
+import {
+  DEFAULT_DETAILED_RASHIFAL,
+  normalizeRashifalList,
+  RASHIFAL_PERIODS,
+  type DetailedRashi,
+  type PeriodForecast,
+  type RashifalPeriodKey,
+} from "@/lib/rashifal";
 import {
   adminBadgeMuted,
   adminBtnGhost,
@@ -104,9 +111,10 @@ function UtilitiesEditor({
   const [goldFine, setGoldFine] = useState(data.gold?.fine ?? "1,60,500");
   const [goldTejabi, setGoldTejabi] = useState(data.gold?.tejabi ?? "1,59,800");
   const [silver, setSilver] = useState(data.gold?.silver ?? "1,950");
-  const [rashifal, setRashifal] = useState<DetailedRashi[]>(
-    data.rashifal && Array.isArray(data.rashifal) ? data.rashifal : DEFAULT_DETAILED_RASHIFAL
+  const [rashifal, setRashifal] = useState<DetailedRashi[]>(() =>
+    normalizeRashifalList(data.rashifal)
   );
+  const [editPeriod, setEditPeriod] = useState<RashifalPeriodKey>("today");
   const forexData = useMemo(() => data.allForexRates ?? [], [data.allForexRates]);
 
   const goldValues = { fine: goldFine, tejabi: goldTejabi, silver };
@@ -121,6 +129,46 @@ function UtilitiesEditor({
     setRashifal((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: val };
+      return updated;
+    });
+  };
+
+  const handlePeriodFieldChange = (
+    index: number,
+    period: RashifalPeriodKey,
+    field: keyof PeriodForecast,
+    val: string
+  ) => {
+    setRashifal((prev) => {
+      const updated = [...prev];
+      const current = updated[index];
+      const nextPeriod = {
+        ...(current.periods?.[period] || {
+          overview: "",
+          health: "",
+          business: "",
+          love: "",
+          remedy: "",
+        }),
+        [field]: val,
+      };
+      const periods = {
+        ...current.periods,
+        [period]: nextPeriod,
+      };
+      updated[index] = {
+        ...current,
+        periods,
+        ...(period === "today"
+          ? {
+              overview: nextPeriod.overview,
+              health: nextPeriod.health,
+              business: nextPeriod.business,
+              love: nextPeriod.love,
+              remedy: nextPeriod.remedy,
+            }
+          : {}),
+      };
       return updated;
     });
   };
@@ -176,7 +224,7 @@ function UtilitiesEditor({
   return (
     <AdminPageShell
       title="Market & horoscope"
-      description="Manage gold rates, daily rashifal, and NRB forex reference"
+      description="Manage gold rates, period rashifal (today / week / month / year), and NRB forex"
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
       actions={
@@ -295,9 +343,9 @@ function UtilitiesEditor({
       {section === "rashifal" && (
         <section className={adminPanel}>
           <div className={adminPanelHeader}>
-            <h2 className={adminPanelTitle}>Daily horoscope — 12 rashis</h2>
+            <h2 className={adminPanelTitle}>Horoscope — 12 rashis × 4 periods</h2>
             <span className="text-[11px] text-muted-foreground">
-              Expand a row to edit predictions
+              Expand a row · switch Today / Weekly / Monthly / Yearly
             </span>
           </div>
 
@@ -336,7 +384,7 @@ function UtilitiesEditor({
                             {r.luckyNumber || "—"}
                           </td>
                           <td className={`${adminTableCell} max-w-xs truncate text-muted-foreground`}>
-                            {r.overview}
+                            {r.periods?.today?.overview || r.overview}
                           </td>
                           <td className={`${adminTableCell} text-right`}>
                             <button
@@ -414,6 +462,22 @@ function UtilitiesEditor({
                                     />
                                   </div>
                                 </div>
+
+                                <div className="flex flex-wrap gap-1.5">
+                                  {RASHIFAL_PERIODS.map((p) => (
+                                    <button
+                                      key={p.key}
+                                      type="button"
+                                      onClick={() => setEditPeriod(p.key)}
+                                      className={
+                                        editPeriod === p.key ? adminBtnPrimary : adminBtnSecondary
+                                      }
+                                    >
+                                      {p.labelEn}
+                                    </button>
+                                  ))}
+                                </div>
+
                                 {(
                                   [
                                     ["overview", "Overview", 3],
@@ -423,12 +487,29 @@ function UtilitiesEditor({
                                     ["remedy", "Remedy", 2],
                                   ] as const
                                 ).map(([field, label, rows]) => (
-                                  <div key={field} className="space-y-1">
-                                    <label className="text-xs font-medium text-foreground">{label}</label>
+                                  <div key={`${editPeriod}-${field}`} className="space-y-1">
+                                    <label className="text-xs font-medium text-foreground">
+                                      {label}{" "}
+                                      <span className="font-normal text-muted-foreground">
+                                        (
+                                        {
+                                          RASHIFAL_PERIODS.find((p) => p.key === editPeriod)
+                                            ?.labelEn
+                                        }
+                                        )
+                                      </span>
+                                    </label>
                                     <textarea
                                       rows={rows}
-                                      value={(r[field] as string) || ""}
-                                      onChange={(e) => handleRashiChange(index, field, e.target.value)}
+                                      value={r.periods?.[editPeriod]?.[field] || ""}
+                                      onChange={(e) =>
+                                        handlePeriodFieldChange(
+                                          index,
+                                          editPeriod,
+                                          field,
+                                          e.target.value
+                                        )
+                                      }
                                       className={`${adminInput} h-auto py-2`}
                                     />
                                   </div>

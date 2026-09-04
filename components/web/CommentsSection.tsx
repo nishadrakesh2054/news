@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { MessageSquare, Send, CheckCircle2, Clock } from "lucide-react";
+import { Send } from "lucide-react";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { PORTAL } from "@/constants/portal";
 
 interface CommentItem {
   id: string;
@@ -17,16 +18,19 @@ interface CommentItem {
 
 interface CommentsSectionProps {
   articleId: string;
+  isEnglish?: boolean;
 }
 
-export function CommentsSection({ articleId }: CommentsSectionProps) {
+export function CommentsSection({ articleId, isEnglish = false }: CommentsSectionProps) {
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [authorName, setAuthorName] = useState("");
   const [authorEmail, setAuthorEmail] = useState("");
   const [content, setContent] = useState("");
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(
+    null
+  );
 
   const fetchComments = useCallback(async () => {
     try {
@@ -53,13 +57,10 @@ export function CommentsSection({ articleId }: CommentsSectionProps) {
           setComments(Array.isArray(payload) ? payload : payload?.comments || []);
         }
       })
-      .catch((err) => {
-        console.error("Failed to load comments", err);
-      })
+      .catch((err) => console.error("Failed to load comments", err))
       .finally(() => {
         if (!ignore) setLoading(false);
       });
-
     return () => {
       ignore = true;
     };
@@ -72,142 +73,161 @@ export function CommentsSection({ articleId }: CommentsSectionProps) {
     try {
       setSubmitting(true);
       setMessage(null);
-
       const res = await fetch(`/api/articles/${articleId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          content,
-          authorName,
-          authorEmail,
-        }),
+        body: JSON.stringify({ content, authorName, authorEmail }),
       });
-
       const data = await res.json();
-
       if (data.success) {
         setMessage({ type: "success", text: data.message });
         setContent("");
-        if (data.data?.status === "APPROVED") {
-          fetchComments();
-        }
+        if (data.data?.status === "APPROVED") fetchComments();
       } else {
-        setMessage({ type: "error", text: data.message || "प्रतिक्रिया पठाउन सकिएन।" });
+        setMessage({
+          type: "error",
+          text:
+            data.message ||
+            (isEnglish ? "Could not post comment." : "प्रतिक्रिया पठाउन सकिएन।"),
+        });
       }
     } catch {
-      setMessage({ type: "error", text: "समस्या आयो। कृपया पुनः प्रयास गर्नुहोस्।" });
+      setMessage({
+        type: "error",
+        text: isEnglish ? "Something went wrong. Try again." : "समस्या आयो। कृपया पुनः प्रयास गर्नुहोस्।",
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
+  const inputClass =
+    "w-full border-0 border-b bg-transparent px-0 py-2.5 text-sm text-gray-800 outline-none placeholder:text-gray-400 focus:border-b-2";
+
   return (
-    <section className="mt-12 pt-8 border-t border-border space-y-8">
-      <div className="flex items-center space-x-3">
-        <MessageSquare className="h-6 w-6 text-[#027081]" />
-        <h3 className="text-xl font-extrabold text-foreground font-serif">
-          प्रतिक्रिया तथा टिप्पणीहरू ({comments.length})
-        </h3>
+    <section className="mt-12 border-t pt-8" style={{ borderColor: PORTAL.rule }}>
+      <div className="mb-6 flex items-center gap-3">
+        <h2 className="shrink-0 text-sm font-extrabold sm:text-base" style={{ color: PORTAL.brand }}>
+          {isEnglish ? `Comments (${comments.length})` : `प्रतिक्रिया (${comments.length})`}
+        </h2>
+        <div
+          className="h-px min-w-4 flex-1"
+          style={{ backgroundColor: PORTAL.accent, opacity: 0.35 }}
+        />
       </div>
 
-      {/* Comment Form */}
-      <form onSubmit={handleSubmit} className="bg-card rounded-2xl border border-border p-5 sm:p-6 space-y-4 shadow-xs">
-        <h4 className="text-sm font-bold text-foreground">तपाईंको विचार व्यक्त गर्नुहोस्</h4>
-
-        {message && (
-          <div
-            className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
-              message.type === "success"
-                ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
-                : "bg-rose-500/10 text-rose-600 border border-rose-500/20"
-            }`}
+      <form onSubmit={handleSubmit} className="mb-10 space-y-5">
+        {message ? (
+          <p
+            className="text-[13px]"
+            style={{ color: message.type === "success" ? PORTAL.brand : PORTAL.accent }}
           >
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span>{message.text}</span>
-          </div>
-        )}
+            {message.text}
+          </p>
+        ) : null}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div>
-            <label className="block text-xs font-bold text-foreground mb-1">
-              तपाईंको नाम <span className="text-rose-500">*</span>
+            <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
+              {isEnglish ? "Name" : "नाम"}{" "}
+              <span style={{ color: PORTAL.accent }}>*</span>
             </label>
             <input
               type="text"
               required
               value={authorName}
               onChange={(e) => setAuthorName(e.target.value)}
-              placeholder="नाम लेख्नुहोस्..."
-              className="w-full h-10 px-3.5 rounded-xl border border-border bg-background text-foreground text-xs focus:outline-hidden focus:ring-2 focus:ring-[#027081]"
+              placeholder={isEnglish ? "Your name" : "तपाईंको नाम"}
+              className={inputClass}
+              style={{ borderColor: PORTAL.rule }}
             />
           </div>
-
           <div>
-            <label className="block text-xs font-bold text-foreground mb-1">
-              ईमेल (गोप्य रहनेछ)
+            <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
+              {isEnglish ? "Email (private)" : "ईमेल (गोप्य)"}
             </label>
             <input
               type="email"
               value={authorEmail}
               onChange={(e) => setAuthorEmail(e.target.value)}
-              placeholder="ईमेल ठेगाना..."
-              className="w-full h-10 px-3.5 rounded-xl border border-border bg-background text-foreground text-xs focus:outline-hidden focus:ring-2 focus:ring-[#027081]"
+              placeholder={isEnglish ? "Email address" : "ईमेल ठेगाना"}
+              className={inputClass}
+              style={{ borderColor: PORTAL.rule }}
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-foreground mb-1">
-            प्रतिक्रिया <span className="text-rose-500">*</span>
+          <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
+            {isEnglish ? "Comment" : "प्रतिक्रिया"}{" "}
+            <span style={{ color: PORTAL.accent }}>*</span>
           </label>
           <textarea
             required
             rows={3}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="यहाँ आफ्नो प्रतिक्रिया वा टिप्पणी लेख्नुहोस्..."
-            className="w-full p-3.5 rounded-xl border border-border bg-background text-foreground text-xs focus:outline-hidden focus:ring-2 focus:ring-[#027081]"
+            placeholder={
+              isEnglish ? "Share your thoughts…" : "आफ्नो प्रतिक्रिया लेख्नुहोस्…"
+            }
+            className={`${inputClass} resize-y`}
+            style={{ borderColor: PORTAL.rule }}
           />
         </div>
 
         <button
           type="submit"
           disabled={submitting}
-          className="inline-flex items-center space-x-2 px-6 py-2.5 bg-[#027081] hover:bg-[#025a68] text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-2 px-4 text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          style={{ backgroundColor: PORTAL.brand }}
         >
-          <Send className="h-4 w-4" />
-          <span>{submitting ? "पठाउँदैछ..." : "प्रतिक्रिया पठाउनुहोस्"}</span>
+          <Send className="h-3.5 w-3.5" />
+          {submitting
+            ? isEnglish
+              ? "Sending…"
+              : "पठाउँदै…"
+            : isEnglish
+              ? "Post comment"
+              : "प्रतिक्रिया पठाउनुहोस्"}
         </button>
       </form>
 
-      {/* Approved Comments List */}
-      <div className="space-y-4">
+      <div className="space-y-0 divide-y divide-gray-100">
         {loading ? (
-          <div className="py-6 text-center text-xs text-muted-foreground">प्रतिक्रियाहरू लोड हुँदैछन्...</div>
+          <p className="py-6 text-center text-[13px] text-gray-400">
+            {isEnglish ? "Loading comments…" : "प्रतिक्रिया लोड हुँदैछ…"}
+          </p>
         ) : comments.length > 0 ? (
           comments.map((c) => (
-            <div key={c.id} className="p-4 rounded-xl border border-border/60 bg-card space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="h-7 w-7 rounded-full bg-[#027081]/10 text-[#027081] font-bold text-xs flex items-center justify-center">
-                    {(c.author?.name || c.authorName || "ग").charAt(0)}
-                  </div>
-                  <span className="text-xs font-bold text-foreground">
-                    {c.author?.name || c.authorName || "अज्ञात"}
+            <div key={c.id} className="flex gap-3 py-5">
+              <div
+                className="flex h-8 w-8 shrink-0 items-center justify-center text-xs font-bold"
+                style={{
+                  color: PORTAL.brand,
+                  backgroundColor: "rgba(25, 87, 166, 0.08)",
+                }}
+              >
+                {(c.author?.name || c.authorName || "ग").charAt(0)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="text-[13px] font-semibold" style={{ color: PORTAL.ink }}>
+                    {c.author?.name || c.authorName || (isEnglish ? "Anonymous" : "अज्ञात")}
+                  </span>
+                  <span className="text-[11px] text-gray-400">
+                    {formatTimeAgoNp(c.createdAt)}
                   </span>
                 </div>
-                <span className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {formatTimeAgoNp(c.createdAt)}
-                </span>
+                <p className="mt-1.5 text-[14px] leading-relaxed text-gray-700">{c.content}</p>
               </div>
-              <p className="text-xs text-foreground/90 leading-relaxed pl-9">{c.content}</p>
             </div>
           ))
         ) : (
-          <div className="p-8 text-center border border-dashed border-border rounded-xl text-xs text-muted-foreground">
-            अहिलेसम्म कुनै प्रतिक्रिया आएको छैन। पहिलो टिप्पणीकर्ता बन्नुहोस्!
-          </div>
+          <p className="py-8 text-center text-[13px] text-gray-400">
+            {isEnglish
+              ? "No comments yet. Be the first."
+              : "अहिलेसम्म कुनै प्रतिक्रिया छैन। पहिलो टिप्पणीकर्ता बन्नुहोस्।"}
+          </p>
         )}
       </div>
     </section>

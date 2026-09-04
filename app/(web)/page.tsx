@@ -191,7 +191,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
   const emptyLabel = isEnglish ? "No stories available yet." : "कुनै समाचार उपलब्ध छैन।";
 
   return (
-    <main className="w-full bg-white pb-12 text-gray-900">
+    <main className="w-full bg-white text-gray-900">
       <Suspense fallback={<div className="h-10 border-b border-gray-200 bg-white" />}>
         <TrendingHashtags />
       </Suspense>

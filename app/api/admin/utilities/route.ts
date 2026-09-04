@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { Role } from "@prisma/client";
+import { normalizeRashifalList } from "@/lib/rashifal";
 
 export async function GET() {
   try {
@@ -79,7 +80,18 @@ export async function POST(req: NextRequest) {
     }
 
     if (rashifal !== undefined) {
-      const val = typeof rashifal === "string" ? rashifal : JSON.stringify(rashifal);
+      const parsed =
+        typeof rashifal === "string"
+          ? (() => {
+              try {
+                return JSON.parse(rashifal);
+              } catch {
+                return null;
+              }
+            })()
+          : rashifal;
+      const normalized = normalizeRashifalList(parsed);
+      const val = JSON.stringify(normalized);
       updates.push(
         db.setting.upsert({
           where: { key: "rashifal_json" },

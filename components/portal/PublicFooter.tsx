@@ -48,7 +48,7 @@ export function PublicFooter() {
   const linkClass = "text-white/80 transition-colors hover:text-white";
 
   return (
-    <footer className="mt-8 w-full select-none text-white" style={{ backgroundColor: PORTAL.brand }}>
+    <footer className="w-full select-none text-white" style={{ backgroundColor: PORTAL.brand }}>
       <div className="h-1 w-full" style={{ backgroundColor: PORTAL.accent }} />
 
       <div className={`${PORTAL.container} py-12`}>

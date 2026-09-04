@@ -43,9 +43,9 @@ interface AdItem {
 
 const SLOT_LABELS: Record<AdSlot, string> = {
   HEADER_LEADERBOARD: "Header leaderboard",
-  SIDEBAR_TOP: "Sidebar top (ad 1)",
-  SIDEBAR_BOTTOM: "Sidebar bottom (ad 2)",
-  IN_ARTICLE: "In-article",
+  SIDEBAR_TOP: "Sidebar top (home + article)",
+  SIDEBAR_BOTTOM: "Sidebar bottom (home + article)",
+  IN_ARTICLE: "In-article (article page)",
   STICKY_FOOTER: "Sticky footer",
 };
 

@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, Type, Share2, Copy, Check, Printer, MessageCircle } from "lucide-react";
-import { FacebookIcon } from "@/components/portal/SocialIcons";
+import { Copy, Check, Printer } from "lucide-react";
+import { FacebookIcon, TwitterIcon } from "@/components/portal/SocialIcons";
+import { PORTAL } from "@/constants/portal";
 
 interface ArticleReaderControlsProps {
   title: string;
   shareUrl: string;
   wordCount: number;
   onFontSizeChange: (size: "normal" | "medium" | "large") => void;
+  isEnglish?: boolean;
 }
 
 export function ArticleReaderControls({
@@ -16,13 +18,15 @@ export function ArticleReaderControls({
   shareUrl,
   wordCount,
   onFontSizeChange,
+  isEnglish = false,
 }: ArticleReaderControlsProps) {
   const [currentSize, setCurrentSize] = useState<"normal" | "medium" | "large">("normal");
   const [copied, setCopied] = useState(false);
 
-  // Estimate reading time: average 180 words per minute for Nepali/English text
   const minutes = Math.max(1, Math.ceil(wordCount / 180));
-  const readingTimeText = `पढ्न लाग्ने समय: ${minutes} मिनेट`;
+  const readingTimeText = isEnglish
+    ? `${minutes} min read`
+    : `पढ्न ${minutes} मिनेट`;
 
   const handleSizeClick = (size: "normal" | "medium" | "large") => {
     setCurrentSize(size);
@@ -36,125 +40,98 @@ export function ArticleReaderControls({
     });
   };
 
-  const handlePrint = () => {
-    if (typeof window !== "undefined") {
-      window.print();
-    }
-  };
+  const actionClass =
+    "inline-flex h-8 items-center gap-1.5 px-2.5 text-[12px] font-medium text-gray-500 transition-colors hover:text-gray-800";
 
   return (
-    <div className="w-full bg-muted/40 border border-border/60 rounded-xl p-3 sm:p-4 flex flex-wrap items-center justify-between gap-4 select-none my-4">
-      {/* Estimated Reading Time */}
-      <div className="flex items-center space-x-2 text-xs font-semibold text-muted-foreground">
-        <Clock className="h-4 w-4 text-[#027081]" />
-        <span>{readingTimeText}</span>
-      </div>
+    <div
+      className="flex flex-wrap items-center justify-between gap-3 border-y py-3"
+      style={{ borderColor: PORTAL.rule }}
+    >
+      <p className="text-[12px] text-gray-500">{readingTimeText}</p>
 
-      {/* Font Size Adjuster Controls */}
-      <div className="flex items-center space-x-2">
-        <span className="text-xs text-muted-foreground font-medium hidden sm:inline flex items-center gap-1">
-          <Type className="h-3.5 w-3.5 text-[#027081]" />
-          अक्षर आकार:
-        </span>
-        <div className="flex items-center space-x-1 bg-background border border-border rounded-lg p-1 text-xs font-bold">
-          <button
-            onClick={() => handleSizeClick("normal")}
-            className={`px-2 py-0.5 rounded ${
-              currentSize === "normal"
-                ? "bg-[#027081] text-white"
-                : "text-foreground hover:bg-muted"
-            }`}
-            title="Standard Font Size"
-          >
-            A-
-          </button>
-          <button
-            onClick={() => handleSizeClick("medium")}
-            className={`px-2 py-0.5 rounded ${
-              currentSize === "medium"
-                ? "bg-[#027081] text-white"
-                : "text-foreground hover:bg-muted"
-            }`}
-            title="Medium Font Size"
-          >
-            A
-          </button>
-          <button
-            onClick={() => handleSizeClick("large")}
-            className={`px-2 py-0.5 rounded text-sm ${
-              currentSize === "large"
-                ? "bg-[#027081] text-white"
-                : "text-foreground hover:bg-muted"
-            }`}
-            title="Large Font Size"
-          >
-            A+
-          </button>
+      <div className="flex flex-wrap items-center gap-0.5">
+        <div className="mr-1 flex items-center gap-0.5" role="group" aria-label={isEnglish ? "Font size" : "अक्षर आकार"}>
+          {(
+            [
+              { size: "normal" as const, label: "A−" },
+              { size: "medium" as const, label: "A" },
+              { size: "large" as const, label: "A+" },
+            ] as const
+          ).map(({ size, label }) => {
+            const active = currentSize === size;
+            return (
+              <button
+                key={size}
+                type="button"
+                onClick={() => handleSizeClick(size)}
+                className="inline-flex h-8 min-w-8 items-center justify-center px-1.5 text-[13px] transition-colors"
+                style={{
+                  color: active ? PORTAL.brand : PORTAL.muted,
+                  fontWeight: active ? 700 : 500,
+                }}
+                title={size}
+                aria-pressed={active}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
-      </div>
 
-      {/* Social Sharing & Action Buttons */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Facebook */}
+        <span className="mx-1 hidden h-4 w-px bg-gray-200 sm:block" aria-hidden />
+
         <a
           href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center space-x-1 bg-[#1877F2] text-white px-2.5 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity"
-          title="Facebook मा सेयर गर्नुहोस्"
+          className={actionClass}
+          title="Facebook"
         >
           <FacebookIcon className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">फेसबुक</span>
+          <span className="hidden sm:inline">Facebook</span>
         </a>
-
-        {/* WhatsApp */}
         <a
-          href={`https://api.whatsapp.com/send?text=${encodeURIComponent(title + " " + shareUrl)}`}
+          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(shareUrl)}`}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center space-x-1 bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity"
-          title="WhatsApp मा पठाउनुहोस्"
+          className={actionClass}
+          title="X"
         >
-          <MessageCircle className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">WhatsApp</span>
+          <TwitterIcon className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">X</span>
         </a>
-
-        {/* Viber */}
         <a
-          href={`viber://forward?text=${encodeURIComponent(title + " " + shareUrl)}`}
-          className="flex items-center space-x-1 bg-purple-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity"
-          title="Viber मा पठाउनुहोस्"
+          href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${title} ${shareUrl}`)}`}
+          target="_blank"
+          rel="noreferrer"
+          className={actionClass}
+          title="WhatsApp"
         >
-          <Share2 className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">भाइबर</span>
+          WhatsApp
         </a>
-
-        {/* Copy Link */}
-        <button
-          onClick={handleCopyLink}
-          className="flex items-center space-x-1 bg-card border border-border text-foreground px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-muted transition-colors cursor-pointer"
-          title="लिङ्क कपी गर्नुहोस्"
-        >
+        <button type="button" onClick={handleCopyLink} className={actionClass}>
           {copied ? (
             <>
-              <Check className="h-3.5 w-3.5 text-emerald-500" />
-              <span>कपी भयो!</span>
+              <Check className="h-3.5 w-3.5" style={{ color: PORTAL.brand }} />
+              <span style={{ color: PORTAL.brand }}>
+                {isEnglish ? "Copied" : "कपी भयो"}
+              </span>
             </>
           ) : (
             <>
-              <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-              <span>कपी</span>
+              <Copy className="h-3.5 w-3.5" />
+              <span>{isEnglish ? "Copy" : "कपी"}</span>
             </>
           )}
         </button>
-
-        {/* Print Button */}
         <button
-          onClick={handlePrint}
-          className="flex items-center space-x-1 bg-card border border-border text-foreground px-2 py-1.5 rounded-lg text-xs hover:bg-muted transition-colors cursor-pointer"
-          title="प्रिन्ट गर्नुहोस्"
+          type="button"
+          onClick={() => typeof window !== "undefined" && window.print()}
+          className={actionClass}
+          title={isEnglish ? "Print" : "प्रिन्ट"}
         >
-          <Printer className="h-3.5 w-3.5 text-muted-foreground" />
+          <Printer className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

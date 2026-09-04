@@ -15,6 +15,7 @@ import { PORTAL } from "@/constants/portal";
 type RashiCard = {
   name: string;
   enName?: string;
+  slug: string;
   symbol: string;
   letters: string;
 };
@@ -23,6 +24,7 @@ function normalizeRashiList(raw: unknown): RashiCard[] {
   const fallback = DEFAULT_DETAILED_RASHIFAL.map((r) => ({
     name: r.name,
     enName: r.enName,
+    slug: r.slug,
     symbol: r.symbol,
     letters: RASHI_LETTERS[r.name] || "",
   }));
@@ -30,12 +32,17 @@ function normalizeRashiList(raw: unknown): RashiCard[] {
   if (!Array.isArray(raw) || raw.length === 0) return fallback;
 
   return fallback.map((base, index) => {
-    const item = raw[index] as Partial<DetailedRashi> & { name?: string; symbol?: string };
+    const item = raw[index] as Partial<DetailedRashi> & {
+      name?: string;
+      symbol?: string;
+      slug?: string;
+    };
     const name = (item?.name || base.name).replace(/\s*\(.*\)\s*$/, "").trim();
     const shortName = name.split(" ")[0] || base.name;
     return {
       name: shortName,
       enName: item?.enName || base.enName,
+      slug: item?.slug || base.slug,
       symbol: item?.symbol || base.symbol,
       letters: RASHI_LETTERS[shortName] || RASHI_LETTERS[base.name] || base.letters,
     };
@@ -99,8 +106,8 @@ export function RashifalSection() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 lg:gap-4">
           {rashis.map((rashi) => (
             <Link
-              key={rashi.name}
-              href={`/rashifal${langQ}#rashi-${encodeURIComponent(rashi.name)}`}
+              key={rashi.slug || rashi.name}
+              href={`/rashifal/${rashi.slug}${langQ}`}
               className="flex flex-col items-center border bg-white px-2 py-4 text-center transition-colors hover:bg-white/90 sm:px-3 sm:py-5"
               style={{ borderColor: "rgba(25, 87, 166, 0.18)" }}
             >

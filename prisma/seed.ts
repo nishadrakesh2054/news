@@ -1075,6 +1075,28 @@ async function main() {
   }
   console.log(`✅ Ads ready: ${ads.length}`);
 
+  const { DEFAULT_DETAILED_RASHIFAL, normalizeRashifalList } = await import("../lib/rashifal");
+  const existingRashifal = await prisma.setting.findUnique({ where: { key: "rashifal_json" } });
+  if (!existingRashifal?.value) {
+    await prisma.setting.create({
+      data: { key: "rashifal_json", value: JSON.stringify(DEFAULT_DETAILED_RASHIFAL) },
+    });
+    console.log("✅ Rashifal seeded (12 rashis × today/weekly/monthly/yearly)");
+  } else {
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(existingRashifal.value);
+    } catch {
+      parsed = null;
+    }
+    const normalized = normalizeRashifalList(parsed);
+    await prisma.setting.update({
+      where: { key: "rashifal_json" },
+      data: { value: JSON.stringify(normalized) },
+    });
+    console.log("✅ Rashifal migrated/normalized with period forecasts");
+  }
+
   const published = await prisma.article.count({ where: { status: ArticleStatus.PUBLISHED } });
   const both = await prisma.article.count({ where: { languageEdition: LanguageEdition.BOTH } });
   console.log(`🎉 Seed complete — published=${published}, bilingual BOTH=${both}`);
