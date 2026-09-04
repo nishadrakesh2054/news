@@ -572,6 +572,108 @@ async function main() {
       hoursAgo: 20,
     },
     {
+      title: "Federalism works only when local budgets reach citizens",
+      titleNp: "संघीयता तब मात्र सफल हुन्छ जब स्थानीय बजेट नागरिकसम्म पुग्छ",
+      slug: "opinion-federalism-local-budgets",
+      excerpt:
+        "Devolution without timely grants and clear audit trails leaves municipalities stuck between promise and delivery.",
+      excerptNp:
+        "समयमै अनुदान र स्पष्ट लेखापरीक्षण बिना विकेन्द्रीकरणले स्थानीय तहलाई वाचा र कार्यान्वयनबीच अड्काउँछ।",
+      content: p(
+        "Federalism was sold as nearer government. In practice, many wards still wait months for capital grants while needs are immediate.",
+        "Transparency on conditional grants and simpler procurement for small projects would do more for trust than another slogan campaign."
+      ),
+      contentNp: p(
+        "संघीयता नजिकको शासनका रूपमा प्रस्तुत भएको थियो। व्यवहारमा धेरै वडा अझै पुँजीगत अनुदान कुर्दै छन् भने आवश्यकता तत्काल छ।",
+        "सशर्त अनुदानमा पारदर्शिता र साना आयोजनाका लागि सरल खरिद प्रक्रिया नारामुखी अभियानभन्दा बढी विश्वास जन्माउँछ।"
+      ),
+      coverImage: "https://images.unsplash.com/photo-1529107382642-6b286daa0f20?auto=format&fit=crop&w=1200&q=80",
+      caption: "Column: Echo Manch editorial desk",
+      status: ArticleStatus.PUBLISHED,
+      type: ArticleType.OPINION,
+      languageEdition: LanguageEdition.BOTH,
+      isFeatured: false,
+      isBreaking: false,
+      views: 4320,
+      metaTitle: "Opinion: federalism and local budgets | Echo Manch",
+      metaTitleNp: "विचार: संघीयता र स्थानीय बजेट | इको माञ्च",
+      metaDescription: "Editorial on federal grants and municipal delivery.",
+      metaDescriptionNp: "संघीय अनुदान र स्थानीय सेवा प्रवाहबारे सम्पादकीय।",
+      keywords: "opinion, federalism, local government",
+      keywordsNp: "विचार, संघीयता, स्थानीय तह",
+      categorySlug: "opinion",
+      tagSlugs: ["parliament"],
+      hoursAgo: 22,
+    },
+    {
+      title: "Youth migration is not only a remittance story",
+      titleNp: "युवा पलायन रेमिट्यान्सको कथा मात्र होइन",
+      slug: "opinion-youth-migration-beyond-remittance",
+      excerpt:
+        "Families celebrate foreign jobs, but schools, farms and local enterprises quietly lose the next generation of builders.",
+      excerptNp:
+        "विदेशी रोजगारी परिवारले मनाउँछन्, तर विद्यालय, खेती र स्थानीय उद्यमले अर्को पुस्ताका निर्माता चुपचाप गुमाइरहेका छन्।",
+      content: p(
+        "Remittances keep household cash flowing. That is real. So is the thinning of skilled labour in mid-hills and small towns.",
+        "Policy should pair safe migration with credible domestic opportunity—skills, credit and dignified work—not guilt-trip those who leave."
+      ),
+      contentNp: p(
+        "रेमिट्यान्सले घरपरिवारको नगद प्रवाह जोगाउँछ। यो सत्य हो। मध्यपहाड र साना सहरमा दक्ष श्रम पातलिँदै जानु पनि उत्तिकै सत्य हो।",
+        "नीतिले सुरक्षित आप्रवासनसँगै स्वदेशमै भरपर्दो अवसर—सीप, कर्जा र मर्यादित रोजगारी—जोड्नुपर्छ; जानेलाई दोषी ठहराएर होइन।"
+      ),
+      coverImage: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80",
+      caption: "Column: Echo Manch editorial desk",
+      status: ArticleStatus.PUBLISHED,
+      type: ArticleType.OPINION,
+      languageEdition: LanguageEdition.BOTH,
+      isFeatured: false,
+      isBreaking: false,
+      views: 5890,
+      metaTitle: "Opinion: youth migration beyond remittance | Echo Manch",
+      metaTitleNp: "विचार: रेमिट्यान्सभन्दा पर युवा पलायन | इको माञ्च",
+      metaDescription: "Editorial on migration, remittance and domestic opportunity.",
+      metaDescriptionNp: "आप्रवासन, रेमिट्यान्स र स्वदेशी अवसरबारे सम्पादकीय।",
+      keywords: "opinion, migration, remittance, youth",
+      keywordsNp: "विचार, पलायन, रेमिट्यान्स, युवा",
+      categorySlug: "opinion",
+      tagSlugs: ["tourism"],
+      hoursAgo: 30,
+    },
+    {
+      title: "Public transport reform needs riders, not only new buses",
+      titleNp: "सार्वजनिक यातायात सुधारलाई नयाँ बस मात्र होइन, यात्रु चाहिन्छ",
+      slug: "opinion-public-transport-riders-first",
+      excerpt:
+        "Fleet upgrades fail if routes stay opaque, stops unsafe and ticketing fragmented across operators.",
+      excerptNp:
+        "रुट अस्पष्ट, स्टप असुरक्षित र टिकट प्रणाली टुक्रिएको रहँदासम्म फ्लिट स्तरोन्नतिले मात्र काम गर्दैन।",
+      content: p(
+        "Kathmandu keeps buying the idea of modern buses. Riders keep asking for reliable frequency and last-mile walking safety.",
+        "Integrate routes, publish live schedules, and treat sidewalks as part of the transit system—or cars will keep winning by default."
+      ),
+      contentNp: p(
+        "काठमाडौँले आधुनिक बसको कल्पना किनिरहेको छ। यात्रुले भरपर्दो फ्रिक्वेन्सी र अन्तिम माइलको पैदल सुरक्षा मागिरहेका छन्।",
+        "रुट एकीकृत गर्नुहोस्, लाइभ तालिका सार्वजनिक गर्नुहोस्, र फुटपाथलाई यातायात प्रणालीकै भाग मान्नुहोस्—नत्र कार नै पूर्वनिर्धारित विकल्प बनिरहन्छ।"
+      ),
+      coverImage: "https://images.unsplash.com/photo-1544620341-73adc401eb00?auto=format&fit=crop&w=1200&q=80",
+      caption: "Column: Echo Manch editorial desk",
+      status: ArticleStatus.PUBLISHED,
+      type: ArticleType.OPINION,
+      languageEdition: LanguageEdition.BOTH,
+      isFeatured: false,
+      isBreaking: false,
+      views: 3180,
+      metaTitle: "Opinion: public transport for riders | Echo Manch",
+      metaTitleNp: "विचार: यात्रुकेन्द्रित सार्वजनिक यातायात | इको माञ्च",
+      metaDescription: "Editorial on buses, routes and walkable transit.",
+      metaDescriptionNp: "बस, रुट र पैदल यातायातबारे सम्पादकीय।",
+      keywords: "opinion, transport, Kathmandu, buses",
+      keywordsNp: "विचार, यातायात, काठमाडौँ, बस",
+      categorySlug: "opinion",
+      tagSlugs: ["climate"],
+      hoursAgo: 40,
+    },
+    {
       title: "NRB signals support for SME credit after disaster shock",
       titleNp: "विपद्पछि साना व्यवसाय कर्जामा राष्ट्र बैंकको सहयोग संकेत",
       slug: "nrb-sme-credit-support-after-disaster",

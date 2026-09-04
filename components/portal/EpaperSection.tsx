@@ -46,10 +46,7 @@ export function EpaperSection() {
   if (editions.length === 0) return null;
 
   return (
-    <section
-      className="w-full border-y border-gray-200"
-      style={{ backgroundColor: "#f3f4f6" }}
-    >
+    <section className="w-full">
       <PortalContainer className="py-6 sm:py-8">
         <SectionHeader
           title={

@@ -137,7 +137,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
           author: { select: { name: true, image: true } },
         },
         orderBy: { publishedAt: "desc" },
-        take: 3,
+        take: 4,
       }),
       prisma.article.findMany({
         where: {
