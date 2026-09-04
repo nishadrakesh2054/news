@@ -20,6 +20,7 @@ import { ProvinceNewsWidget } from "@/components/portal/ProvinceNewsWidget";
 import { LatestNewsSection } from "@/components/portal/LatestNewsSection";
 import { MediaShowcaseAboveFooter } from "@/components/portal/MediaShowcaseAboveFooter";
 import { RashifalSection } from "@/components/portal/RashifalSection";
+import { EpaperSection } from "@/components/portal/EpaperSection";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { PORTAL } from "@/constants/portal";
@@ -307,6 +308,10 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
 
       <Suspense fallback={<div className="h-64 bg-white" />}>
         <MediaShowcaseAboveFooter />
+      </Suspense>
+
+      <Suspense fallback={<div className="h-56 bg-white" />}>
+        <EpaperSection />
       </Suspense>
 
       <Suspense fallback={<div className="h-48" style={{ backgroundColor: "rgba(25, 87, 166, 0.06)" }} />}>

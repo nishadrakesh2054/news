@@ -1,112 +1,350 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { ArticleStatus } from "@prisma/client";
+import { AdSlot, ArticleStatus } from "@prisma/client";
+import { absoluteUrl } from "@/lib/site-url";
+import { SITE_CONFIG, SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
+import {
+  languageEditionWhere,
+  resolveArticleTitle,
+  resolveLanguageEdition,
+} from "@/lib/language";
+import { PortalContainer } from "@/components/portal/SectionHeader";
+import { NewsCard } from "@/components/portal/NewsCard";
+import { ArticleAdSlot } from "@/components/portal/ArticleAdSlot";
+import { PORTAL } from "@/constants/portal";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
-import { Hash, ChevronRight } from "lucide-react";
 
 interface TagPageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ lang?: string }>;
 }
 
-export default async function TagArchivePage({ params }: TagPageProps) {
-  const { slug } = await params;
+async function resolvePageLang(searchParamsLang?: string) {
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") || headerList.get("host");
+  return resolveLanguageEdition(searchParamsLang, host);
+}
 
-  const articles = await prisma.article.findMany({
-    where: {
-      status: ArticleStatus.PUBLISHED,
-      OR: [
-        { keywords: { contains: slug, mode: "insensitive" } },
-        { title: { contains: slug, mode: "insensitive" } },
-        { titleNp: { contains: slug, mode: "insensitive" } },
-      ],
+export async function generateMetadata({ params, searchParams }: TagPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const query = await searchParams;
+  const lang = await resolvePageLang(query.lang);
+  const tag = await prisma.tag.findUnique({ where: { slug } });
+  const label = tag?.name || slug;
+  const suffix = lang === "en" ? SITE_TITLE_SUFFIX : SITE_TITLE_SUFFIX_NP;
+
+  return {
+    title: lang === "en" ? `#${label}` : `#${label}`,
+    description:
+      lang === "en"
+        ? `News tagged ${label} | ${SITE_CONFIG.name}`
+        : `${label} ट्यागका समाचार | ${SITE_CONFIG.nameNp}`,
+    alternates: {
+      canonical: `/tag/${slug}`,
+      languages: {
+        "ne-NP": absoluteUrl(`/tag/${slug}`, "ne"),
+        en: absoluteUrl(`/tag/${slug}`, "en"),
+      },
     },
-    select: {
-      id: true,
-      title: true,
-      titleNp: true,
-      slug: true,
-      excerpt: true,
-      coverImage: true,
-      createdAt: true,
-      category: { select: { name: true, nameNp: true, slug: true } },
+    openGraph: {
+      title: `#${label} ${suffix}`,
+      url: absoluteUrl(`/tag/${slug}`, lang),
+      type: "website",
     },
-    orderBy: { createdAt: "desc" },
-    take: 30,
-  });
+  };
+}
+
+export const revalidate = 60;
+
+export default async function TagArchivePage({ params, searchParams }: TagPageProps) {
+  const { slug } = await params;
+  const query = await searchParams;
+  const lang = await resolvePageLang(query.lang);
+  const isEnglish = lang === "en";
+  const langQuery = isEnglish ? "?lang=en" : "";
+  const homeHref = isEnglish ? "/?lang=en" : "/";
+
+  const [tag, sidebarAds, otherTags] = await Promise.all([
+    prisma.tag.findUnique({
+      where: { slug },
+      select: { id: true, name: true, slug: true },
+    }),
+    prisma.ad.findMany({
+      where: {
+        isActive: true,
+        slot: { in: [AdSlot.SIDEBAR_TOP, AdSlot.SIDEBAR_BOTTOM] },
+      },
+      select: {
+        id: true,
+        title: true,
+        imageUrl: true,
+        targetUrl: true,
+        scriptCode: true,
+        slot: true,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.tag.findMany({
+      where: { slug: { not: slug } },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        _count: { select: { articles: true } },
+      },
+      orderBy: { name: "asc" },
+      take: 12,
+    }),
+  ]);
+
+  const tagLabel = tag?.name || slug.replace(/-/g, " ");
+
+  const articles = tag
+    ? await prisma.article.findMany({
+        where: {
+          status: ArticleStatus.PUBLISHED,
+          tags: { some: { id: tag.id } },
+          ...languageEditionWhere(lang),
+        },
+        select: {
+          id: true,
+          title: true,
+          titleNp: true,
+          slug: true,
+          excerpt: true,
+          excerptNp: true,
+          coverImage: true,
+          createdAt: true,
+          views: true,
+          isFeatured: true,
+          author: { select: { name: true } },
+          category: { select: { name: true, nameNp: true, slug: true } },
+        },
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+        take: 36,
+      })
+    : await prisma.article.findMany({
+        where: {
+          status: ArticleStatus.PUBLISHED,
+          ...languageEditionWhere(lang),
+          OR: [
+            { keywords: { contains: slug, mode: "insensitive" } },
+            { keywordsNp: { contains: slug, mode: "insensitive" } },
+            { title: { contains: slug, mode: "insensitive" } },
+            { titleNp: { contains: slug, mode: "insensitive" } },
+          ],
+        },
+        select: {
+          id: true,
+          title: true,
+          titleNp: true,
+          slug: true,
+          excerpt: true,
+          excerptNp: true,
+          coverImage: true,
+          createdAt: true,
+          views: true,
+          isFeatured: true,
+          author: { select: { name: true } },
+          category: { select: { name: true, nameNp: true, slug: true } },
+        },
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+        take: 36,
+      });
+
+  const lead = articles.find((a) => a.isFeatured) || articles[0] || null;
+  const rest = articles.filter((a) => a.id !== lead?.id);
+  const popular = [...articles]
+    .sort((a, b) => (b.views || 0) - (a.views || 0))
+    .slice(0, 6);
+  const adTop = sidebarAds.find((a) => a.slot === AdSlot.SIDEBAR_TOP) ?? null;
+  const adBottom = sidebarAds.find((a) => a.slot === AdSlot.SIDEBAR_BOTTOM) ?? null;
+  const pagePath = `/tag/${slug}`;
 
   return (
-    <main className="w-full bg-background pb-16 pt-6">
-      <div className="max-w-7xl mx-auto px-4 space-y-8">
-        {/* Tag Header */}
-        <div className="border-b-2 border-[#027081] pb-4 flex items-center justify-between">
-          <div className="space-y-1">
-            <nav className="flex items-center space-x-2 text-xs text-muted-foreground pb-1">
-              <Link href="/" className="hover:text-[#027081]">गृह</Link>
-              <ChevronRight className="h-3 w-3" />
-              <span>विषयगत ट्याग</span>
-            </nav>
-            <h1 className="text-3xl font-extrabold text-[#027081] font-serif flex items-center gap-2">
-              <Hash className="h-7 w-7" />
-              <span>#{slug}</span>
-            </h1>
-          </div>
-
-          <span className="bg-[#027081]/10 text-[#027081] text-xs font-bold px-3 py-1.5 rounded-lg font-mono">
-            {articles.length} समाचार
+    <main className="w-full bg-white pb-16 text-gray-900">
+      <PortalContainer className="py-8 sm:py-10">
+        <nav className="mb-8 flex flex-wrap items-center gap-1.5 text-[12px] text-gray-400">
+          <Link
+            href={homeHref}
+            className="transition-colors hover:underline"
+            style={{ color: PORTAL.brand }}
+          >
+            {isEnglish ? "Home" : "गृह"}
+          </Link>
+          <span aria-hidden className="text-gray-300">
+            /
           </span>
-        </div>
+          <span className="text-gray-400">{isEnglish ? "Tag" : "ट्याग"}</span>
+          <span aria-hidden className="text-gray-300">
+            /
+          </span>
+          <span className="font-medium" style={{ color: PORTAL.ink }}>
+            #{tagLabel}
+          </span>
+        </nav>
 
-        {/* Tag Articles Grid */}
-        {articles.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {articles.map((art) => (
-              <article
-                key={art.id}
-                className="group rounded-2xl border border-border/50 bg-card overflow-hidden hover:shadow-md transition-all flex flex-col justify-between"
+        <header className="mb-8 max-w-3xl">
+          <h1
+            className="text-3xl font-extrabold tracking-tight sm:text-4xl"
+            style={{ color: PORTAL.brand }}
+          >
+            #{tagLabel}
+          </h1>
+          <p className="mt-2 text-sm text-gray-600">
+            {isEnglish
+              ? `Stories related to ${tagLabel}`
+              : `${tagLabel} सँग सम्बन्धित समाचार`}
+          </p>
+        </header>
+
+        {lead ? (
+          <section className="mb-10">
+            <NewsCard article={lead} lang={lang} variant="lead" badge={`#${tagLabel}`} />
+          </section>
+        ) : null}
+
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:gap-12">
+          <section className="min-w-0">
+            <div className="mb-4 flex items-center gap-3">
+              <h2
+                className="shrink-0 text-sm font-extrabold sm:text-base"
+                style={{ color: PORTAL.brand }}
               >
-                {art.coverImage && (
-                  <div className="h-48 w-full overflow-hidden bg-muted">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={art.coverImage}
-                      alt={art.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                )}
-                <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
-                  <div className="space-y-2">
-                    <span className="text-[11px] font-mono text-muted-foreground block">
-                      {formatTimeAgoNp(art.createdAt)}
-                    </span>
+                {isEnglish ? "Latest" : "ताजा समाचार"}
+              </h2>
+              <div
+                className="h-px min-w-4 flex-1"
+                style={{ backgroundColor: PORTAL.accent, opacity: 0.35 }}
+              />
+            </div>
 
-                    <h2 className="text-base font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif">
-                      <Link href={`/article/${art.slug}`}>
-                        {art.titleNp || art.title}
-                      </Link>
-                    </h2>
+            {rest.length > 0 ? (
+              <div>
+                {rest.map((art) => (
+                  <NewsCard
+                    key={art.id}
+                    article={art}
+                    lang={lang}
+                    variant="list"
+                    showAuthor
+                    showExcerpt
+                  />
+                ))}
+              </div>
+            ) : !lead ? (
+              <p className="border border-dashed border-gray-200 px-4 py-12 text-center text-sm text-gray-500">
+                {isEnglish
+                  ? "No published articles for this tag yet."
+                  : "यस ट्यागमा हाल कुनै प्रकाशित समाचार उपलब्ध छैन।"}
+              </p>
+            ) : (
+              <p className="py-6 text-sm text-gray-500">
+                {isEnglish
+                  ? "More stories will appear here soon."
+                  : "थप समाचार चाँडै यहाँ आउनेछन्।"}
+              </p>
+            )}
+          </section>
 
-                    {art.excerpt && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                        {art.excerpt}
-                      </p>
-                    )}
-                  </div>
+          <aside
+            className="min-w-0 space-y-8 border-t pt-8 lg:sticky lg:top-24 lg:border-t-0 lg:pt-0 lg:self-start"
+            style={{ borderColor: PORTAL.rule }}
+          >
+            <ArticleAdSlot
+              ad={adTop}
+              path={pagePath}
+              isEnglish={isEnglish}
+              variant="sidebar"
+            />
 
-                  <div className="pt-2 border-t border-border/30 text-[11px] font-semibold text-[#027081] flex items-center gap-1">
-                    <span>थप पढ्नुहोस्</span>
-                    <ChevronRight className="h-3 w-3" />
-                  </div>
+            {popular.length > 0 ? (
+              <section>
+                <div className="mb-2 flex items-center gap-2">
+                  <h2
+                    className="shrink-0 text-sm font-extrabold"
+                    style={{ color: PORTAL.brand }}
+                  >
+                    {isEnglish ? "Popular" : "पढिएको"}
+                  </h2>
+                  <div
+                    className="h-px min-w-4 flex-1"
+                    style={{ backgroundColor: PORTAL.accent, opacity: 0.35 }}
+                  />
                 </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="p-12 text-center text-muted-foreground rounded-2xl border border-dashed">
-            यस ट्यागमा हाल कुनै समाचार उपलब्ध छैन।
-          </div>
-        )}
-      </div>
+                <ul className="divide-y divide-gray-100">
+                  {popular.map((art, index) => (
+                    <li key={art.id}>
+                      <Link
+                        href={`/article/${art.slug}${langQuery}`}
+                        className="group flex gap-3 py-3"
+                      >
+                        <span
+                          className="w-5 shrink-0 pt-0.5 text-sm font-extrabold tabular-nums"
+                          style={{
+                            color: index < 3 ? PORTAL.accent : PORTAL.muted,
+                          }}
+                        >
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <h3
+                            className="line-clamp-3 text-[13px] font-bold leading-snug group-hover:underline"
+                            style={{ color: PORTAL.ink }}
+                          >
+                            {resolveArticleTitle(art, lang)}
+                          </h3>
+                          <span className="mt-1 block text-[11px] text-gray-400">
+                            {formatTimeAgoNp(art.createdAt)}
+                          </span>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {otherTags.length > 0 ? (
+              <section>
+                <div className="mb-2 flex items-center gap-2">
+                  <h2
+                    className="shrink-0 text-sm font-extrabold"
+                    style={{ color: PORTAL.brand }}
+                  >
+                    {isEnglish ? "Other tags" : "अन्य ट्याग"}
+                  </h2>
+                  <div
+                    className="h-px min-w-4 flex-1"
+                    style={{ backgroundColor: PORTAL.accent, opacity: 0.35 }}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-x-1 gap-y-1">
+                  {otherTags.map((t) => (
+                    <Link
+                      key={t.id}
+                      href={`/tag/${t.slug}${langQuery}`}
+                      className="px-2 py-1 text-[13px] font-medium transition-colors hover:underline"
+                      style={{ color: PORTAL.brand }}
+                    >
+                      #{t.name}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <ArticleAdSlot
+              ad={adBottom}
+              path={pagePath}
+              isEnglish={isEnglish}
+              variant="sidebar"
+            />
+          </aside>
+        </div>
+      </PortalContainer>
     </main>
   );
 }

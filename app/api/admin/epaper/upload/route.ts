@@ -7,6 +7,22 @@ import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 
 const MAX_PDF_SIZE = 20 * 1024 * 1024;
+const MAX_COVER_SIZE = 5 * 1024 * 1024;
+const COVER_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+
+async function uploadBuffer(
+  buffer: Buffer,
+  options: { folder: string; resource_type: "raw" | "image" }
+) {
+  return new Promise<{ secure_url: string }>((resolve, reject) => {
+    cloudinary.uploader
+      .upload_stream(options, (error, result) => {
+        if (error) reject(error);
+        else resolve(result as { secure_url: string });
+      })
+      .end(buffer);
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,9 +33,9 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData();
-    const file = formData.get("file") as File;
+    const file = formData.get("file") as File | null;
+    const coverFile = formData.get("coverFile") as File | null;
     const title = (formData.get("title") as string) || "";
-    const coverImage = (formData.get("coverImage") as string) || "";
     const publishDate = (formData.get("publishDate") as string) || "";
 
     if (!file) {
@@ -38,23 +54,35 @@ export async function POST(request: NextRequest) {
       return apiError("Edition title is required", 400);
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    if (!coverFile || coverFile.size === 0) {
+      return apiError("Cover image is required — upload from your computer", 400);
+    }
 
-    const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
-      cloudinary.uploader
-        .upload_stream({ folder: "epaper", resource_type: "raw" }, (error, result) => {
-          if (error) reject(error);
-          else resolve(result as { secure_url: string });
-        })
-        .end(buffer);
+    if (!COVER_TYPES.has(coverFile.type)) {
+      return apiError("Cover must be JPEG, PNG, WebP, or GIF", 400);
+    }
+
+    if (coverFile.size > MAX_COVER_SIZE) {
+      return apiError("Cover image exceeds 5MB limit", 400);
+    }
+
+    const pdfBuffer = Buffer.from(await file.arrayBuffer());
+    const uploadResult = await uploadBuffer(pdfBuffer, {
+      folder: "epaper",
+      resource_type: "raw",
+    });
+
+    const coverBuffer = Buffer.from(await coverFile.arrayBuffer());
+    const coverResult = await uploadBuffer(coverBuffer, {
+      folder: "epaper/covers",
+      resource_type: "image",
     });
 
     const epaper = await prisma.ePaper.create({
       data: {
         title: title.trim(),
         pdfUrl: uploadResult.secure_url,
-        coverImage: coverImage.trim() || null,
+        coverImage: coverResult.secure_url,
         publishDate: publishDate ? new Date(publishDate) : new Date(),
       },
     });

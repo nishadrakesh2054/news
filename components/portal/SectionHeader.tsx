@@ -19,7 +19,7 @@ export function SectionHeader({
   return (
     <div className={`mb-4 flex items-center gap-3 ${className}`}>
       <h2
-        className="shrink-0 text-xl font-extrabold tracking-tight whitespace-nowrap sm:text-2xl"
+        className="shrink-0 text-xl font-extrabold tracking-tight sm:text-2xl"
         style={{ color: PORTAL.brand }}
       >
         {title}

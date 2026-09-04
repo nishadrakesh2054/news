@@ -112,6 +112,14 @@ export function CategoryNavbar() {
           </Link>
         );
       })}
+      <Link
+        href={`/epaper${langQuery}`}
+        onClick={closeMobile}
+        className={itemClass(pathname === "/epaper")}
+        style={activeStyle(pathname === "/epaper")}
+      >
+        {isEnglish ? "E-Paper" : "इ-पत्रिका"}
+      </Link>
     </>
   );
 
@@ -207,6 +215,16 @@ export function CategoryNavbar() {
                   </Link>
                 );
               })}
+              <Link
+                href={`/epaper${langQuery}`}
+                onClick={closeMobile}
+                className={`border-b border-gray-100 px-4 py-2.5 text-sm font-semibold ${
+                  pathname === "/epaper" ? "text-white" : "text-gray-900 hover:bg-gray-50"
+                }`}
+                style={pathname === "/epaper" ? { backgroundColor: PORTAL.accent } : undefined}
+              >
+                {isEnglish ? "E-Paper" : "इ-पत्रिका"}
+              </Link>
             </div>
           </div>
         </div>

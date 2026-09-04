@@ -1097,6 +1097,65 @@ async function main() {
     console.log("✅ Rashifal migrated/normalized with period forecasts");
   }
 
+  const samplePdf =
+    "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf";
+  const samplePdfAlt =
+    "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
+  const epaperDaysAgo = (n: number) => {
+    const d = new Date();
+    d.setHours(6, 0, 0, 0);
+    d.setDate(d.getDate() - n);
+    return d;
+  };
+  const epaperEditions = [
+    {
+      title: "आर्थिक वर्ष २०८३/८४ को बजेट वक्तव्य",
+      pdfUrl: samplePdf,
+      coverImage: "https://placehold.co/400x500/c4a574/1a1a1a?text=Budget+2083%2F84",
+      publishDate: epaperDaysAgo(0),
+    },
+    {
+      title: "नीति तथा कार्यक्रम २०८३",
+      pdfUrl: samplePdfAlt,
+      coverImage: "https://placehold.co/400x500/ffffff/c41e3a?text=Policy+2083",
+      publishDate: epaperDaysAgo(1),
+    },
+    {
+      title: "नेपालको वर्तमान आर्थिक स्थितिपत्र",
+      pdfUrl: samplePdf,
+      coverImage: "https://placehold.co/400x500/f5f5f5/1957a6?text=Economic+Status",
+      publishDate: epaperDaysAgo(2),
+    },
+    {
+      title: "सुशासन मार्गचित्र — २०८२",
+      pdfUrl: samplePdfAlt,
+      coverImage: "https://placehold.co/400x500/0c4ea0/ffffff?text=Governance+2082",
+      publishDate: epaperDaysAgo(3),
+    },
+    {
+      title: "इको मञ्च दैनिक — आजको संस्करण",
+      pdfUrl: samplePdf,
+      coverImage: "https://placehold.co/400x500/1957A6/ffffff?text=Daily+E-Paper",
+      publishDate: epaperDaysAgo(0),
+    },
+  ];
+  for (const edition of epaperEditions) {
+    const existing = await prisma.ePaper.findFirst({ where: { title: edition.title } });
+    if (existing) {
+      await prisma.ePaper.update({
+        where: { id: existing.id },
+        data: {
+          pdfUrl: edition.pdfUrl,
+          coverImage: edition.coverImage,
+          publishDate: edition.publishDate,
+        },
+      });
+    } else {
+      await prisma.ePaper.create({ data: edition });
+    }
+  }
+  console.log(`✅ E-paper editions ready: ${epaperEditions.length}`);
+
   const published = await prisma.article.count({ where: { status: ArticleStatus.PUBLISHED } });
   const both = await prisma.article.count({ where: { languageEdition: LanguageEdition.BOTH } });
   console.log(`🎉 Seed complete — published=${published}, bilingual BOTH=${both}`);

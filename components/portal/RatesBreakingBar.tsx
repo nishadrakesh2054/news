@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Zap } from "lucide-react";
@@ -13,7 +13,7 @@ interface BreakingItem {
   slug: string;
 }
 
-/** Breaking news ticker — marquee text; rates/utilities live in the top bar. */
+/** Breaking ticker: marquee scroll; arrows restart from prev/next story. */
 export function RatesBreakingBar() {
   const searchParams = useSearchParams();
   const langParam = searchParams.get("lang");
@@ -23,8 +23,10 @@ export function RatesBreakingBar() {
   const langQ = isEnglish ? "?lang=en" : "";
 
   const [breaking, setBreaking] = useState<BreakingItem[]>([]);
-  const [breakingIndex, setBreakingIndex] = useState(0);
+  const [startIndex, setStartIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  /** Bumps so arrow clicks remount the marquee even if index wraps. */
+  const [tickKey, setTickKey] = useState(0);
 
   useEffect(() => {
     fetch(`/api/breaking${langQ}`)
@@ -46,42 +48,63 @@ export function RatesBreakingBar() {
               })
             )
           );
-          setBreakingIndex(0);
+          setStartIndex(0);
+          setTickKey((k) => k + 1);
         }
       })
       .catch(() => {});
   }, [langQ]);
 
-  useEffect(() => {
-    if (breaking.length <= 1 || paused) return;
-    const id = setInterval(() => {
-      setBreakingIndex((i) => (i + 1) % breaking.length);
-    }, 8000);
-    return () => clearInterval(id);
-  }, [breaking.length, paused]);
+  const ordered = useMemo(() => {
+    if (breaking.length === 0) return [];
+    return [...breaking.slice(startIndex), ...breaking.slice(0, startIndex)];
+  }, [breaking, startIndex]);
 
-  if (breaking.length === 0) return null;
-
-  const current = breaking[breakingIndex];
-  const marqueeItems = [...breaking, ...breaking];
-  const durationSec = Math.max(36, breaking.length * 14);
+  const durationSec = Math.max(18, ordered.length * 8);
 
   const goPrev = () => {
-    setPaused(true);
-    setBreakingIndex((i) => (i - 1 + breaking.length) % breaking.length);
+    if (breaking.length <= 1) return;
+    setStartIndex((i) => (i - 1 + breaking.length) % breaking.length);
+    setTickKey((k) => k + 1);
   };
 
   const goNext = () => {
-    setPaused(true);
-    setBreakingIndex((i) => (i + 1) % breaking.length);
+    if (breaking.length <= 1) return;
+    setStartIndex((i) => (i + 1) % breaking.length);
+    setTickKey((k) => k + 1);
   };
+
+  if (breaking.length === 0) return null;
+
+  const linkClass =
+    "inline-flex items-center whitespace-nowrap px-4 py-0.5 text-xs font-medium leading-normal text-gray-900 hover:underline";
+
+  const track = (
+    <>
+      {ordered.map((item) => (
+        <Link key={`${tickKey}-${item.id}-a`} href={`/article/${item.slug}${langQ}`} className={linkClass}>
+          {item.title}
+        </Link>
+      ))}
+      {ordered.map((item) => (
+        <Link
+          key={`${tickKey}-${item.id}-b`}
+          href={`/article/${item.slug}${langQ}`}
+          className={linkClass}
+          aria-hidden
+          tabIndex={-1}
+        >
+          {item.title}
+        </Link>
+      ))}
+    </>
+  );
 
   return (
     <div className="w-full border-b border-gray-200 bg-white text-xs">
-      <div className={`${PORTAL.container} flex items-center gap-2 py-1`}>
-        {/* Fixed width so EN/NE labels don’t resize the badge; compact like a ticker chip */}
+      <div className={`${PORTAL.container} flex items-center gap-2 py-1.5`}>
         <span
-          className="inline-flex h-6 w-[6.25rem] shrink-0 items-center justify-center gap-1 px-2 text-[11px] font-bold leading-none text-white"
+          className="inline-flex h-7 w-[6.25rem] shrink-0 items-center justify-center gap-1 px-2 text-[11px] font-bold leading-none text-white"
           style={{ backgroundColor: PORTAL.accent }}
         >
           <Zap className="h-3 w-3 shrink-0 fill-white" />
@@ -89,33 +112,30 @@ export function RatesBreakingBar() {
         </span>
 
         <div
-          className="relative h-6 min-w-0 flex-1 overflow-hidden"
+          className="relative min-h-7 min-w-0 flex-1 overflow-x-hidden overflow-y-visible py-0.5"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
-          <div
-            className="portal-breaking-marquee flex h-full w-max items-center gap-8 whitespace-nowrap"
-            style={{
-              ["--marquee-duration" as string]: `${durationSec}s`,
-              animationPlayState: paused ? "paused" : "running",
-            }}
-          >
-            {marqueeItems.map((item, idx) => (
-              <Link
-                key={`${item.id}-${idx}`}
-                href={`/article/${item.slug}${langQ}`}
-                className={`inline-flex items-center text-xs font-medium leading-6 text-gray-800 hover:underline ${
-                  item.id === current.id ? "text-gray-950" : "text-gray-700"
-                }`}
-              >
-                <span
-                  className="mr-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: PORTAL.accent }}
-                />
-                {item.title}
-              </Link>
-            ))}
-          </div>
+          {breaking.length === 1 ? (
+            <Link
+              href={`/article/${breaking[0].slug}${langQ}`}
+              className="block truncate py-0.5 text-xs font-medium leading-normal text-gray-900 hover:underline"
+              title={breaking[0].title}
+            >
+              {breaking[0].title}
+            </Link>
+          ) : (
+            <div
+              key={tickKey}
+              className="portal-breaking-marquee flex w-max items-center"
+              style={{
+                ["--marquee-duration" as string]: `${durationSec}s`,
+                animationPlayState: paused ? "paused" : "running",
+              }}
+            >
+              {track}
+            </div>
+          )}
         </div>
 
         {breaking.length > 1 ? (
@@ -123,7 +143,7 @@ export function RatesBreakingBar() {
             <button
               type="button"
               onClick={goPrev}
-              className="inline-flex h-6 w-6 items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              className="inline-flex h-7 w-7 items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900"
               aria-label={isEnglish ? "Previous" : "अघिल्लो"}
             >
               <ChevronLeft className="h-3.5 w-3.5" />
@@ -131,7 +151,7 @@ export function RatesBreakingBar() {
             <button
               type="button"
               onClick={goNext}
-              className="inline-flex h-6 w-6 items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              className="inline-flex h-7 w-7 items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900"
               aria-label={isEnglish ? "Next" : "अर्को"}
             >
               <ChevronRight className="h-3.5 w-3.5" />
