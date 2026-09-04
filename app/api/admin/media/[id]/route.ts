@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireStaff } from "@/lib/admin-auth";
+import { requireStaff, requireEditor } from "@/lib/admin-auth";
 import cloudinary from "@/lib/cloudinary";
 
 export async function PATCH(
@@ -11,6 +12,7 @@ export async function PATCH(
   try {
     const auth = await requireStaff();
     if (auth.error) return auth.error;
+    const session = auth.session!;
 
     const { id } = await params;
     const body = await request.json();
@@ -18,6 +20,10 @@ export async function PATCH(
     const media = await prisma.media.findUnique({ where: { id } });
     if (!media) {
       return apiError("Media asset not found", 404);
+    }
+
+    if (session.user.role === Role.AUTHOR && media.uploaderId !== session.user.id) {
+      return apiError("Unauthorized: You can only edit your own media", 403);
     }
 
     const updated = await prisma.media.update({
@@ -37,11 +43,11 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireStaff();
+    const auth = await requireEditor();
     if (auth.error) return auth.error;
 
     const { id } = await params;

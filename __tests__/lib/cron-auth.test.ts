@@ -38,13 +38,9 @@ describe("verifyCronSecret", () => {
     expect(result?.status).toBe(401);
   });
 
-  it("returns 503 when CRON_SECRET missing outside development", () => {
+  it("returns 503 when CRON_SECRET missing without ALLOW_INSECURE_CRON", () => {
     delete process.env.CRON_SECRET;
-    const nodeEnv = process.env.NODE_ENV;
-    if (nodeEnv === "development") {
-      // verifyCronSecret allows unauthenticated access only in development
-      return;
-    }
+    delete process.env.ALLOW_INSECURE_CRON;
 
     const request = new NextRequest("http://localhost/api/cron/test");
     const result = verifyCronSecret(request);

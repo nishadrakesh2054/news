@@ -6,19 +6,20 @@ enum Role {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  name      String
-  email     String    @unique
-  password  String?
-  image     String?
-  role      Role      @default(READER)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  articles  Article[]
-  comments  Comment[]
-  media     Media[]
-  auditLogs AuditLog[]
-  apiKeys   ApiKey[]
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  password       String?
+  image          String?
+  role           Role      @default(READER)
+  sessionVersion Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  articles       Article[]
+  comments       Comment[]
+  media          Media[]
+  auditLogs      AuditLog[]
+  apiKeys        ApiKey[]
   passwordResetTokens PasswordResetToken[]
 }
 

@@ -24,6 +24,9 @@ export function apiError(error: string, status = 400) {
 }
 
 function clientSafeErrorMessage(error: unknown, fallback: string) {
+  if (process.env.NODE_ENV === "production") {
+    return fallback;
+  }
   if (!(error instanceof Error) || !error.message) return fallback;
   let message = error.message;
   const databaseUrl = process.env.DATABASE_URL?.trim();

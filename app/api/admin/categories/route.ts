@@ -5,9 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { invalidatePublicCategories } from "@/lib/cache-invalidation";
+import { requireStaff, requireEditor } from "@/lib/admin-auth";
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireStaff();
+    if (auth.error) return auth.error;
+
     const { searchParams } = new URL(request.url);
     const light = searchParams.get("light") === "1";
 

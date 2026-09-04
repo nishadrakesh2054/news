@@ -37,13 +37,18 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const userCount = await prisma.user.count();
-    const isAdminEmail = email.trim().toLowerCase() === "nishadrakesh2054@gmail.com";
-    const userRole: Role = userCount === 0 || isAdminEmail ? Role.ADMIN : Role.READER;
+    const normalizedEmail = email.trim().toLowerCase();
+    const bootstrapEmail = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
+    // First user only: ADMIN if empty DB, optionally matching BOOTSTRAP_ADMIN_EMAIL when set.
+    const userRole: Role =
+      userCount === 0 && (!bootstrapEmail || normalizedEmail === bootstrapEmail)
+        ? Role.ADMIN
+        : Role.READER;
 
     const user = await prisma.user.create({
       data: {
         name: String(name).trim(),
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         password: hashedPassword,
         role: userRole,
       },

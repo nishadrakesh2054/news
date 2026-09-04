@@ -5,6 +5,9 @@ import { requireEditor } from "@/lib/admin-auth";
 
 export async function GET() {
   try {
+    const auth = await requireEditor();
+    if (auth.error) return auth.error;
+
     const menus = await prisma.menu.findMany({
       include: {
         items: {

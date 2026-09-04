@@ -1,13 +1,26 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role, AdSlot } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
+import { requireAdmin, requireEditor } from "@/lib/admin-auth";
 import { invalidatePublicAds } from "@/lib/cache-invalidation";
+import { sanitizeAdScriptCode } from "@/lib/sanitize-html";
+
+function isSafeAdTargetUrl(url: string | null | undefined): boolean {
+  if (!url?.trim()) return true;
+  try {
+    const parsed = new URL(url.trim());
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return url.trim().startsWith("/") && !url.trim().startsWith("//");
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireEditor();
+    if (auth.error) return auth.error;
+
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10) || 50));
@@ -44,11 +57,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || session.user.role !== Role.ADMIN) {
-      return apiError("Unauthorized: Only Admins can manage advertisements", 403);
-    }
+    const auth = await requireAdmin();
+    if (auth.error) return auth.error;
 
     const { title, slot, imageUrl, targetUrl, scriptCode, isActive } = await request.json();
 
@@ -56,13 +66,18 @@ export async function POST(request: NextRequest) {
       return apiError("Valid title and ad slot are required", 400);
     }
 
+    const trimmedTarget = targetUrl ? String(targetUrl).trim() : null;
+    if (trimmedTarget && !isSafeAdTargetUrl(trimmedTarget)) {
+      return apiError("Invalid ad target URL", 400);
+    }
+
     const ad = await prisma.ad.create({
       data: {
         title: title.trim(),
         slot,
         imageUrl: imageUrl ? imageUrl.trim() : null,
-        targetUrl: targetUrl ? targetUrl.trim() : null,
-        scriptCode: scriptCode ? scriptCode.trim() : null,
+        targetUrl: trimmedTarget,
+        scriptCode: scriptCode ? sanitizeAdScriptCode(scriptCode) || null : null,
         isActive: Boolean(isActive ?? true),
       },
     });

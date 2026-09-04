@@ -1,13 +1,16 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requireStaff, requireEditor } from "@/lib/admin-auth";
 import { slugify } from "@/lib/slug";
 import { writeAuditLog } from "@/lib/audit-log";
 import { invalidatePublicTags } from "@/lib/cache-invalidation";
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireStaff();
+    if (auth.error) return auth.error;
+
     const { searchParams } = new URL(request.url);
     const light = searchParams.get("light") === "1";
 

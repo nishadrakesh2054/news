@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { sanitizeAdScriptCode } from "@/lib/sanitize-html";
 
 export type AdUnitData = {
   id: string;
@@ -71,13 +72,17 @@ export function AdUnit({
   }, [ad.id, path]);
 
   const clickHref = `/api/ads/${ad.id}/click${path ? `?path=${encodeURIComponent(path)}` : ""}`;
+  const safeScript = useMemo(
+    () => (ad.scriptCode?.trim() ? sanitizeAdScriptCode(ad.scriptCode) : ""),
+    [ad.scriptCode]
+  );
 
-  if (ad.scriptCode?.trim()) {
+  if (safeScript) {
     return (
       <div ref={containerRef} className={`relative ${className}`}>
         <div
           className="w-full"
-          dangerouslySetInnerHTML={{ __html: ad.scriptCode }}
+          dangerouslySetInnerHTML={{ __html: safeScript }}
         />
         <span className="absolute top-1 right-1 bg-black text-white text-[9px] px-1.5 py-0.5 font-mono uppercase rounded-none">
           {label}

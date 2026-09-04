@@ -19,9 +19,20 @@ self.addEventListener("push", (event) => {
   );
 });
 
+function sameOriginUrl(candidate, origin) {
+  try {
+    const url = new URL(candidate || "/", origin);
+    if (url.origin !== origin) return origin + "/";
+    return url.href;
+  } catch {
+    return origin + "/";
+  }
+}
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || "/";
+  const origin = self.location.origin;
+  const url = sameOriginUrl(event.notification.data?.url, origin);
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {

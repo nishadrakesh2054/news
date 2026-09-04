@@ -14,6 +14,9 @@ const SEO_KEYS = [
 
 export async function GET() {
   try {
+    const auth = await requireEditor();
+    if (auth.error) return auth.error;
+
     const data = await getSettings(SEO_KEYS);
     return apiSuccess(data);
   } catch (error) {

@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireStaff } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
@@ -18,6 +17,9 @@ const VALID_IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp",
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireStaff();
+    if (auth.error) return auth.error;
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
     const folder = searchParams.get("folder") || "ALL";
@@ -104,7 +106,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const auth = await requireStaff();
+    if (auth.error) return auth.error;
+    const session = auth.session!;
     const formData = await request.formData();
     const files = formData.getAll("file") as File[];
     const folder = (formData.get("folder") as string) || "articles";
@@ -181,7 +185,7 @@ export async function POST(request: NextRequest) {
           altText: altText || undefined,
           caption: caption || undefined,
           folder,
-          uploaderId: session?.user?.id || undefined,
+          uploaderId: session.user.id,
         },
       });
 

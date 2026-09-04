@@ -18,6 +18,9 @@ const SITE_KEYS = [
 
 export async function GET() {
   try {
+    const auth = await requireEditor();
+    if (auth.error) return auth.error;
+
     const data = await getSettings(SITE_KEYS);
     return apiSuccess(data);
   } catch (error) {

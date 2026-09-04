@@ -16,6 +16,13 @@ describe("sanitizeArticleHtml", () => {
     expect(sanitizeArticleHtml(dirty)).toContain("Hello");
   });
 
+  it("strips protocol-relative and javascript URLs", () => {
+    const dirty = '<a href="//evil.com">x</a><a href="javascript:alert(1)">y</a>';
+    const clean = sanitizeArticleHtml(dirty);
+    expect(clean).not.toContain("//evil.com");
+    expect(clean).not.toContain("javascript:");
+  });
+
   it("returns empty string for blank input", () => {
     expect(sanitizeArticleHtml("")).toBe("");
     expect(sanitizeArticleHtml(null)).toBe("");

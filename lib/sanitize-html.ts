@@ -1,4 +1,6 @@
-const ALLOWED_TAGS = new Set([
+import DOMPurify from "isomorphic-dompurify";
+
+const ALLOWED_TAGS = [
   "p",
   "br",
   "strong",
@@ -34,73 +36,135 @@ const ALLOWED_TAGS = new Set([
   "tr",
   "th",
   "td",
-]);
+];
 
-const GLOBAL_ATTRS = new Set(["class", "title"]);
-const TAG_ATTRS: Record<string, Set<string>> = {
-  a: new Set(["href", "target", "rel", "title"]),
-  img: new Set(["src", "alt", "title", "width", "height"]),
-  td: new Set(["colspan", "rowspan"]),
-  th: new Set(["colspan", "rowspan"]),
-};
+const ALLOWED_ATTR = [
+  "class",
+  "title",
+  "href",
+  "target",
+  "rel",
+  "src",
+  "alt",
+  "width",
+  "height",
+  "colspan",
+  "rowspan",
+];
 
-const VOID_TAGS = new Set(["br", "hr", "img"]);
-
+/** Reject javascript:, data:, and protocol-relative // URLs. */
 function isSafeUrl(value: string): boolean {
   const trimmed = value.trim();
   if (!trimmed || trimmed.startsWith("#")) return true;
   const lower = trimmed.toLowerCase();
-  return (
-    lower.startsWith("https://") ||
-    lower.startsWith("http://") ||
-    lower.startsWith("/") ||
-    lower.startsWith("mailto:")
-  );
+  if (lower.startsWith("//")) return false;
+  if (lower.startsWith("mailto:")) {
+    return !lower.includes("javascript:");
+  }
+  if (lower.startsWith("/") && !lower.startsWith("//")) return true;
+  return lower.startsWith("https://") || lower.startsWith("http://");
 }
 
-function sanitizeAttributes(tag: string, rawAttrs: string): string {
-  const allowed = new Set([...GLOBAL_ATTRS, ...(TAG_ATTRS[tag] ?? [])]);
-  const kept: string[] = [];
-  const attrPattern = /([^\s=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
-  let match: RegExpExecArray | null;
+let hooksRegistered = false;
 
-  while ((match = attrPattern.exec(rawAttrs)) !== null) {
-    const name = match[1].toLowerCase();
-    if (name.startsWith("on") || name === "style" || name.startsWith("data-")) continue;
-    if (!allowed.has(name)) continue;
-    const value = match[2] ?? match[3] ?? match[4] ?? "";
-    if ((name === "href" || name === "src") && !isSafeUrl(value)) continue;
-    const safeValue = value.replace(/"/g, "&quot;");
-    kept.push(`${name}="${safeValue}"`);
-  }
-
-  if (tag === "a") {
-    if (!kept.some((attr) => attr.startsWith("rel="))) {
-      kept.push('rel="noopener noreferrer"');
+function ensureHooks() {
+  if (hooksRegistered) return;
+  hooksRegistered = true;
+  DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+    if (!node || typeof (node as Element).hasAttribute !== "function") return;
+    const el = node as Element;
+    if (el.hasAttribute("href") && !isSafeUrl(el.getAttribute("href") || "")) {
+      el.removeAttribute("href");
     }
-  }
-
-  return kept.length ? ` ${kept.join(" ")}` : "";
+    if (el.hasAttribute("src") && !isSafeUrl(el.getAttribute("src") || "")) {
+      el.removeAttribute("src");
+    }
+    if (el.tagName === "A") {
+      el.setAttribute("rel", "noopener noreferrer");
+    }
+  });
 }
 
 /** Sanitize rich HTML from the article editor before save and on public render. */
 export function sanitizeArticleHtml(html: string | null | undefined): string {
   if (!html?.trim()) return "";
+  ensureHooks();
 
-  const withoutDangerous = html
-    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "")
-    .replace(/<iframe[\s\S]*?>[\s\S]*?<\/iframe>/gi, "")
-    .replace(/<object[\s\S]*?>[\s\S]*?<\/object>/gi, "")
-    .replace(/<embed[\s\S]*?>/gi, "");
-
-  return withoutDangerous.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g, (full, rawTag: string, rawAttrs: string) => {
-    const tag = rawTag.toLowerCase();
-    const closing = full.startsWith("</");
-    if (!ALLOWED_TAGS.has(tag)) return "";
-    if (closing) return VOID_TAGS.has(tag) ? "" : `</${tag}>`;
-    const attrs = sanitizeAttributes(tag, rawAttrs);
-    if (VOID_TAGS.has(tag)) return `<${tag}${attrs}>`;
-    return `<${tag}${attrs}>`;
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS,
+    ALLOWED_ATTR,
+    ALLOW_DATA_ATTR: false,
+    FORBID_TAGS: ["script", "style", "iframe", "object", "embed", "form", "input"],
+    FORBID_ATTR: ["style", "onerror", "onload", "onclick"],
   });
+}
+
+/** Sanitize live-update HTML (same policy as articles). */
+export function sanitizeLiveUpdateHtml(html: string | null | undefined): string {
+  return sanitizeArticleHtml(html);
+}
+
+const AD_SCRIPT_HOST_ALLOWLIST = [
+  "googletagmanager.com",
+  "googleadservices.com",
+  "googlesyndication.com",
+  "doubleclick.net",
+  "pagead2.googlesyndication.com",
+  "adservice.google.com",
+  "connect.facebook.net",
+  "cdn.ampproject.org",
+];
+
+function isAllowedAdScriptSrc(src: string): boolean {
+  try {
+    const url = new URL(src);
+    if (url.protocol !== "https:") return false;
+    const host = url.hostname.toLowerCase();
+    return AD_SCRIPT_HOST_ALLOWLIST.some(
+      (allowed) => host === allowed || host.endsWith(`.${allowed}`)
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Constrain ad script snippets: keep only https <script src> from known ad CDNs.
+ * Inline scripts and unknown hosts are stripped.
+ */
+export function sanitizeAdScriptCode(code: string | null | undefined): string {
+  if (!code?.trim()) return "";
+
+  const scripts: string[] = [];
+  const scriptRe = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = scriptRe.exec(code)) !== null) {
+    const attrs = match[1] || "";
+    const srcMatch = /\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(attrs);
+    const src = srcMatch?.[1] ?? srcMatch?.[2] ?? srcMatch?.[3] ?? "";
+    if (src && isAllowedAdScriptSrc(src)) {
+      const asyncAttr = /\basync\b/i.test(attrs) ? " async" : "";
+      const deferAttr = /\bdefer\b/i.test(attrs) ? " defer" : "";
+      scripts.push(`<script src="${src.replace(/"/g, "")}"${asyncAttr}${deferAttr}></script>`);
+    }
+  }
+
+  // Allow Google AdSense <ins class="adsbygoogle"> placeholders (no event handlers)
+  const insParts: string[] = [];
+  const insRe = /<ins\b([^>]*)>/gi;
+  while ((match = insRe.exec(code)) !== null) {
+    const attrs = match[1] || "";
+    if (/on\w+\s*=/i.test(attrs)) continue;
+    const classMatch = /\bclass\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(attrs);
+    const cls = classMatch?.[1] ?? classMatch?.[2] ?? "";
+    if (!cls.includes("adsbygoogle")) continue;
+    const safeAttrs = attrs
+      .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+      .replace(/\sstyle\s*=\s*(?:"[^"]*"|'[^']*')/gi, (m) =>
+        /display\s*:\s*block/i.test(m) ? ' style="display:block"' : ""
+      );
+    insParts.push(`<ins${safeAttrs}></ins>`);
+  }
+
+  return [...scripts, ...insParts].join("\n");
 }

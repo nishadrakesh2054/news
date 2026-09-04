@@ -26,7 +26,10 @@ export function verifyCronSecret(request: NextRequest): NextResponse | null {
   const secret = process.env.CRON_SECRET;
 
   if (!secret) {
-    if (process.env.NODE_ENV === "development") {
+    if (
+      process.env.NODE_ENV === "development" &&
+      process.env.ALLOW_INSECURE_CRON === "1"
+    ) {
       return null;
     }
     return apiError("Cron secret is not configured", 503) as NextResponse;

@@ -13,6 +13,9 @@ import {
 
 export async function GET() {
   try {
+    const auth = await requireEditor();
+    if (auth.error) return auth.error;
+
     const totalViews = await prisma.article.aggregate({ _sum: { views: true } });
     const published = await prisma.article.count({ where: { status: "PUBLISHED" } });
 

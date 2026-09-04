@@ -5,9 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { Role } from "@prisma/client";
 import { normalizeRashifalList } from "@/lib/rashifal";
+import { requireEditor } from "@/lib/admin-auth";
 
 export async function GET() {
   try {
+    const auth = await requireEditor();
+    if (auth.error) return auth.error;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = prisma as any;
     if (!db?.setting) {

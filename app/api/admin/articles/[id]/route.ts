@@ -43,6 +43,13 @@ export async function GET(
       return apiError("Article not found", 404);
     }
 
+    if (
+      auth.session!.user.role === Role.AUTHOR &&
+      article.authorId !== auth.session!.user.id
+    ) {
+      return apiError("Unauthorized: You can only view your own articles", 403);
+    }
+
     return apiSuccess(article, "Article retrieved successfully");
   } catch (error) {
     return handleServerError(error, "Failed to retrieve article");

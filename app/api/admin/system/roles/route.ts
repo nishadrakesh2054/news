@@ -1,5 +1,6 @@
 import { apiSuccess } from "@/lib/api-response";
 import { Role } from "@prisma/client";
+import { requireAdmin } from "@/lib/admin-auth";
 
 const PERMISSIONS = {
   [Role.ADMIN]: ["*"],
@@ -13,6 +14,9 @@ const PERMISSIONS = {
 };
 
 export async function GET() {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   return apiSuccess({
     roles: Object.values(Role),
     permissions: PERMISSIONS,

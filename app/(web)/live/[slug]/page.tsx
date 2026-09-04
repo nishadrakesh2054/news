@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Radio, Clock, User, ChevronRight, RefreshCw } from "lucide-react";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { sanitizeLiveUpdateHtml } from "@/lib/sanitize-html";
 
 interface LiveUpdateItem {
   id: string;
@@ -242,7 +243,7 @@ export default function LiveCoveragePage() {
 
                     <div
                       className="prose dark:prose-invert max-w-none text-sm sm:text-base text-foreground font-sans leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: update.content }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeLiveUpdateHtml(update.content) }}
                     />
                   </div>
                 </div>

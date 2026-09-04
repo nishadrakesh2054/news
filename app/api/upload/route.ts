@@ -10,7 +10,6 @@ const ALLOWED_MIME_TYPES = new Set([
   "image/png",
   "image/webp",
   "image/gif",
-  "image/svg+xml",
 ]);
 
 export async function POST(request: NextRequest) {

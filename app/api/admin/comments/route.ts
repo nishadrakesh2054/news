@@ -4,9 +4,13 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role, CommentStatus, Prisma } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
+import { requireEditor } from "@/lib/admin-auth";
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireEditor();
+    if (auth.error) return auth.error;
+
     const session = await getServerSession(authOptions);
 
     if (!session || !([Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {

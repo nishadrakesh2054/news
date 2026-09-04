@@ -1,22 +1,29 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ArticleType } from "@prisma/client";
+import { ArticleType, Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireStaff } from "@/lib/admin-auth";
+import { sanitizeLiveUpdateHtml } from "@/lib/sanitize-html";
 
 export async function GET(request: NextRequest) {
   try {
     const auth = await requireStaff();
     if (auth.error) return auth.error;
 
+    const session = auth.session!;
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20", 10) || 20));
     const skip = (page - 1) * limit;
 
+    const where =
+      session.user.role === Role.AUTHOR
+        ? { type: ArticleType.LIVE, authorId: session.user.id }
+        : { type: ArticleType.LIVE };
+
     const [liveArticles, total] = await Promise.all([
       prisma.article.findMany({
-        where: { type: ArticleType.LIVE },
+        where,
         select: {
           id: true,
           title: true,
@@ -24,6 +31,7 @@ export async function GET(request: NextRequest) {
           slug: true,
           status: true,
           updatedAt: true,
+          authorId: true,
           category: {
             select: { name: true, nameNp: true },
           },
@@ -43,7 +51,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.article.count({ where: { type: ArticleType.LIVE } }),
+      prisma.article.count({ where }),
     ]);
 
     return apiSuccess(
@@ -59,6 +67,7 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireStaff();
     if (auth.error) return auth.error;
+    const session = auth.session!;
 
     const { articleId, title, content } = await request.json();
 
@@ -66,11 +75,22 @@ export async function POST(request: NextRequest) {
       return apiError("Article ID, update title, and content are required", 400);
     }
 
+    const article = await prisma.article.findUnique({
+      where: { id: articleId },
+      select: { id: true, type: true, authorId: true },
+    });
+    if (!article || article.type !== ArticleType.LIVE) {
+      return apiError("Live article not found", 404);
+    }
+    if (session.user.role === Role.AUTHOR && article.authorId !== session.user.id) {
+      return apiError("Unauthorized: You can only update your own live coverage", 403);
+    }
+
     const liveUpdate = await prisma.liveUpdate.create({
       data: {
         articleId,
         title: title.trim(),
-        content: content.trim(),
+        content: sanitizeLiveUpdateHtml(content),
       },
     });
 

@@ -10,7 +10,12 @@ import { getSentryDsn } from "@/lib/sentry-options";
 describe("password policy", () => {
   it("rejects short passwords", () => {
     expect(validatePassword("short")).toContain(String(PASSWORD_MIN_LENGTH));
-    expect(validatePassword("longenough")).toBeNull();
+    expect(validatePassword("longenough1")).toBeNull();
+  });
+
+  it("requires a letter and a number", () => {
+    expect(validatePassword("longenough")).not.toBeNull();
+    expect(validatePassword("1234567890")).not.toBeNull();
   });
 });
 
