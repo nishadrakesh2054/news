@@ -10,18 +10,18 @@ interface RashiItem {
 }
 
 const DEFAULT_RASHIFAL: RashiItem[] = [
-  { name: "मेष (Aries)", symbol: "♈", prediction: "आजको दिन कार्यक्षेत्रमा सफलता र नयाँ अवसर मिल्नेछ। आर्थिक लाभको योग छ।" },
-  { name: "वृष (Taurus)", symbol: "♉", prediction: "सामाजिक प्रतिष्ठा वृद्धि हुनेछ। परिवारसँग रमाइलो समय बित्नेछ।" },
-  { name: "मिथुन (Gemini)", symbol: "♊", prediction: "यात्राको अवसर प्राप्त हुनसक्छ। स्वास्थ्यमा ध्यान दिनुहोला।" },
-  { name: "कर्कट (Cancer)", symbol: "♋", prediction: "अधुरा कामहरू पूरा हुनेछन्। नयाँ लगानीको लागि उपयुक्त समय छ।" },
-  { name: "सिंह (Leo)", symbol: "<ctrl42>", prediction: "आत्मविश्वासमा वृद्धि हुनेछ। साथीभाइको पूर्ण सहयोग मिल्नेछ।" },
-  { name: "कन्या (Virgo)", symbol: "♍", prediction: "सोचेभन्दा बढी आम्दानी हुनसक्छ। बौद्धिक कार्यमा सफलता मिल्नेछ।" },
-  { name: "तुला (Libra)", symbol: "♎", prediction: "व्यापार व्यवसायमा प्रगति हुनेछ। नयाँ मित्रहरूसँग भेटघाट हुनेछ।" },
-  { name: "वृश्चिक (Scorpio)", symbol: "♏", prediction: "पारिवारिक सुख प्राप्त हुनेछ। मेहनतको उचित फल मिल्ने समय छ।" },
-  { name: "धनु (Sagittarius)", symbol: "♐", prediction: "धार्मिक तथा आध्यात्मिक कार्यमा रुचि बढ्नेछ। काममा उत्साह रहनेछ।" },
-  { name: "मकर (Capricorn)", symbol: "♑", prediction: "सकारात्मक विचारले अघि बढ्नुहोला। अचानक धन लाभको सम्भावना छ।" },
-  { name: "कुम्भ (Aquarius)", symbol: "♒", prediction: "रोकिएका कामहरू बन्नेछन्। प्रेम सम्बन्ध सुमधुर रहनेछ।" },
-  { name: "मीन (Pisces)", symbol: "♓", prediction: "पढाइ र रचनात्मक काममा राम्रो नतिजा मिल्नेछ। स्वास्थ्य राम्रो रहनेछ।" },
+  { name: "मेष", symbol: "♈", prediction: "आजको दिन कार्यक्षेत्रमा सफलता र नयाँ अवसर मिल्नेछ। आर्थिक लाभको योग छ।" },
+  { name: "वृष", symbol: "♉", prediction: "सामाजिक प्रतिष्ठा वृद्धि हुनेछ। परिवारसँग रमाइलो समय बित्नेछ।" },
+  { name: "मिथुन", symbol: "♊", prediction: "यात्राको अवसर प्राप्त हुनसक्छ। स्वास्थ्यमा ध्यान दिनुहोला।" },
+  { name: "कर्कट", symbol: "♋", prediction: "अधुरा कामहरू पूरा हुनेछन्। नयाँ लगानीको लागि उपयुक्त समय छ।" },
+  { name: "सिंह", symbol: "♌", prediction: "आत्मविश्वासमा वृद्धि हुनेछ। साथीभाइको पूर्ण सहयोग मिल्नेछ।" },
+  { name: "कन्या", symbol: "♍", prediction: "सोचेभन्दा बढी आम्दानी हुनसक्छ। बौद्धिक कार्यमा सफलता मिल्नेछ।" },
+  { name: "तुला", symbol: "♎", prediction: "व्यापार व्यवसायमा प्रगति हुनेछ। नयाँ मित्रहरूसँग भेटघाट हुनेछ।" },
+  { name: "वृश्चिक", symbol: "♏", prediction: "पारिवारिक सुख प्राप्त हुनेछ। मेहनतको उचित फल मिल्ने समय छ।" },
+  { name: "धनु", symbol: "♐", prediction: "धार्मिक तथा आध्यात्मिक कार्यमा रुचि बढ्नेछ। काममा उत्साह रहनेछ।" },
+  { name: "मकर", symbol: "♑", prediction: "सकारात्मक विचारले अघि बढ्नुहोला। अचानक धन लाभको सम्भावना छ।" },
+  { name: "कुम्भ", symbol: "♒", prediction: "रोकिएका कामहरू बन्नेछन्। प्रेम सम्बन्ध सुमधुर रहनेछ।" },
+  { name: "मीन", symbol: "♓", prediction: "पढाइ र रचनात्मक काममा राम्रो नतिजा मिल्नेछ। स्वास्थ्य राम्रो रहनेछ।" },
 ];
 
 export function NepaliUtilityBar() {
@@ -72,9 +72,9 @@ export function NepaliUtilityBar() {
             <div className="hidden md:flex items-center space-x-2">
               <DollarSign className="h-3.5 w-3.5 text-emerald-300 shrink-0" />
               <span className="text-emerald-200 font-bold">राष्ट्र बैंक मुद्रा दर:</span>
-              <span>USD $१ = रु. {usdRate}</span>
+              <span>अमेरिकी डलर $१ = रु. {usdRate}</span>
               <span className="text-white/40">•</span>
-              <span>INR ₹१०० = रु. {inrRate}</span>
+              <span>भारतीय रुपैयाँ ₹१०० = रु. {inrRate}</span>
             </div>
           </div>
 
@@ -84,7 +84,7 @@ export function NepaliUtilityBar() {
               href="/bs-date-converter"
               className="hidden sm:inline-flex items-center space-x-1 text-white/90 hover:text-white text-[11px] font-semibold underline"
             >
-              <span>मिति रूपान्तरण (BS Converter)</span>
+              <span>मिति रूपान्तरण</span>
             </a>
 
             <button
@@ -92,7 +92,7 @@ export function NepaliUtilityBar() {
               className="inline-flex items-center space-x-1.5 bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/40 px-2.5 py-0.5 rounded-none text-[11px] font-bold transition-all cursor-pointer"
             >
               <Sparkles className="h-3 w-3 text-amber-300 animate-pulse" />
-              <span>आजको राशिफल (Horoscope)</span>
+              <span>आजको राशिफल</span>
               <ChevronDown className="h-3 w-3" />
             </button>
           </div>
@@ -106,7 +106,7 @@ export function NepaliUtilityBar() {
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center space-x-2 text-[#027081]">
                 <Sparkles className="h-5 w-5" />
-                <h3 className="text-lg font-extrabold font-serif">आजको राशिफल (Daily Horoscope)</h3>
+                <h3 className="text-lg font-extrabold font-serif">आजको राशिफल</h3>
               </div>
               <button
                 onClick={() => {

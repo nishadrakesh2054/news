@@ -2,7 +2,6 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
 import { ArrowLeft, Camera, PlayCircle } from "lucide-react";
-import { SITE_CONFIG } from "@/constants/site";
 
 export const revalidate = 60;
 
@@ -55,7 +54,7 @@ export default async function MediaGalleryPage() {
             <Camera className="h-8 w-8" />
             <div>
               <h1 className="text-3xl font-extrabold text-foreground font-serif">मिडिया र फोटो ग्यालेरी</h1>
-              <p className="text-xs text-muted-foreground">{SITE_CONFIG.name} multimedia coverage and visual stories</p>
+              <p className="text-xs text-muted-foreground">दृश्य–श्रव्य सामग्री र फोटो कथाहरू</p>
             </div>
           </div>
         </section>
@@ -79,13 +78,17 @@ export default async function MediaGalleryPage() {
                 <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-transparent" />
                 <div className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
                   <PlayCircle className="h-3 w-3" />
-                  Gallery
+                  ग्यालेरी
                 </div>
               </div>
 
               <div className="p-4 space-y-2">
                 <span className="text-[10px] text-muted-foreground font-mono block">
-                  {new Date(article.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                  {new Date(article.createdAt).toLocaleDateString("ne-NP", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
                 </span>
                 <h2 className="text-base font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
                   {article.titleNp || article.title}

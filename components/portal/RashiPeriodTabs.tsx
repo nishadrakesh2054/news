@@ -33,7 +33,7 @@ export function RashiPeriodTabs({ rashi, isEnglish }: Props) {
   return (
     <div>
       <div
-        className="-mx-1 flex gap-1 overflow-x-auto"
+        className="flex w-full gap-0 overflow-x-auto"
         style={{ borderBottom: `1px solid ${PORTAL.rule}` }}
         role="tablist"
         aria-label={isEnglish ? "Horoscope period" : "राशिफल अवधि"}
@@ -47,7 +47,7 @@ export function RashiPeriodTabs({ rashi, isEnglish }: Props) {
               role="tab"
               aria-selected={active}
               onClick={() => setPeriod(p.key)}
-              className="shrink-0 border-b-2 px-3 py-3 text-[13px] tracking-wide transition-colors sm:px-4 sm:text-sm"
+              className="shrink-0 border-b-2 px-3.5 py-2.5 text-[13px] tracking-wide transition-colors sm:flex-1 sm:px-4 sm:text-sm"
               style={{
                 color: active ? PORTAL.brand : PORTAL.muted,
                 fontWeight: active ? 700 : 500,
@@ -61,20 +61,24 @@ export function RashiPeriodTabs({ rashi, isEnglish }: Props) {
         })}
       </div>
 
-      <div className="mt-8 space-y-7">
+      <div className="mt-5 space-y-4 sm:mt-6 sm:space-y-5">
         {ASPECTS.map((aspect) => {
           const text = forecast[aspect.key];
           if (!text) return null;
           const isRemedy = aspect.key === "remedy";
           return (
-            <article key={aspect.key}>
+            <article key={aspect.key} className={isRemedy ? "pt-1" : undefined}>
               <h3
-                className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em]"
+                className="mb-1 text-[11px] font-bold uppercase tracking-[0.12em]"
                 style={{ color: isRemedy ? PORTAL.accent : PORTAL.brand }}
               >
                 {isEnglish ? aspect.labelEn : aspect.labelNp}
               </h3>
-              <p className="max-w-2xl text-[15px] leading-[1.75] text-gray-700 sm:text-base">
+              <p
+                className={`max-w-2xl text-[15px] leading-snug sm:text-base sm:leading-relaxed ${
+                  isRemedy ? "font-medium text-gray-800" : "text-gray-700"
+                }`}
+              >
                 {text}
               </p>
             </article>

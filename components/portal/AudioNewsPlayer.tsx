@@ -84,9 +84,9 @@ export function AudioNewsPlayer({ textToRead, title }: AudioNewsPlayerProps) {
         </div>
         <div>
           <h4 className="text-xs sm:text-sm font-extrabold text-foreground font-serif flex items-center gap-1.5">
-            <span>समाचार सुन्नुहोस् (Listen to Article)</span>
+            <span>समाचार सुन्नुहोस्</span>
             <span className="text-[10px] bg-[#027081]/20 text-[#027081] px-2 py-0.5 rounded-full font-mono font-bold">
-              AI वाचन
+              स्वतः वाचन
             </span>
           </h4>
           <p className="text-[11px] text-muted-foreground">
@@ -103,12 +103,12 @@ export function AudioNewsPlayer({ textToRead, title }: AudioNewsPlayerProps) {
           {isPlaying ? (
             <>
               <Pause className="h-4 w-4 fill-current" />
-              <span>रोक्नुहोस् (Pause)</span>
+              <span>रोक्नुहोस्</span>
             </>
           ) : (
             <>
               <Play className="h-4 w-4 fill-current" />
-              <span>सुन्नुहोस् (Listen)</span>
+              <span>सुन्नुहोस्</span>
             </>
           )}
         </button>

@@ -37,15 +37,19 @@ export default async function RashifalHubPage({ searchParams }: PageProps) {
   const dateLabel = getFormattedNepaliDate();
 
   return (
-    <main className="w-full bg-white pb-12 text-gray-900">
+    <main className="w-full bg-white pb-14 text-gray-900">
       <PortalContainer className="py-6 sm:py-8">
-        <Link
-          href={`/${langQ}`}
-          className="mb-4 inline-block text-xs font-bold hover:underline"
-          style={{ color: PORTAL.brand }}
-        >
-          ← {isEnglish ? "Home" : "गृह"}
-        </Link>
+        <nav className="mb-5 flex flex-wrap items-center gap-1.5 text-[12px] text-gray-400">
+          <Link href={`/${langQ}`} className="hover:underline" style={{ color: PORTAL.brand }}>
+            {isEnglish ? "Home" : "गृह"}
+          </Link>
+          <span aria-hidden className="text-gray-300">
+            /
+          </span>
+          <span className="font-medium text-gray-700">
+            {isEnglish ? "Horoscope" : "राशिफल"}
+          </span>
+        </nav>
 
         <div className="mb-2 flex items-center gap-3">
           <h1
@@ -59,23 +63,22 @@ export default async function RashifalHubPage({ searchParams }: PageProps) {
             style={{ backgroundColor: PORTAL.accent, opacity: 0.35 }}
           />
         </div>
-        <p className="mb-6 text-sm text-gray-600">
+        <p className="mb-5 text-sm leading-snug text-gray-600">
           {dateLabel} ·{" "}
           {isEnglish
             ? "Choose your rashi for today, weekly, monthly and yearly forecasts."
             : "आजको, साप्ताहिक, मासिक र वार्षिक राशिफल हेर्न आफ्नो राशि छान्नुहोस्।"}
         </p>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-6">
           {list.map((rashi) => (
             <Link
               key={rashi.slug}
               href={`/rashifal/${rashi.slug}${langQ}`}
-              className="flex flex-col items-center border bg-white px-2 py-5 text-center transition-colors hover:bg-gray-50 sm:px-3"
-              style={{ borderColor: "rgba(25, 87, 166, 0.18)" }}
+              className="flex flex-col items-center px-2 py-4 text-center transition-colors hover:bg-gray-50 sm:px-3 sm:py-5"
             >
               <span
-                className="mb-2 text-3xl leading-none sm:text-4xl"
+                className="mb-1.5 text-3xl leading-none sm:text-4xl"
                 style={{ color: PORTAL.brand }}
                 aria-hidden
               >
@@ -85,7 +88,7 @@ export default async function RashifalHubPage({ searchParams }: PageProps) {
                 {isEnglish ? rashi.enName : `${rashi.name} राशि`}
               </span>
               {RASHI_LETTERS[rashi.name] ? (
-                <span className="mt-2 line-clamp-2 text-[10px] leading-snug text-gray-500">
+                <span className="mt-1.5 line-clamp-2 text-[10px] leading-snug text-gray-500">
                   {RASHI_LETTERS[rashi.name]}
                 </span>
               ) : null}

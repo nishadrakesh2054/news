@@ -115,7 +115,7 @@ export function ReelsSection({ lang = "ne" }: ReelsSectionProps) {
                 className="absolute left-2 top-2 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white"
                 style={{ backgroundColor: PORTAL.accent }}
               >
-                Reel
+                {isEnglish ? "Reel" : "रिल"}
               </span>
               <span className="absolute inset-0 flex items-center justify-center">
                 <span

@@ -82,16 +82,16 @@ export default function BSDateConverterPage() {
             मिति रूपान्तरण
           </h1>
           <p className="mt-2 text-sm text-gray-600">
-            अंग्रेजी मिति (A.D.) र नेपाली बि.सं. (B.S.) बीच रूपान्तरण —{" "}
+            अंग्रेजी मिति (ई.सं.) र नेपाली बि.सं. बीच रूपान्तरण —{" "}
             {toNepaliDigits(BS_START_YEAR)}–{toNepaliDigits(BS_END_YEAR)} बि.सं.
           </p>
         </header>
 
-        <div className="mb-6 flex gap-1" role="tablist" aria-label="Conversion direction">
+        <div className="mb-6 flex gap-1" role="tablist" aria-label="रूपान्तरण दिशा">
           {(
             [
-              { key: "ad-to-bs" as const, label: "A.D. → बि.सं." },
-              { key: "bs-to-ad" as const, label: "बि.सं. → A.D." },
+              { key: "ad-to-bs" as const, label: "ई.सं. → बि.सं." },
+              { key: "bs-to-ad" as const, label: "बि.सं. → ई.सं." },
             ] as const
           ).map((tab) => {
             const active = mode === tab.key;
@@ -121,7 +121,7 @@ export default function BSDateConverterPage() {
               className="mb-3 text-[11px] font-bold uppercase tracking-[0.12em]"
               style={{ color: PORTAL.accent }}
             >
-              {mode === "ad-to-bs" ? "English date (A.D.)" : "नेपाली मिति (बि.सं.)"}
+              {mode === "ad-to-bs" ? "अंग्रेजी मिति (ई.सं.)" : "नेपाली मिति (बि.सं.)"}
             </h2>
 
             {mode === "ad-to-bs" ? (
@@ -223,19 +223,15 @@ export default function BSDateConverterPage() {
                   </p>
                 </div>
                 <div style={{ borderTop: `1px solid ${PORTAL.rule}` }} className="pt-4">
-                  <p className="text-[11px] text-gray-400">A.D.</p>
+                  <p className="text-[11px] text-gray-400">ई.सं.</p>
                   <p className="mt-1 text-base font-semibold" style={{ color: PORTAL.ink }}>
                     {result.adLabel}
                   </p>
                 </div>
-                <dl className="grid grid-cols-2 gap-3 pt-1 text-sm">
+                <dl className="pt-1 text-sm">
                   <div>
                     <dt className="text-[11px] text-gray-400">बार</dt>
                     <dd className="font-medium">{result.info.dayOfWeekNp}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-[11px] text-gray-400">Weekday</dt>
-                    <dd className="font-medium">{result.info.dayOfWeekEn}</dd>
                   </div>
                 </dl>
               </div>

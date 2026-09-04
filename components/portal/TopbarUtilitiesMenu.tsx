@@ -37,7 +37,7 @@ export function TopbarUtilitiesMenu({ isEnglish }: TopbarUtilitiesMenuProps) {
     {
       href: `/forex${langQ}`,
       icon: DollarSign,
-      label: isEnglish ? "Forex / money rates" : "मुद्रा दर (Forex)",
+      label: isEnglish ? "Forex / money rates" : "मुद्रा दर",
     },
     {
       href: `/gold-rate${langQ}`,

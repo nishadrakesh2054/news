@@ -53,7 +53,7 @@ export function PushOptIn() {
       const publicKey = keyJson.data?.publicKey as string | null;
 
       if (!publicKey) {
-        toast.error("Push alerts are not configured on this site yet");
+        toast.error("पुश सूचना अहिले सेटअप छैन");
         return;
       }
 
@@ -77,12 +77,12 @@ export function PushOptIn() {
       });
 
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to subscribe");
+      if (!res.ok) throw new Error(json.error || "सदस्यता असफल");
 
       setSubscribed(true);
       toast.success("ब्रेकिङ समाचार सूचना सक्रिय भयो");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Push subscription failed");
+      toast.error(err instanceof Error ? err.message : "पुश सदस्यता असफल");
     } finally {
       setLoading(false);
     }
@@ -104,7 +104,7 @@ export function PushOptIn() {
       setSubscribed(false);
       toast.success("सूचना बन्द गरियो");
     } catch {
-      toast.error("Failed to unsubscribe");
+      toast.error("सूचना बन्द गर्न सकिएन");
     } finally {
       setLoading(false);
     }

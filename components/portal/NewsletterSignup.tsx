@@ -30,14 +30,20 @@ export function NewsletterSignup({ source = "footer", isEnglish = false }: Newsl
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Subscription failed");
+      if (!res.ok) throw new Error(json.error || (isEnglish ? "Subscription failed" : "सदस्यता असफल"));
       toast.success(
         json.message ||
           (isEnglish ? "Subscribed successfully" : "सदस्यता सफल भयो")
       );
       setEmail("");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to subscribe");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : isEnglish
+            ? "Failed to subscribe"
+            : "सदस्यता लिन सकिएन"
+      );
     } finally {
       setLoading(false);
     }

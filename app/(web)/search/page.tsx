@@ -70,7 +70,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               </Link>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground font-serif tracking-tight flex items-center gap-2.5">
                 <SearchIcon className="h-7 w-7 text-[#027081]" />
-                <span>{isEnglish ? "Search news" : "समाचार खोजि (Search Portal)"}</span>
+                <span>{isEnglish ? "Search news" : "समाचार खोज"}</span>
               </h1>
             </div>
             <span className="text-xs text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-full">
@@ -102,7 +102,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   defaultValue={categorySlug}
                   className="h-12 px-4 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-hidden focus:ring-2 focus:ring-[#027081]"
                 >
-                  <option value="">{isEnglish ? "All categories" : "सबै विधा (All Categories)"}</option>
+                  <option value="">{isEnglish ? "All categories" : "सबै विधा"}</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.slug}>
                       {resolveCategoryName(cat, lang)}
@@ -116,7 +116,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   className="h-12 px-4 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-hidden focus:ring-2 focus:ring-[#027081]"
                 >
                   <option value="recent">{isEnglish ? "Newest" : "नयाँ समाचार"}</option>
-                  <option value="views">{isEnglish ? "Most read" : "लोकप्रिय (Most Read)"}</option>
+                  <option value="views">{isEnglish ? "Most read" : "लोकप्रिय"}</option>
                 </select>
 
                 <button

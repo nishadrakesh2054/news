@@ -14,14 +14,14 @@ export function NepaliUtilityWidget() {
   const directoryItems = [
     {
       title: "युनिकोडमा टाइप गर्नुहोस्",
-      desc: "अंग्रेजी (Roman) बाट नेपाली युनिकोडमा सहजै कन्भर्ट गर्नुहोस्",
+      desc: "रोमन अक्षरबाट नेपाली युनिकोडमा सहजै रूपान्तरण गर्नुहोस्",
       href: "/unicode",
       icon: Type,
       color: "bg-sky-500 text-white",
       iconBg: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
     },
     {
-      title: "विदेशी विनिमय दर (Forex)",
+      title: "विदेशी विनिमय दर",
       desc: "नेपाल राष्ट्र बैंकको आधिकारिक विनिमय दरहरू",
       href: "/forex",
       icon: DollarSign,
@@ -29,8 +29,8 @@ export function NepaliUtilityWidget() {
       iconBg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     },
     {
-      title: "सेयर बजार (NEPSE)",
-      desc: "आजको नेप्से परिसूचक तथा शेयर कारोबार विवरण",
+      title: "सेयर बजार",
+      desc: "आजको नेप्से परिसूचक तथा सेयर कारोबार विवरण",
       href: "/share-market",
       icon: TrendingUp,
       color: "bg-teal-500 text-white",
@@ -45,7 +45,7 @@ export function NepaliUtilityWidget() {
       iconBg: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
     },
     {
-      title: "आजको राशिफल (Horoscope)",
+      title: "आजको राशिफल",
       desc: "१२ राशिको दैनिक, साप्ताहिक र वार्षिक भाग्यफल",
       href: "/rashifal",
       icon: Sparkles,
@@ -60,7 +60,7 @@ export function NepaliUtilityWidget() {
       <div className="flex items-center justify-between border-b-2 border-[#027081] pb-2.5">
         <h3 className="text-lg font-extrabold text-foreground font-serif tracking-tight flex items-center gap-2">
           <span className="h-4 w-1.5 rounded-full bg-[#027081]" />
-          <span>सूचनापाटी (Nepali Utility Directory)</span>
+          <span>सूचनापाटी</span>
         </h3>
       </div>
 

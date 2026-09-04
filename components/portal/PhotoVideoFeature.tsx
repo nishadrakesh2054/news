@@ -36,7 +36,7 @@ export function PhotoVideoFeature({ articles, lang }: PhotoVideoFeatureProps) {
           </div>
           <div>
             <h3 className="text-xl sm:text-2xl font-extrabold text-white font-serif tracking-tight">
-              {isEnglish ? "Multimedia & Photo Features" : "फोटो फिचर र भिडियो (Multimedia)"}
+              {isEnglish ? "Multimedia & Photo Features" : "फोटो फिचर र भिडियो"}
             </h3>
             <p className="text-xs text-slate-400">
               {isEnglish ? "Captivating photos and visual stories across Nepal" : "तस्बिर र भिडियोमा प्रस्तुत मुख्य खबरहरू"}

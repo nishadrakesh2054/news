@@ -55,11 +55,11 @@ export function PublicFooter() {
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Subscription failed");
+      if (!res.ok) throw new Error(json.error || (isEnglish ? "Subscription failed" : "सदस्यता असफल"));
       toast.success(json.message || (isEnglish ? "Subscribed" : "सदस्यता सफल भयो"));
       setEmail("");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed");
+      toast.error(err instanceof Error ? err.message : isEnglish ? "Failed" : "असफल");
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ export function PublicFooter() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/newslogo.png"
-                alt={`${SITE_CONFIG.nameNp} (${SITE_CONFIG.name})`}
+                alt={isEnglish ? SITE_CONFIG.name : SITE_CONFIG.nameNp}
                 className="h-11 w-auto object-contain brightness-0 invert opacity-95 transition-opacity hover:opacity-100"
               />
             </Link>
@@ -186,7 +186,7 @@ export function PublicFooter() {
             <ul className="space-y-3 text-sm text-white/80">
               <li className="flex items-start gap-2.5">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-white" />
-                <span>Kathmandu, Nepal</span>
+                <span>{isEnglish ? "Kathmandu, Nepal" : "काठमाडौँ, नेपाल"}</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 shrink-0 text-white" />

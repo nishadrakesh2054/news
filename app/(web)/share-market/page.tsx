@@ -13,25 +13,25 @@ export default function ShareMarketPage() {
         <nav className="flex items-center space-x-2 text-xs font-semibold text-muted-foreground border-b border-border/40 pb-3">
           <Link href="/" className="hover:text-[#027081]">गृह</Link>
           <ChevronRight className="h-3 w-3" />
-          <span className="text-[#027081] font-bold">नेप्से सेयर बजार (NEPSE Share Market)</span>
+          <span className="text-[#027081] font-bold">नेप्से सेयर बजार</span>
         </nav>
 
         <header className="space-y-2 border-b border-border pb-4">
           <div className="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400">
             <TrendingUp className="h-6 w-6" />
             <h1 className="text-2xl sm:text-4xl font-extrabold font-serif">
-              नेपाल स्टक एक्सचेन्ज (NEPSE Index)
+              नेपाल स्टक एक्सचेन्ज
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            आज मिति {nepaliDateStr} को नेपाल सेयर बजार परिसूचक, कुल कारोबार रकम तथा टप गेनर्स / लूजर्स विवरण।
+            आज मिति {nepaliDateStr} को नेपाल सेयर बजार परिसूचक, कुल कारोबार रकम तथा बढ्ने / घट्ने सेयर विवरण।
           </p>
         </header>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5 space-y-2">
             <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase font-mono">
-              नेप्से परिसूचक (NEPSE Index)
+              नेप्से परिसूचक
             </span>
             <div className="flex items-baseline justify-between">
               <span className="text-2xl sm:text-3xl font-extrabold font-serif text-foreground">
@@ -46,7 +46,7 @@ export default function ShareMarketPage() {
 
           <div className="bg-card border border-border rounded-2xl p-5 space-y-2">
             <span className="text-xs font-bold text-muted-foreground uppercase font-mono">
-              कुल कारोबार रकम (Turnover)
+              कुल कारोबार रकम
             </span>
             <p className="text-2xl sm:text-3xl font-extrabold font-serif text-foreground">
               रु. ७.४५ अर्ब
@@ -55,7 +55,7 @@ export default function ShareMarketPage() {
 
           <div className="bg-card border border-border rounded-2xl p-5 space-y-2">
             <span className="text-xs font-bold text-muted-foreground uppercase font-mono">
-              कुल कारोबार कित्ता (Volume)
+              कुल कारोबार कित्ता
             </span>
             <p className="text-2xl sm:text-3xl font-extrabold font-serif text-foreground">
               १,८४,५०,२००

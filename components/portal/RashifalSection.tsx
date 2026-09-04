@@ -74,10 +74,9 @@ export function RashifalSection() {
 
   return (
     <section
-      className="w-full border-t"
+      className="w-full"
       style={{
         backgroundColor: "rgba(25, 87, 166, 0.06)",
-        borderColor: "rgba(25, 87, 166, 0.12)",
       }}
     >
       <div className={`${PORTAL.container} py-8 sm:py-10`}>

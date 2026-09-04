@@ -9,7 +9,6 @@ import { PORTAL } from "@/constants/portal";
 type RateRow = {
   key: string;
   nameNp: string;
-  nameEn: string;
   purity: string;
   rate: string;
 };
@@ -39,21 +38,18 @@ export default function GoldRatePage() {
     {
       key: "fine",
       nameNp: "छापावाल सुन",
-      nameEn: "Fine gold",
       purity: "२४ क्यारेट",
       rate: goldFine,
     },
     {
       key: "tejabi",
       nameNp: "तेजाबी सुन",
-      nameEn: "Tejabi gold",
       purity: "२२ क्यारेट",
       rate: goldTejabi,
     },
     {
       key: "silver",
       nameNp: "चाँदी",
-      nameEn: "Silver",
       purity: "शुद्ध",
       rate: silver,
     },
@@ -117,7 +113,6 @@ export default function GoldRatePage() {
                     <p className="font-bold" style={{ color: PORTAL.ink }}>
                       {row.nameNp}
                     </p>
-                    <p className="mt-0.5 text-[12px] text-gray-400">{row.nameEn}</p>
                   </td>
                   <td className="py-4 pr-4 align-top text-gray-600">{row.purity}</td>
                   <td

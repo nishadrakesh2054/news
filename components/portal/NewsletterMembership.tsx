@@ -30,11 +30,11 @@ export function NewsletterMembership({ isEnglish = false, source = "home-sidebar
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Subscription failed");
+      if (!res.ok) throw new Error(json.error || (isEnglish ? "Subscription failed" : "सदस्यता असफल"));
       toast.success(json.message || (isEnglish ? "Subscribed" : "सदस्यता सफल भयो"));
       setEmail("");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed");
+      toast.error(err instanceof Error ? err.message : isEnglish ? "Failed" : "असफल");
     } finally {
       setLoading(false);
     }

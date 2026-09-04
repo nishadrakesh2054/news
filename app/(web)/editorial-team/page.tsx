@@ -19,7 +19,7 @@ export default function EditorialTeamPage() {
           <div className="flex items-center space-x-3 text-[#027081]">
             <Users className="h-8 w-8" />
             <h1 className="text-3xl font-extrabold text-foreground font-serif">
-              सम्पादकीय टोली तथा कानुनी विवरण (Editorial & Compliance)
+              सम्पादकीय टोली तथा कानुनी विवरण
             </h1>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
@@ -66,7 +66,7 @@ export default function EditorialTeamPage() {
             </div>
 
             <div className="p-4 rounded-xl border border-border/60 bg-muted/30 space-y-1">
-              <span className="text-[11px] font-bold text-[#027081] uppercase">प्रधान सम्पादक (Editor-in-Chief)</span>
+              <span className="text-[11px] font-bold text-[#027081] uppercase">प्रधान सम्पादक</span>
               <h3 className="text-base font-extrabold text-foreground font-serif">विशाल नेपाल</h3>
               <p className="text-xs text-muted-foreground">प्रधान सम्पादक</p>
             </div>

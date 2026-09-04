@@ -80,11 +80,11 @@ export default function UnicodeConverterPage() {
           <div className="flex items-center space-x-2 text-[#027081]">
             <Type className="h-6 w-6" />
             <h1 className="text-2xl sm:text-4xl font-extrabold font-serif">
-              नेपाली युनिकोड कन्भर्टर (English to Nepali Unicode)
+              नेपाली युनिकोड रूपान्तरक
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            अंग्रेजी अक्षर (Romanized Nepali) मा टाइप गर्नुहोस् र स्वचालित रूपमा शुद्ध नेपाली युनिकोड प्राप्त गर्नुहोस्।
+            रोमन अक्षरमा लेख्नुहोस् र स्वचालित रूपमा शुद्ध नेपाली युनिकोड प्राप्त गर्नुहोस्।
           </p>
         </header>
 
@@ -92,7 +92,7 @@ export default function UnicodeConverterPage() {
           {/* Roman Input */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-foreground flex items-center justify-between">
-              <span>अंग्रेजी (Romanized Text Input):</span>
+              <span>रोमन लेखाइ:</span>
               <span className="text-[10px] text-muted-foreground font-mono">
                 उदा: echo manch
               </span>
@@ -101,7 +101,7 @@ export default function UnicodeConverterPage() {
               rows={8}
               value={romanText}
               onChange={(e) => convertToUnicode(e.target.value)}
-              placeholder="यहाँ टाइप गर्नुहोस् (e.g. namaste nepal)..."
+              placeholder="यहाँ लेख्नुहोस् (उदा: namaste nepal)…"
               className="w-full rounded-2xl border border-input bg-card p-4 text-sm text-foreground focus:border-[#027081] outline-none leading-relaxed"
             />
           </div>
@@ -110,21 +110,21 @@ export default function UnicodeConverterPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-[#027081] font-serif">
-                नेपाली युनिकोड (Output Nepali Unicode):
+                नेपाली नतिजा:
               </label>
               <button
                 onClick={handleCopy}
                 className="flex items-center space-x-1 bg-[#027081] text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-[#025c6a] transition-all cursor-pointer"
               >
                 {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                <span>{copied ? "कपी भयो!" : "कपी गर्नुहोस्"}</span>
+                <span>{copied ? "प्रतिलिपि भयो!" : "प्रतिलिपि गर्नुहोस्"}</span>
               </button>
             </div>
             <textarea
               rows={8}
               readOnly
               value={unicodeText || romanText}
-              placeholder="नेपाली युनिकोड यहाँ देखिनेछ..."
+              placeholder="नेपाली युनिकोड यहाँ देखिनेछ…"
               className="w-full rounded-2xl border border-[#027081]/30 bg-[#027081]/5 p-4 text-base font-bold text-foreground outline-none leading-relaxed"
             />
           </div>

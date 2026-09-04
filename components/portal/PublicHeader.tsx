@@ -103,7 +103,7 @@ export function PublicHeader() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/newslogo.png"
-            alt={`${SITE_CONFIG.nameNp} (${SITE_CONFIG.name})`}
+            alt={isEnglish ? SITE_CONFIG.name : SITE_CONFIG.nameNp}
             className="h-14 w-auto object-contain object-left sm:h-16 md:h-[4.75rem]"
           />
         </Link>
@@ -119,7 +119,7 @@ export function PublicHeader() {
             className="hidden h-[72px] w-full max-w-[728px] items-center justify-center border border-gray-200 text-xs font-medium text-gray-500 xl:h-[90px] lg:flex"
             style={{ backgroundColor: PORTAL.surface }}
           >
-            {SITE_CONFIG.name} Ad · 728×90
+            {isEnglish ? `${SITE_CONFIG.name} Ad · 728×90` : `विज्ञापन · ७२८×९०`}
           </div>
         )}
       </div>
