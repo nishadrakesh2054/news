@@ -1,46 +1,29 @@
 /**
  * Helper functions for Nepali Devanagari numbers and B.S. dates
  */
+import { getBikramSambatDate, toNepaliDigits } from "@/lib/bs-calendar";
 
 export function toDevanagariDigits(num: number | string): string {
-  const devanagariDigits = ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"];
-  return String(num).replace(/\d/g, (d) => devanagariDigits[parseInt(d, 10)]);
+  return toNepaliDigits(num);
 }
 
 export function getFormattedNepaliDate(date: Date = new Date()): string {
-  const nepaliDays = [
-    "आइतबार",
-    "सोमबार",
-    "मङ्गलबार",
-    "बुधबार",
-    "बिहीबार",
-    "शुक्रबार",
-    "शनिबार",
-  ];
-
-  const nepaliMonths = [
-    "वैशाख",
-    "जेठ",
-    "असार",
-    "साउन",
-    "भदौ",
-    "असोज",
-    "कात्तिक",
-    "मंसिर",
-    "पुस",
-    "माघ",
-    "फागुन",
-    "चैत",
-  ];
-
-  const dayOfWeek = nepaliDays[date.getDay()];
-
-  // Approximate BS year conversion for display (2026 AD -> 2083 BS)
-  const bsYear = date.getFullYear() + 57;
-  const bsMonth = nepaliMonths[date.getMonth()];
-  const bsDate = date.getDate();
-
-  return `${dayOfWeek}, ${toDevanagariDigits(bsDate)} ${bsMonth} ${toDevanagariDigits(bsYear)}`;
+  try {
+    const bs = getBikramSambatDate(date);
+    return `${bs.dayOfWeekNp}, ${bs.dayNp} ${bs.monthNp} ${bs.yearNp}`;
+  } catch {
+    // Outside BS table range — fall back to AD with Nepali digits
+    const nepaliDays = [
+      "आइतबार",
+      "सोमबार",
+      "मङ्गलबार",
+      "बुधबार",
+      "बिहीबार",
+      "शुक्रबार",
+      "शनिबार",
+    ];
+    return `${nepaliDays[date.getDay()]}, ${toDevanagariDigits(date.getDate())}/${toDevanagariDigits(date.getMonth() + 1)}/${toDevanagariDigits(date.getFullYear())}`;
+  }
 }
 
 export function formatTimeAgoNp(dateInput: Date | string): string {
