@@ -3,7 +3,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { resolveLanguageEdition } from "@/lib/language";
-import { SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
+import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { PORTAL } from "@/constants/portal";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
@@ -18,12 +18,15 @@ export async function generateMetadata({
 }: GalleriesIndexProps): Promise<Metadata> {
   const sp = await searchParams;
   const headerList = await headers();
-  const lang = resolveLanguageEdition(sp.lang, headerList.get("host"));
+  const lang = resolveLanguageEdition(sp.lang, requestHost(headerList));
+  const title = lang === "en" ? "Photo galleries" : "फोटो ग्यालेरी";
   return {
-    title:
+    title: pageTitle(title, lang),
+    description:
       lang === "en"
-        ? `Photo galleries ${SITE_TITLE_SUFFIX}`
-        : `फोटो ग्यालेरी ${SITE_TITLE_SUFFIX_NP}`,
+        ? "Photo galleries and visual stories from Echo Manch."
+        : "इको माञ्चका फोटो ग्यालेरी र दृश्य कथाहरू।",
+    alternates: editionAlternates("/galleries", lang),
   };
 }
 
@@ -32,7 +35,7 @@ export const revalidate = 60;
 export default async function GalleriesIndexPage({ searchParams }: GalleriesIndexProps) {
   const sp = await searchParams;
   const headerList = await headers();
-  const lang = resolveLanguageEdition(sp.lang, headerList.get("host"));
+  const lang = resolveLanguageEdition(sp.lang, requestHost(headerList));
   const isEnglish = lang === "en";
   const langQ = isEnglish ? "?lang=en" : "";
 

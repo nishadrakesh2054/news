@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
 import {
@@ -8,6 +6,7 @@ import {
   type LanguageEditionType,
 } from "@/lib/language";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
+import { PortalImage } from "@/components/portal/PortalImage";
 import { SectionHeader } from "@/components/portal/SectionHeader";
 import { PORTAL } from "@/constants/portal";
 
@@ -74,11 +73,12 @@ export function CategoryGridSection({
           className="group relative block min-h-[280px] overflow-hidden bg-neutral-800 sm:min-h-[340px] lg:col-span-8"
         >
           {mainImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <PortalImage
               src={mainImage}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              alt={mainTitle}
+              fill
+              sizes="(max-width: 1024px) 100vw, 66vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             />
           ) : null}
 
@@ -133,13 +133,14 @@ export function CategoryGridSection({
                   href={`/article/${art.slug}${langQ}`}
                   className="group flex flex-1 gap-3 p-3 transition-colors hover:bg-gray-50 sm:p-4"
                 >
-                  <div className="h-[4.5rem] w-24 shrink-0 overflow-hidden bg-gray-200">
+                  <div className="relative h-[4.5rem] w-24 shrink-0 overflow-hidden bg-gray-200">
                     {image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <PortalImage
                         src={image}
-                        alt=""
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                        alt={itemTitle}
+                        fill
+                        sizes="96px"
+                        className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                       />
                     ) : null}
                   </div>

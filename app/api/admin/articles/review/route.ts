@@ -5,6 +5,7 @@ import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireStaff } from "@/lib/admin-auth";
 import { assertArticleStatusPermission } from "@/lib/article-permissions";
 import { writeAuditLog } from "@/lib/audit-log";
+import { invalidatePublicArticles } from "@/lib/cache-invalidation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -129,6 +130,8 @@ export async function POST(request: NextRequest) {
       entityId: id,
       details: `${updated.status}: ${updated.title}`,
     });
+
+    invalidatePublicArticles();
 
     return apiSuccess(updated, action === "approve" ? "Article published" : "Article sent back to draft");
   } catch (error) {

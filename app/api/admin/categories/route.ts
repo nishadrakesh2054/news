@@ -6,8 +6,25 @@ import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { invalidatePublicCategories } from "@/lib/cache-invalidation";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const light = searchParams.get("light") === "1";
+
+    if (light) {
+      const categories = await prisma.category.findMany({
+        select: {
+          id: true,
+          name: true,
+          nameNp: true,
+          slug: true,
+          order: true,
+        },
+        orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+      });
+      return apiSuccess(categories, "Categories retrieved successfully");
+    }
+
     const categories = await prisma.category.findMany({
       select: {
         id: true,
@@ -24,10 +41,7 @@ export async function GET() {
           },
         },
       },
-      orderBy: [
-        { order: "asc" },
-        { createdAt: "desc" },
-      ],
+      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
     });
 
     return apiSuccess(categories, "Categories retrieved successfully");

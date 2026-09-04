@@ -1,47 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { isEnglishHostname } from "@/lib/language";
 import { SITE_CONFIG } from "@/constants/site";
 import { SectionHeader, PortalContainer } from "@/components/portal/SectionHeader";
 import { EpaperPdfCard, type EpaperCardItem } from "@/components/portal/EpaperPdfCard";
 
+type EpaperSectionProps = {
+  editions?: EpaperCardItem[];
+};
+
 /** Homepage PDF / E-paper grid — cover cards; click opens PDF. */
-export function EpaperSection() {
+export function EpaperSection({ editions = [] }: EpaperSectionProps) {
   const searchParams = useSearchParams();
   const langParam = searchParams.get("lang");
   const isEnglish =
     langParam === "en" ||
     (typeof window !== "undefined" && isEnglishHostname(window.location.hostname));
   const langQ = isEnglish ? "?lang=en" : "";
-
-  const [editions, setEditions] = useState<EpaperCardItem[]>([]);
-
-  useEffect(() => {
-    fetch("/api/epaper")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && Array.isArray(json.data)) {
-          setEditions(
-            json.data.slice(0, 5).map(
-              (ep: {
-                id: string;
-                title: string;
-                pdfUrl: string;
-                coverImage?: string | null;
-              }) => ({
-                id: ep.id,
-                title: ep.title,
-                pdfUrl: ep.pdfUrl,
-                coverImage: ep.coverImage,
-              })
-            )
-          );
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   if (editions.length === 0) return null;
 

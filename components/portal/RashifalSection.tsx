@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { isEnglishHostname } from "@/lib/language";
@@ -49,7 +49,7 @@ function normalizeRashiList(raw: unknown): RashiCard[] {
   });
 }
 
-/** Homepage/footer राशिफल grid — 12 rashis from /api/utilities. */
+/** Homepage/footer राशिफल grid — static 12 rashis (detail page has live data). */
 export function RashifalSection() {
   const searchParams = useSearchParams();
   const langParam = searchParams.get("lang");
@@ -58,19 +58,8 @@ export function RashifalSection() {
     (typeof window !== "undefined" && isEnglishHostname(window.location.hostname));
   const langQ = isEnglish ? "?lang=en" : "";
 
-  const [rashis, setRashis] = useState<RashiCard[]>(() => normalizeRashiList(null));
+  const [rashis] = useState<RashiCard[]>(() => normalizeRashiList(null));
   const [dateLabel] = useState(() => getFormattedNepaliDate());
-
-  useEffect(() => {
-    fetch("/api/utilities")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && Array.isArray(json.data?.rashifal)) {
-          setRashis(normalizeRashiList(json.data.rashifal));
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   return (
     <section

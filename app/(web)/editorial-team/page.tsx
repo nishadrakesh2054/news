@@ -1,8 +1,32 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { Users, ShieldCheck, FileCheck, ArrowLeft, Mail, Phone } from "lucide-react";
 import { SITE_CONFIG } from "@/constants/site";
+import { resolveLanguageEdition } from "@/lib/language";
+import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 
-export default function EditorialTeamPage() {
+type PageProps = {
+  searchParams: Promise<{ lang?: string }>;
+};
+
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const sp = await searchParams;
+  const headerList = await headers();
+  const lang = resolveLanguageEdition(sp.lang, requestHost(headerList));
+  const title = lang === "en" ? "Editorial team" : "सम्पादकीय टोली";
+  return {
+    title: pageTitle(title, lang),
+    description:
+      lang === "en"
+        ? `${SITE_CONFIG.name} editorial team and legal details.`
+        : `${SITE_CONFIG.nameNp} सम्पादकीय टोली तथा कानुनी विवरण।`,
+    alternates: editionAlternates("/editorial-team", lang),
+  };
+}
+
+export default async function EditorialTeamPage({ searchParams }: PageProps) {
+  await searchParams;
   return (
     <main className="w-full bg-background min-h-screen pb-20 pt-8">
       <div className="max-w-4xl mx-auto px-4 space-y-8">

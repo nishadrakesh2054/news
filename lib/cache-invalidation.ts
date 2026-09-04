@@ -14,3 +14,18 @@ export function invalidatePublicTags() {
 export function invalidatePublicAds() {
   revalidateTag(CACHE_TAGS.ads, CACHE_PROFILE);
 }
+
+export function invalidatePublicBreaking() {
+  revalidateTag(CACHE_TAGS.breaking, CACHE_PROFILE);
+}
+
+export function invalidatePublicHome() {
+  revalidateTag(CACHE_TAGS.home, CACHE_PROFILE);
+  revalidateTag(CACHE_TAGS.articles, CACHE_PROFILE);
+}
+
+/** Call after article publish / update / delete that affects public pages. */
+export function invalidatePublicArticles() {
+  invalidatePublicHome();
+  invalidatePublicBreaking();
+}

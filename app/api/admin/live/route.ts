@@ -4,31 +4,52 @@ import { ArticleType } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireStaff } from "@/lib/admin-auth";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const auth = await requireStaff();
     if (auth.error) return auth.error;
 
-    const liveArticles = await prisma.article.findMany({
-      where: { type: ArticleType.LIVE },
-      select: {
-        id: true,
-        title: true,
-        titleNp: true,
-        slug: true,
-        status: true,
-        updatedAt: true,
-        category: {
-          select: { name: true, nameNp: true },
-        },
-        liveUpdates: {
-          orderBy: { createdAt: "desc" },
-        },
-      },
-      orderBy: { updatedAt: "desc" },
-    });
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20", 10) || 20));
+    const skip = (page - 1) * limit;
 
-    return apiSuccess(liveArticles, "Live coverage articles retrieved successfully");
+    const [liveArticles, total] = await Promise.all([
+      prisma.article.findMany({
+        where: { type: ArticleType.LIVE },
+        select: {
+          id: true,
+          title: true,
+          titleNp: true,
+          slug: true,
+          status: true,
+          updatedAt: true,
+          category: {
+            select: { name: true, nameNp: true },
+          },
+          _count: { select: { liveUpdates: true } },
+          liveUpdates: {
+            orderBy: { createdAt: "desc" },
+            take: 5,
+            select: {
+              id: true,
+              title: true,
+              content: true,
+              createdAt: true,
+            },
+          },
+        },
+        orderBy: { updatedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.article.count({ where: { type: ArticleType.LIVE } }),
+    ]);
+
+    return apiSuccess(
+      { items: liveArticles, page, limit, total, totalPages: Math.ceil(total / limit) },
+      "Live coverage articles retrieved successfully"
+    );
   } catch (error) {
     return handleServerError(error, "Failed to retrieve live coverage articles");
   }

@@ -1,12 +1,25 @@
 import type { Metadata } from "next";
+import { Inter, Geist_Mono } from "next/font/google";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { AdminDashboardShell } from "@/components/admin/AdminDashboardShell";
+import { AdminProviders } from "@/components/providers/AdminProviders";
 import { SITE_CONFIG } from "@/constants/site";
 import { SkipToContent } from "@/components/a11y/SkipToContent";
 import Link from "next/link";
 import { Role } from "@prisma/client";
+
+const inter = Inter({
+  variable: "--font-admin-ui",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
   title: {
@@ -22,7 +35,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/login");
   }
 
-  // RBAC protection: Only ADMIN, EDITOR, and AUTHOR roles can access the Admin portal
   const allowedRoles: Role[] = [Role.ADMIN, Role.EDITOR, Role.AUTHOR];
   if (!allowedRoles.includes(session.user.role)) {
     return (
@@ -39,9 +51,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <>
-      <SkipToContent />
-      <AdminDashboardShell>{children}</AdminDashboardShell>
-    </>
+    <div className={`${inter.variable} ${geistMono.variable}`}>
+      <AdminProviders>
+        <SkipToContent />
+        <AdminDashboardShell>{children}</AdminDashboardShell>
+      </AdminProviders>
+    </div>
   );
 }

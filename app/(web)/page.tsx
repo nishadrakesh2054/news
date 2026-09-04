@@ -2,14 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { headers } from "next/headers";
-import { prisma } from "@/lib/prisma";
-import { ArticleStatus, ArticleType, Prisma } from "@prisma/client";
 import {
   resolveLanguageEdition,
   resolveCategoryName,
   resolveCategoryDescription,
 } from "@/lib/language";
-import { SITE_CONFIG, SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
+import { SITE_CONFIG } from "@/constants/site";
+import {
+  defaultDescription,
+  editionAlternates,
+  organizationJsonLd,
+  pageTitle,
+  requestHost,
+  websiteJsonLd,
+} from "@/lib/seo";
 import { TrendingHashtags } from "@/components/portal/TrendingHashtags";
 import { NewsCard } from "@/components/portal/NewsCard";
 import { HomeSidebarTabs } from "@/components/portal/HomeSidebarTabs";
@@ -22,6 +28,14 @@ import { MediaShowcaseAboveFooter } from "@/components/portal/MediaShowcaseAbove
 import { RashifalSection } from "@/components/portal/RashifalSection";
 import { EpaperSection } from "@/components/portal/EpaperSection";
 import { PortalContainer } from "@/components/portal/SectionHeader";
+import {
+  getCachedActiveAds,
+  getCachedEpapers,
+  getCachedGalleriesHome,
+  getCachedHomePayload,
+  getCachedReels,
+  getCachedTags,
+} from "@/lib/public-cache";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { PORTAL } from "@/constants/portal";
 
@@ -34,148 +48,62 @@ export const revalidate = 60;
 export async function generateMetadata({ searchParams }: WebHomeProps): Promise<Metadata> {
   const params = await searchParams;
   const headerList = await headers();
-  const lang = resolveLanguageEdition(params.lang, headerList.get("host"));
+  const lang = resolveLanguageEdition(params.lang, requestHost(headerList));
   const isEnglish = lang === "en";
+  const description = defaultDescription(lang);
 
   return {
-    title: isEnglish ? `Home ${SITE_TITLE_SUFFIX}` : `गृहपृष्ठ ${SITE_TITLE_SUFFIX_NP}`,
-    description: isEnglish
-      ? SITE_CONFIG.description
-      : "इको माञ्च — नेपालका ताजा समाचार, राजनीति, अर्थतन्त्र, खेलकुद र विचार।",
-    alternates: {
-      canonical: isEnglish ? "/?lang=en" : "/",
-      languages: { "ne-NP": "/", en: "/?lang=en" },
+    title: pageTitle(isEnglish ? "Home" : "गृहपृष्ठ", lang),
+    description,
+    alternates: editionAlternates("/", lang),
+    openGraph: {
+      title: pageTitle(isEnglish ? "Home" : "गृहपृष्ठ", lang),
+      description,
+      url: editionAlternates("/", lang).canonical as string,
+      siteName: SITE_CONFIG.name,
+      locale: isEnglish ? "en_US" : "ne_NP",
+      type: "website",
     },
   };
 }
 
-const articleSelect = {
-  id: true,
-  title: true,
-  titleNp: true,
-  slug: true,
-  excerpt: true,
-  excerptNp: true,
-  coverImage: true,
-  isFeatured: true,
-  views: true,
-  province: true,
-  district: true,
-  createdAt: true,
-  categoryId: true,
-  category: {
-    select: { id: true, name: true, nameNp: true, slug: true, description: true },
-  },
-  author: {
-    select: { name: true, image: true },
-  },
-} satisfies Prisma.ArticleSelect;
-
 export default async function WebHome({ searchParams }: WebHomeProps) {
   const params = await searchParams;
   const headerList = await headers();
-  const host = headerList.get("host");
-  const lang = resolveLanguageEdition(params.lang, host);
+  const lang = resolveLanguageEdition(params.lang, requestHost(headerList));
   const isEnglish = lang === "en";
   const langQ = isEnglish ? "?lang=en" : "";
 
-  const whereClause: Prisma.ArticleWhereInput = {
-    status: ArticleStatus.PUBLISHED,
-    languageEdition: isEnglish
-      ? { in: ["BOTH", "ENGLISH_ONLY"] }
-      : { in: ["BOTH", "NEPALI_ONLY"] },
-  };
-
   const [
+    home,
+    trendingTags,
+    epapers,
+    galleriesHome,
+    reels,
+    activeAds,
+  ] = await Promise.all([
+    getCachedHomePayload(lang),
+    getCachedTags(),
+    getCachedEpapers(),
+    getCachedGalleriesHome(),
+    getCachedReels(),
+    getCachedActiveAds(),
+  ]);
+
+  const {
     publishedArticles,
     categories,
     opinionArticles,
     economyArticles,
     sportsArticles,
     provinceArticles,
-  ] = await Promise.all([
-      prisma.article.findMany({
-        where: whereClause,
-        select: articleSelect,
-        orderBy: { publishedAt: "desc" },
-        take: 24,
-      }),
-      prisma.category.findMany({
-        orderBy: { order: "asc" },
-        take: 6,
-        select: {
-          id: true,
-          name: true,
-          nameNp: true,
-          slug: true,
-          description: true,
-          descriptionNp: true,
-          articles: {
-            where: whereClause,
-            orderBy: { publishedAt: "desc" },
-            take: 1,
-            select: { coverImage: true },
-          },
-        },
-      }),
-      prisma.article.findMany({
-        where: {
-          ...whereClause,
-          OR: [
-            { category: { slug: { in: ["opinion", "vichar"] } } },
-            { type: ArticleType.OPINION },
-          ],
-        },
-        select: {
-          id: true,
-          title: true,
-          titleNp: true,
-          slug: true,
-          excerpt: true,
-          excerptNp: true,
-          createdAt: true,
-          author: { select: { name: true, image: true } },
-        },
-        orderBy: { publishedAt: "desc" },
-        take: 4,
-      }),
-      prisma.article.findMany({
-        where: {
-          ...whereClause,
-          category: { slug: { in: ["economy", "arthatantra"] } },
-        },
-        select: articleSelect,
-        orderBy: { publishedAt: "desc" },
-        take: 4,
-      }),
-      prisma.article.findMany({
-        where: {
-          ...whereClause,
-          category: { slug: { in: ["sports", "entertainment", "khelkud", "manoranjan"] } },
-        },
-        select: articleSelect,
-        orderBy: { publishedAt: "desc" },
-        take: 4,
-      }),
-      prisma.article.findMany({
-        where: {
-          ...whereClause,
-          province: { not: null },
-        },
-        select: {
-          id: true,
-          title: true,
-          titleNp: true,
-          slug: true,
-          coverImage: true,
-          province: true,
-          district: true,
-          createdAt: true,
-        },
-        orderBy: { publishedAt: "desc" },
-        take: 48,
-      }),
-    ]);
+    popularArticles,
+  } = home;
+
+  const sidebarAdTop =
+    activeAds.find((a) => a.slot === "SIDEBAR_TOP" && a.isActive !== false) || null;
+  const sidebarAdBottom =
+    activeAds.find((a) => a.slot === "SIDEBAR_BOTTOM" && a.isActive !== false) || null;
 
   const featured = publishedArticles.filter((a) => a.isFeatured);
   const mainStories = (
@@ -186,18 +114,32 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
   const mainIds = new Set(mainStories.map((a) => a.id));
   const rest = publishedArticles.filter((a) => !mainIds.has(a.id));
   const recentSidebar = rest.slice(0, 6);
-  const popularSidebar = [...publishedArticles].sort((a, b) => b.views - a.views).slice(0, 6);
+  const popularSidebar = popularArticles;
   const latestBelow = rest.slice(0, 6);
 
   const emptyLabel = isEnglish ? "No stories available yet." : "कुनै समाचार उपलब्ध छैन।";
 
   return (
     <main className="w-full bg-white text-gray-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd(lang)) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd(lang)) }}
+      />
+
+      <h1 className="sr-only">
+        {isEnglish
+          ? `${SITE_CONFIG.name} — Latest news from Nepal`
+          : `${SITE_CONFIG.nameNp} — नेपालका ताजा समाचार`}
+      </h1>
+
       <Suspense fallback={<div className="h-10 border-b border-gray-200 bg-white" />}>
-        <TrendingHashtags />
+        <TrendingHashtags tags={trendingTags} />
       </Suspense>
 
-      {/* Hero: 2 main stories stacked (~70% / 9 cols) + sidebar (~30% / 3 cols) */}
       <PortalContainer className="py-4 sm:py-5">
         {mainStories.length === 0 ? (
           <div className="border border-dashed border-gray-300 px-6 py-16 text-center text-sm text-gray-500">
@@ -206,12 +148,13 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         ) : (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
             <div className="flex flex-col gap-4 lg:col-span-9">
-              {mainStories.map((art) => (
+              {mainStories.map((art, index) => (
                 <NewsCard
                   key={art.id}
                   article={art}
                   lang={lang}
                   variant="lead"
+                  priority={index === 0}
                   badge={isEnglish ? "Main News" : "मुख्य समाचार"}
                 />
               ))}
@@ -227,7 +170,6 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         )}
       </PortalContainer>
 
-      {/* News categories strip */}
       {categories.length > 0 ? (
         <section className="border-y border-gray-200 bg-white py-5">
           <PortalContainer>
@@ -255,7 +197,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
                     <div className="aspect-[16/10] overflow-hidden bg-gray-200">
                       {cover ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={cover} alt="" className="h-full w-full object-cover" />
+                        <img src={cover} alt={name} className="h-full w-full object-cover" />
                       ) : null}
                     </div>
                     <h3 className="text-sm font-bold group-hover:underline" style={{ color: PORTAL.brand }}>
@@ -272,14 +214,17 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         </section>
       ) : null}
 
-      {/* Latest news + sidebar ad */}
       {latestBelow.length > 0 ? (
         <PortalContainer className="py-6">
-          <LatestNewsSection articles={latestBelow} lang={lang} />
+          <LatestNewsSection
+            articles={latestBelow}
+            lang={lang}
+            adTop={sidebarAdTop}
+            adBottom={sidebarAdBottom}
+          />
         </PortalContainer>
       ) : null}
 
-      {/* Province news tabs */}
       <PortalContainer className="py-6">
         <ProvinceNewsWidget articles={provinceArticles} lang={lang} />
       </PortalContainer>
@@ -308,13 +253,22 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         />
       </PortalContainer>
 
-      <Suspense fallback={<div className="h-64 bg-white" />}>
-        <MediaShowcaseAboveFooter />
-      </Suspense>
+      <MediaShowcaseAboveFooter
+        lang={lang}
+        galleries={galleriesHome.map((g) => ({
+          id: g.id,
+          title: g.title,
+          titleNp: g.titleNp,
+          slug: g.slug,
+          description: g.description,
+          coverUrl: g.coverUrl,
+          createdAt: g.createdAt,
+          itemCount: g._count.items,
+        }))}
+        videos={reels}
+      />
 
-      <Suspense fallback={<div className="h-56 bg-white" />}>
-        <EpaperSection />
-      </Suspense>
+      <EpaperSection editions={epapers} />
 
       <Suspense fallback={<div className="h-48" style={{ backgroundColor: "rgba(25, 87, 166, 0.06)" }} />}>
         <RashifalSection />

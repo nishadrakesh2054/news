@@ -1,4 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -26,6 +29,14 @@ export function resolveDatabaseUrl(): string {
   }
 }
 
+function isNeonUrl(connectionString: string): boolean {
+  return (
+    connectionString.includes("neon.tech") ||
+    connectionString.includes("neon.database") ||
+    Boolean(process.env.DATABASE_URL_USE_NEON_ADAPTER === "1")
+  );
+}
+
 function createPrismaClient() {
   const connectionString = resolveDatabaseUrl();
   const log: Array<"warn" | "error"> =
@@ -33,6 +44,15 @@ function createPrismaClient() {
 
   if (!connectionString) {
     return new PrismaClient({ log });
+  }
+
+  if (isNeonUrl(connectionString)) {
+    if (typeof WebSocket === "undefined") {
+      neonConfig.webSocketConstructor = ws;
+    }
+    // PrismaNeon is a factory — pass PoolConfig, not a Pool instance
+    const adapter = new PrismaNeon({ connectionString });
+    return new PrismaClient({ adapter, log });
   }
 
   return new PrismaClient({
@@ -46,9 +66,7 @@ function isStalePrismaClient(client: PrismaClient) {
   const c = client as PrismaClient & {
     gallery?: unknown;
     menu?: unknown;
-    tag?: { fields?: unknown };
   };
-  // Recreate when newer schema fields are missing from a warm client.
   const tagDelegate = (client as unknown as { tag?: { findMany?: unknown } }).tag;
   return (
     typeof c.gallery === "undefined" ||

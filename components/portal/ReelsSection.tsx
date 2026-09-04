@@ -19,6 +19,7 @@ type VideoItem = {
 
 type ReelsSectionProps = {
   lang?: LanguageEditionType | string;
+  videos?: VideoItem[];
 };
 
 function thumbFor(video: VideoItem): string | null {
@@ -47,22 +48,10 @@ function embedIdFor(video: VideoItem): string | null {
   );
 }
 
-export function ReelsSection({ lang = "ne" }: ReelsSectionProps) {
+export function ReelsSection({ lang = "ne", videos = [] }: ReelsSectionProps) {
   const isEnglish = lang === "en";
   const langQ = isEnglish ? "?lang=en" : "";
-  const [videos, setVideos] = useState<VideoItem[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/videos?type=reels&limit=8")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && Array.isArray(json.data)) {
-          setVideos(json.data);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   const active = videos.find((v) => v.id === activeId) || null;
   const activeEmbedId = active ? embedIdFor(active) : null;
@@ -106,7 +95,7 @@ export function ReelsSection({ lang = "ne" }: ReelsSectionProps) {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={thumb}
-                  alt=""
+                  alt={video.filename}
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                 />
               ) : null}

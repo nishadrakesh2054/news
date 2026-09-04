@@ -70,5 +70,9 @@ model Article {
   @@index([status, languageEdition])
   @@index([status, type])
   @@index([province])
+  @@index([district])
   @@index([authorId])
+  @@index([isFeatured, featuredOrder])
+  @@index([isBreaking, updatedAt(sort: Desc)])
+  @@index([type])
 }

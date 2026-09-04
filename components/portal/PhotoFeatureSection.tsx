@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Camera } from "lucide-react";
 import type { LanguageEditionType } from "@/lib/language";
@@ -22,23 +21,12 @@ type GalleryCard = {
 
 type PhotoFeatureSectionProps = {
   lang?: LanguageEditionType | string;
+  galleries?: GalleryCard[];
 };
 
-export function PhotoFeatureSection({ lang = "ne" }: PhotoFeatureSectionProps) {
+export function PhotoFeatureSection({ lang = "ne", galleries = [] }: PhotoFeatureSectionProps) {
   const isEnglish = lang === "en";
   const langQ = isEnglish ? "?lang=en" : "";
-  const [galleries, setGalleries] = useState<GalleryCard[]>([]);
-
-  useEffect(() => {
-    fetch("/api/galleries")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && Array.isArray(json.data)) {
-          setGalleries(json.data.slice(0, 4));
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   if (galleries.length === 0) return null;
 
@@ -70,7 +58,7 @@ export function PhotoFeatureSection({ lang = "ne" }: PhotoFeatureSectionProps) {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={cover}
-                  alt=""
+                  alt={title}
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                 />
               ) : null}

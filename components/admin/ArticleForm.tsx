@@ -218,7 +218,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
   const { data: categories = [] } = useQuery<CategoryItem[]>({
     queryKey: ["admin-categories"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/categories");
+      const res = await fetch("/api/admin/categories?light=1");
       const json = await res.json();
       if (!res.ok) throw new Error("Failed to fetch categories");
       return json.data;
@@ -228,7 +228,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
   const { data: tags = [] } = useQuery<TagItem[]>({
     queryKey: ["admin-tags"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/tags");
+      const res = await fetch("/api/admin/tags?light=1");
       const json = await res.json();
       if (!res.ok) throw new Error("Failed to fetch tags");
       return json.data;

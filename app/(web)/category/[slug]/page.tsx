@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { AdSlot, ArticleStatus } from "@prisma/client";
 import { absoluteUrl } from "@/lib/site-url";
-import { SITE_CONFIG, SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
+import { SITE_CONFIG } from "@/constants/site";
 import {
   languageEditionWhere,
   resolveArticleTitle,
@@ -13,6 +13,7 @@ import {
   resolveCategoryName,
   resolveLanguageEdition,
 } from "@/lib/language";
+import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { NewsCard } from "@/components/portal/NewsCard";
 import { ArticleAdSlot } from "@/components/portal/ArticleAdSlot";
@@ -26,8 +27,7 @@ interface CategoryPageProps {
 
 async function resolvePageLang(searchParamsLang?: string) {
   const headerList = await headers();
-  const host = headerList.get("x-forwarded-host") || headerList.get("host");
-  return resolveLanguageEdition(searchParamsLang, host);
+  return resolveLanguageEdition(searchParamsLang, requestHost(headerList));
 }
 
 export async function generateMetadata({ params, searchParams }: CategoryPageProps): Promise<Metadata> {
@@ -40,15 +40,12 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
 
   if (!category) {
     return {
-      title:
-        lang === "en"
-          ? `Category not found ${SITE_TITLE_SUFFIX}`
-          : `श्रेणी भेटिएन ${SITE_TITLE_SUFFIX_NP}`,
+      title: pageTitle(lang === "en" ? "Category not found" : "श्रेणी भेटिएन", lang),
     };
   }
 
   const name = resolveCategoryName(category, lang);
-  const suffix = lang === "en" ? SITE_TITLE_SUFFIX : SITE_TITLE_SUFFIX_NP;
+  const headline = lang === "en" ? `${name} news` : `${name} समाचार`;
   const description =
     resolveCategoryDescription(category, lang) ||
     (lang === "en"
@@ -56,24 +53,18 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
       : `${name} श्रेणीका सबै समाचार | ${SITE_CONFIG.nameNp}`);
 
   return {
-    title: lang === "en" ? `${name} news` : `${name} समाचार`,
+    title: pageTitle(headline, lang),
     description,
-    alternates: {
-      canonical: `/category/${category.slug}`,
-      languages: {
-        "ne-NP": absoluteUrl(`/category/${category.slug}`, "ne"),
-        en: absoluteUrl(`/category/${category.slug}`, "en"),
-      },
-    },
+    alternates: editionAlternates(`/category/${category.slug}`, lang),
     openGraph: {
-      title: `${name} ${suffix}`,
+      title: pageTitle(headline, lang),
       description,
       url: absoluteUrl(`/category/${category.slug}`, lang),
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: `${name} ${suffix}`,
+      title: pageTitle(headline, lang),
       description,
     },
   };

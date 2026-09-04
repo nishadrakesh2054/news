@@ -36,10 +36,10 @@ export default function AdminFeaturedPage() {
   const { data = [], isLoading, isError, refetch, isFetching } = useQuery<FeaturedArticle[]>({
     queryKey: ["admin-featured"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/featured");
+      const res = await fetch("/api/admin/featured?limit=100");
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      return json.data;
+      return Array.isArray(json.data) ? json.data : json.data?.items ?? [];
     },
   });
 

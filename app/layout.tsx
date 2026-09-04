@@ -1,18 +1,11 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Sans_Devanagari, Geist_Mono } from "next/font/google";
+import { Noto_Sans_Devanagari } from "next/font/google";
 import { headers } from "next/headers";
 import { SITE_CONFIG } from "@/constants/site";
 import { htmlLang, resolveLanguageEdition } from "@/lib/language";
-import { SessionProvider } from "@/components/providers/SessionProvider";
-import { QueryProvider } from "@/components/providers/QueryProvider";
+import { SITE_LANG_HEADER, getAdminSeoMetadataOverrides } from "@/lib/seo";
 import { Toaster } from "sonner";
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-admin-ui",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
 
 const notoSansDevanagari = Noto_Sans_Devanagari({
   variable: "--font-noto-devanagari",
@@ -20,17 +13,12 @@ const notoSansDevanagari = Noto_Sans_Devanagari({
   weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   metadataBase: new URL(SITE_CONFIG.url),
   applicationName: SITE_CONFIG.name,
   title: {
     default: SITE_CONFIG.title,
-    template: `%s | ${SITE_CONFIG.name}`,
+    template: "%s",
   },
   description: SITE_CONFIG.description,
   keywords: [
@@ -46,10 +34,11 @@ export const metadata: Metadata = {
     "latest updates",
   ],
   alternates: {
-    canonical: "/",
+    canonical: SITE_CONFIG.url,
     languages: {
       "ne-NP": SITE_CONFIG.url,
       en: SITE_CONFIG.englishUrl,
+      "x-default": SITE_CONFIG.url,
     },
   },
   openGraph: {
@@ -90,24 +79,47 @@ export const metadata: Metadata = {
   },
 };
 
+export async function generateMetadata(): Promise<Metadata> {
+  const overrides = await getAdminSeoMetadataOverrides();
+  return {
+    ...baseMetadata,
+    ...overrides,
+    openGraph: {
+      ...baseMetadata.openGraph,
+      ...overrides.openGraph,
+    },
+    twitter: {
+      ...(baseMetadata.twitter as object),
+      ...(overrides.twitter as object),
+    } as Metadata["twitter"],
+    alternates: {
+      ...baseMetadata.alternates,
+      ...overrides.alternates,
+      languages: {
+        ...(baseMetadata.alternates?.languages || {}),
+        ...(overrides.alternates?.languages || {}),
+      },
+    },
+    robots: overrides.robots ?? baseMetadata.robots,
+  };
+}
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const headerList = await headers();
-  const host = headerList.get("x-forwarded-host") || headerList.get("host");
-  const lang = resolveLanguageEdition(null, host);
+  const host =
+    headerList.get("x-forwarded-host")?.split(",")[0]?.trim() || headerList.get("host");
+  const langFromHeader = headerList.get(SITE_LANG_HEADER);
+  const lang = resolveLanguageEdition(langFromHeader, host);
 
   return (
     <html
       lang={htmlLang(lang)}
-      className={`${inter.variable} ${notoSansDevanagari.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${notoSansDevanagari.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <SessionProvider>
-          <QueryProvider>
-            {children}
-            <Toaster richColors position="top-right" />
-          </QueryProvider>
-        </SessionProvider>
+        {children}
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

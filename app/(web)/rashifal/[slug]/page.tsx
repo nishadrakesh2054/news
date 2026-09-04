@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { resolveLanguageEdition } from "@/lib/language";
-import { SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
+import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { PORTAL } from "@/constants/portal";
 import { getFormattedNepaliDate } from "@/lib/nepaliDate";
@@ -21,17 +21,17 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const { slug } = await params;
   const sp = await searchParams;
   const headerList = await headers();
-  const lang = resolveLanguageEdition(sp.lang, headerList.get("host"));
+  const lang = resolveLanguageEdition(sp.lang, requestHost(headerList));
   const list = await loadRashifalList();
   const rashi = getRashiBySlug(list, slug);
   if (!rashi) {
-    return { title: lang === "en" ? `Horoscope ${SITE_TITLE_SUFFIX}` : `राशिफल ${SITE_TITLE_SUFFIX_NP}` };
+    return { title: pageTitle(lang === "en" ? "Horoscope" : "राशिफल", lang) };
   }
+  const title =
+    lang === "en" ? `${rashi.enName} horoscope` : `${rashi.name} राशिफल`;
   return {
-    title:
-      lang === "en"
-        ? `${rashi.enName} horoscope ${SITE_TITLE_SUFFIX}`
-        : `${rashi.name} राशिफल ${SITE_TITLE_SUFFIX_NP}`,
+    title: pageTitle(title, lang),
+    alternates: editionAlternates(`/rashifal/${slug}`, lang),
   };
 }
 
@@ -41,7 +41,7 @@ export default async function RashiDetailPage({ params, searchParams }: PageProp
   const { slug } = await params;
   const sp = await searchParams;
   const headerList = await headers();
-  const lang = resolveLanguageEdition(sp.lang, headerList.get("host"));
+  const lang = resolveLanguageEdition(sp.lang, requestHost(headerList));
   const isEnglish = lang === "en";
   const langQ = isEnglish ? "?lang=en" : "";
 

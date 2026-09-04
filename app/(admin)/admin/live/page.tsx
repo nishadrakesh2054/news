@@ -48,10 +48,10 @@ export default function AdminLivePage() {
   const { data: liveArticles = [], isLoading, isError, refetch, isFetching } = useQuery<LiveArticleItem[]>({
     queryKey: ["admin-live"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/live");
+      const res = await fetch("/api/admin/live?limit=50");
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to fetch live articles");
-      return json.data;
+      return Array.isArray(json.data) ? json.data : json.data?.items ?? [];
     },
   });
 

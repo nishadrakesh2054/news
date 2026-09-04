@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
 import { Search as SearchIcon, Newspaper, ArrowLeft } from "lucide-react";
@@ -11,6 +12,7 @@ import {
   resolveCategoryName,
   resolveLanguageEdition,
 } from "@/lib/language";
+import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 
 interface SearchPageProps {
   searchParams: Promise<{
@@ -24,11 +26,21 @@ interface SearchPageProps {
 
 export const revalidate = 30;
 
+export async function generateMetadata({ searchParams }: SearchPageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const headerList = await headers();
+  const lang = resolveLanguageEdition(params.lang, requestHost(headerList));
+  return {
+    title: pageTitle(lang === "en" ? "Search" : "खोज", lang),
+    robots: { index: false, follow: true },
+    alternates: editionAlternates("/search", lang),
+  };
+}
+
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const headerList = await headers();
-  const host = headerList.get("x-forwarded-host") || headerList.get("host");
-  const lang = resolveLanguageEdition(params.lang, host);
+  const lang = resolveLanguageEdition(params.lang, requestHost(headerList));
   const isEnglish = lang === "en";
   const langQuery = isEnglish ? "lang=en" : "";
 

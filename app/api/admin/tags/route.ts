@@ -6,10 +6,28 @@ import { slugify } from "@/lib/slug";
 import { writeAuditLog } from "@/lib/audit-log";
 import { invalidatePublicTags } from "@/lib/cache-invalidation";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const light = searchParams.get("light") === "1";
+
+    if (light) {
+      const tags = await prisma.tag.findMany({
+        select: { id: true, name: true, nameNp: true, slug: true },
+        orderBy: { name: "asc" },
+        take: 500,
+      });
+      return apiSuccess(tags);
+    }
+
     const tags = await prisma.tag.findMany({
-      include: { _count: { select: { articles: true } } },
+      select: {
+        id: true,
+        name: true,
+        nameNp: true,
+        slug: true,
+        _count: { select: { articles: true } },
+      },
       orderBy: { name: "asc" },
     });
     return apiSuccess(tags);

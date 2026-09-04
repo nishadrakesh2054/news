@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { LanguageEditionType } from "@/lib/language";
@@ -17,6 +16,8 @@ type SidebarAd = AdUnitData & {
 type LatestNewsSectionProps = {
   articles: PortalArticleCard[];
   lang: LanguageEditionType;
+  adTop?: SidebarAd | null;
+  adBottom?: SidebarAd | null;
 };
 
 function AdSlotBox({
@@ -57,25 +58,14 @@ function AdSlotBox({
   );
 }
 
-export function LatestNewsSection({ articles, lang }: LatestNewsSectionProps) {
+export function LatestNewsSection({
+  articles,
+  lang,
+  adTop = null,
+  adBottom = null,
+}: LatestNewsSectionProps) {
   const isEnglish = lang === "en";
   const langQ = isEnglish ? "?lang=en" : "";
-  const [adTop, setAdTop] = useState<SidebarAd | null>(null);
-  const [adBottom, setAdBottom] = useState<SidebarAd | null>(null);
-
-  useEffect(() => {
-    fetch("/api/ads")
-      .then((res) => res.json())
-      .then((json) => {
-        if (!json.success || !Array.isArray(json.data)) return;
-        const active = (json.data as SidebarAd[]).filter((a) => a.isActive !== false);
-        const top = active.find((a) => a.slot === "SIDEBAR_TOP") || null;
-        const bottom = active.find((a) => a.slot === "SIDEBAR_BOTTOM") || null;
-        setAdTop(top);
-        setAdBottom(bottom);
-      })
-      .catch(() => {});
-  }, []);
 
   if (articles.length === 0) return null;
 

@@ -43,10 +43,10 @@ export default function AdminWebsiteRedirectsPage() {
   const { data: redirects = [], isLoading, isError, refetch, isFetching } = useQuery<RedirectItem[]>({
     queryKey: ["admin-redirects"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/website/redirects");
+      const res = await fetch("/api/admin/website/redirects?limit=200");
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to fetch redirects");
-      return json.data;
+      return Array.isArray(json.data) ? json.data : json.data?.items ?? [];
     },
   });
 

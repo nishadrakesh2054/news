@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { isEnglishHostname } from "@/lib/language";
@@ -14,26 +13,19 @@ type TagItem = {
   articlesCount?: number;
 };
 
-export function TrendingHashtags() {
+type TrendingHashtagsProps = {
+  tags?: TagItem[];
+};
+
+export function TrendingHashtags({ tags = [] }: TrendingHashtagsProps) {
   const searchParams = useSearchParams();
   const isEnglish =
     searchParams.get("lang") === "en" ||
     (typeof window !== "undefined" && isEnglishHostname(window.location.hostname));
   const langQ = isEnglish ? "?lang=en" : "";
-  const [tags, setTags] = useState<TagItem[]>([]);
+  const shown = tags.slice(0, 10);
 
-  useEffect(() => {
-    fetch("/api/tags")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && Array.isArray(json.data)) {
-          setTags(json.data.slice(0, 10));
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  if (tags.length === 0) return null;
+  if (shown.length === 0) return null;
 
   return (
     <div className="w-full border-b border-gray-200 bg-white py-2.5">
@@ -42,7 +34,7 @@ export function TrendingHashtags() {
           {isEnglish ? "Trending Topics:" : "ट्रेन्डिङ विषय:"}
         </span>
         <div className="flex items-center gap-2 whitespace-nowrap">
-          {tags.map((tag) => {
+          {shown.map((tag) => {
             const label = (isEnglish ? tag.name || tag.nameNp : tag.nameNp || tag.name) || tag.slug;
             return (
               <Link

@@ -4,12 +4,13 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { AdSlot, ArticleStatus } from "@prisma/client";
 import { absoluteUrl } from "@/lib/site-url";
-import { SITE_CONFIG, SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
+import { SITE_CONFIG } from "@/constants/site";
 import {
   languageEditionWhere,
   resolveArticleTitle,
   resolveLanguageEdition,
 } from "@/lib/language";
+import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { NewsCard } from "@/components/portal/NewsCard";
 import { ArticleAdSlot } from "@/components/portal/ArticleAdSlot";
@@ -23,8 +24,7 @@ interface TagPageProps {
 
 async function resolvePageLang(searchParamsLang?: string) {
   const headerList = await headers();
-  const host = headerList.get("x-forwarded-host") || headerList.get("host");
-  return resolveLanguageEdition(searchParamsLang, host);
+  return resolveLanguageEdition(searchParamsLang, requestHost(headerList));
 }
 
 export async function generateMetadata({ params, searchParams }: TagPageProps): Promise<Metadata> {
@@ -32,24 +32,23 @@ export async function generateMetadata({ params, searchParams }: TagPageProps): 
   const query = await searchParams;
   const lang = await resolvePageLang(query.lang);
   const tag = await prisma.tag.findUnique({ where: { slug } });
-  const label = tag?.name || slug;
-  const suffix = lang === "en" ? SITE_TITLE_SUFFIX : SITE_TITLE_SUFFIX_NP;
+  const label =
+    lang === "en"
+      ? tag?.name || slug
+      : tag?.nameNp || tag?.name || slug;
+  const headline = `#${label}`;
+  const description =
+    lang === "en"
+      ? `News tagged ${label} | ${SITE_CONFIG.name}`
+      : `${label} ट्यागका समाचार | ${SITE_CONFIG.nameNp}`;
 
   return {
-    title: lang === "en" ? `#${label}` : `#${label}`,
-    description:
-      lang === "en"
-        ? `News tagged ${label} | ${SITE_CONFIG.name}`
-        : `${label} ट्यागका समाचार | ${SITE_CONFIG.nameNp}`,
-    alternates: {
-      canonical: `/tag/${slug}`,
-      languages: {
-        "ne-NP": absoluteUrl(`/tag/${slug}`, "ne"),
-        en: absoluteUrl(`/tag/${slug}`, "en"),
-      },
-    },
+    title: pageTitle(headline, lang),
+    description,
+    alternates: editionAlternates(`/tag/${slug}`, lang),
     openGraph: {
-      title: `#${label} ${suffix}`,
+      title: pageTitle(headline, lang),
+      description,
       url: absoluteUrl(`/tag/${slug}`, lang),
       type: "website",
     },

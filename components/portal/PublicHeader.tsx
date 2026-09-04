@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Globe, Calendar } from "lucide-react";
 import { FacebookIcon, TwitterIcon, YoutubeIcon } from "./SocialIcons";
 import { getFormattedNepaliDate } from "@/lib/nepaliDate";
@@ -18,7 +18,11 @@ interface AdItem extends AdUnitData {
   isActive?: boolean;
 }
 
-export function PublicHeader() {
+type PublicHeaderProps = {
+  leaderboardAd?: AdItem | null;
+};
+
+export function PublicHeader({ leaderboardAd = null }: PublicHeaderProps) {
   const [nepaliDateStr] = useState(() => getFormattedNepaliDate());
   const [englishDateStr] = useState(() =>
     new Date().toLocaleDateString("en-US", {
@@ -28,7 +32,6 @@ export function PublicHeader() {
       day: "numeric",
     })
   );
-  const [leaderboardAd, setLeaderboardAd] = useState<AdItem | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -36,18 +39,6 @@ export function PublicHeader() {
   const langParam = searchParams.get("lang");
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
   const isEnglish = langParam === "en" || isEnglishHostname(hostname);
-
-  useEffect(() => {
-    fetch("/api/ads")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && Array.isArray(json.data)) {
-          const ad = json.data.find((a: AdItem) => a.slot === "HEADER_LEADERBOARD" && a.isActive);
-          if (ad) setLeaderboardAd(ad);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   const toggleLanguage = () => {
     const target = isEnglish ? "ne" : "en";

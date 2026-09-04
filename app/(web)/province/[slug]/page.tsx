@@ -1,17 +1,48 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
 import { MapPin, ChevronRight } from "lucide-react";
 import { PROVINCES } from "@/components/portal/ProvinceNewsWidget";
+import { resolveLanguageEdition } from "@/lib/language";
+import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 
 interface ProvincePageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ lang?: string }>;
 }
 
-export default async function ProvinceArchivePage({ params }: ProvincePageProps) {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: ProvincePageProps): Promise<Metadata> {
   const { slug } = await params;
+  const sp = await searchParams;
+  const headerList = await headers();
+  const lang = resolveLanguageEdition(sp.lang, requestHost(headerList));
+  const provinceObj = PROVINCES.find((p) => p.slug === slug);
+  const name = !provinceObj
+    ? slug
+    : lang === "en"
+      ? provinceObj.nameEn
+      : provinceObj.name;
+  const title = lang === "en" ? `${name} news` : `${name} समाचार`;
+  return {
+    title: pageTitle(title, lang),
+    description:
+      lang === "en"
+        ? `Latest news from ${name}.`
+        : `${name} बाट ताजा समाचार।`,
+    alternates: editionAlternates(`/province/${slug}`, lang),
+  };
+}
+
+export default async function ProvinceArchivePage({ params, searchParams }: ProvincePageProps) {
+  const { slug } = await params;
+  await searchParams;
 
   const provinceObj = PROVINCES.find((p) => p.slug === slug);
   if (!provinceObj) {

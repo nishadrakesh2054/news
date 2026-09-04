@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { resolveLanguageEdition } from "@/lib/language";
-import { SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
+import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { PORTAL } from "@/constants/portal";
 import { getFormattedNepaliDate } from "@/lib/nepaliDate";
@@ -16,12 +16,15 @@ type PageProps = {
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const sp = await searchParams;
   const headerList = await headers();
-  const lang = resolveLanguageEdition(sp.lang, headerList.get("host"));
+  const lang = resolveLanguageEdition(sp.lang, requestHost(headerList));
+  const title = lang === "en" ? "Horoscope" : "राशिफल";
   return {
-    title:
+    title: pageTitle(title, lang),
+    description:
       lang === "en"
-        ? `Horoscope ${SITE_TITLE_SUFFIX}`
-        : `राशिफल ${SITE_TITLE_SUFFIX_NP}`,
+        ? "Daily horoscope for all 12 rashis."
+        : "१२ राशिको दैनिक राशिफल।",
+    alternates: editionAlternates("/rashifal", lang),
   };
 }
 
@@ -30,7 +33,7 @@ export const dynamic = "force-dynamic";
 export default async function RashifalHubPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const headerList = await headers();
-  const lang = resolveLanguageEdition(sp.lang, headerList.get("host"));
+  const lang = resolveLanguageEdition(sp.lang, requestHost(headerList));
   const isEnglish = lang === "en";
   const langQ = isEnglish ? "?lang=en" : "";
   const list = await loadRashifalList();

@@ -56,10 +56,10 @@ export default function AdminGalleriesPage() {
   const { data: galleries = [], isLoading, isError, refetch, isFetching } = useQuery<GalleryItem[]>({
     queryKey: ["admin-galleries"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/galleries");
+      const res = await fetch("/api/admin/galleries?limit=100");
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to fetch galleries");
-      return json.data;
+      return Array.isArray(json.data) ? json.data : json.data?.items ?? [];
     },
   });
 

@@ -7,6 +7,7 @@ import {
 } from "@/lib/language";
 import { formatTimeAgoNp } from "@/lib/nepaliDate";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
+import { PortalImage } from "@/components/portal/PortalImage";
 import { PORTAL } from "@/constants/portal";
 
 export type PortalArticleCard = {
@@ -35,6 +36,8 @@ type NewsCardProps = {
   rank?: number;
   showExcerpt?: boolean;
   showAuthor?: boolean;
+  /** Mark first hero as LCP priority. */
+  priority?: boolean;
   className?: string;
 };
 
@@ -50,6 +53,7 @@ export function NewsCard({
   rank,
   showExcerpt = true,
   showAuthor = false,
+  priority = false,
   className = "",
 }: NewsCardProps) {
   const title = resolveArticleTitle(article, lang);
@@ -60,7 +64,7 @@ export function NewsCard({
   const image =
     optimizeCloudinaryUrl(
       article.coverImage,
-      variant === "lead" ? "hero" : variant === "stack" ? "card" : "card"
+      variant === "lead" ? "hero" : "card"
     ) || article.coverImage;
   const when = formatTimeAgoNp(
     typeof article.createdAt === "string" ? new Date(article.createdAt) : article.createdAt
@@ -79,11 +83,17 @@ export function NewsCard({
         className={`group relative block overflow-hidden bg-neutral-800 ${frameH} ${className}`}
       >
         {image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <PortalImage
             src={image}
-            alt=""
-            className="absolute inset-0 z-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            alt={title}
+            fill
+            priority={priority}
+            sizes={
+              isLead
+                ? "(max-width: 1024px) 100vw, 70vw"
+                : "(max-width: 1024px) 100vw, 35vw"
+            }
+            className="absolute inset-0 z-0 object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
         ) : null}
         {label ? (
@@ -94,7 +104,6 @@ export function NewsCard({
             {label}
           </span>
         ) : null}
-        {/* Translucent gradient — photo shows through, title stays readable */}
         <div
           className={`absolute inset-x-0 bottom-0 z-10 ${isLead ? "px-4 pb-4 pt-24 sm:px-5 sm:pb-5 sm:pt-28" : "px-3 pb-3 pt-14"}`}
           style={{
@@ -140,9 +149,8 @@ export function NewsCard({
     return (
       <Link href={href} className={`group flex gap-3 border-b border-gray-100 pb-3 last:border-0 ${className}`}>
         {image ? (
-          <div className="h-16 w-20 shrink-0 overflow-hidden bg-gray-200">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image} alt="" className="h-full w-full object-cover" />
+          <div className="relative h-16 w-20 shrink-0 overflow-hidden bg-gray-200">
+            <PortalImage src={image} alt={title} fill sizes="80px" className="object-cover" />
           </div>
         ) : null}
         <div className="min-w-0 space-y-1">
@@ -163,10 +171,15 @@ export function NewsCard({
   if (variant === "feature") {
     return (
       <Link href={href} className={`group block space-y-2 ${className}`}>
-        <div className="aspect-[16/10] overflow-hidden bg-gray-200">
+        <div className="relative aspect-[16/10] overflow-hidden bg-gray-200">
           {image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={image} alt="" className="h-full w-full object-cover" />
+            <PortalImage
+              src={image}
+              alt={title}
+              fill
+              sizes="(max-width: 768px) 100vw, 33vw"
+              className="object-cover"
+            />
           ) : null}
         </div>
         {category ? (
@@ -185,14 +198,20 @@ export function NewsCard({
   }
 
   return (
-    <article className={`group flex flex-col gap-3 border-b border-gray-100 py-4 transition-colors hover:bg-gray-50/80 sm:flex-row sm:gap-4 sm:py-5 ${className}`}>
+    <article
+      className={`group flex flex-col gap-3 border-b border-gray-100 py-4 transition-colors hover:bg-gray-50/80 sm:flex-row sm:gap-4 sm:py-5 ${className}`}
+    >
       {image ? (
-        <Link href={href} className="block h-44 shrink-0 overflow-hidden bg-gray-200 sm:h-28 sm:w-44">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+        <Link
+          href={href}
+          className="relative block h-44 shrink-0 overflow-hidden bg-gray-200 sm:h-28 sm:w-44"
+        >
+          <PortalImage
             src={image}
-            alt=""
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            alt={title}
+            fill
+            sizes="(max-width: 640px) 100vw, 176px"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
         </Link>
       ) : null}

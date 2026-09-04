@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { ArticleStatus, AdSlot } from "@prisma/client";
+import { ArticleStatus, AdSlot, LanguageEdition } from "@prisma/client";
 import { formatTimeAgoNp, getFormattedNepaliDate } from "@/lib/nepaliDate";
 import { ArticleBodyClient } from "@/components/web/ArticleBodyClient";
 import { CommentsSection } from "@/components/web/CommentsSection";
@@ -13,7 +13,7 @@ import { ArticleSidebar } from "@/components/portal/ArticleSidebar";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { PORTAL } from "@/constants/portal";
 import { absoluteUrl } from "@/lib/site-url";
-import { SITE_CONFIG, SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
+import { SITE_CONFIG } from "@/constants/site";
 import {
   articleMatchesLang,
   languageEditionWhere,
@@ -26,7 +26,17 @@ import {
   resolveMetaDescription,
   resolveMetaTitle,
 } from "@/lib/language";
+import {
+  breadcrumbJsonLd,
+  editionAlternates,
+  newsArticleJsonLd,
+  pageTitle,
+  requestHost,
+} from "@/lib/seo";
+import { getArticleBySlug } from "@/lib/article-page";
+import { getCachedActiveAds } from "@/lib/public-cache";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
+import { PortalImage } from "@/components/portal/PortalImage";
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -35,48 +45,45 @@ interface ArticlePageProps {
 
 async function resolvePageLang(searchParamsLang?: string) {
   const headerList = await headers();
-  const host = headerList.get("x-forwarded-host") || headerList.get("host");
-  return resolveLanguageEdition(searchParamsLang, host);
+  return resolveLanguageEdition(searchParamsLang, requestHost(headerList));
+}
+
+function editionAllows(edition: LanguageEdition | null | undefined, which: "ne" | "en") {
+  if (!edition || edition === LanguageEdition.BOTH) return true;
+  if (which === "en") return edition === LanguageEdition.ENGLISH_ONLY;
+  return edition === LanguageEdition.NEPALI_ONLY;
 }
 
 export async function generateMetadata({ params, searchParams }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
   const query = await searchParams;
   const lang = await resolvePageLang(query.lang);
-  const article = await prisma.article.findUnique({
-    where: { slug },
-    include: { category: true },
-  });
+  const article = await getArticleBySlug(slug);
 
   if (!article) {
     return {
-      title:
-        lang === "en"
-          ? `Article not found ${SITE_TITLE_SUFFIX}`
-          : `समाचार भेटिएन ${SITE_TITLE_SUFFIX_NP}`,
+      title: pageTitle(lang === "en" ? "Article not found" : "समाचार भेटिएन", lang),
     };
   }
 
   const title = resolveMetaTitle(article, lang);
   const description = resolveMetaDescription(article, lang) || SITE_CONFIG.domain;
-  const image = article.ogImage || article.coverImage || "/favicon.ico";
-  const suffix = lang === "en" ? SITE_TITLE_SUFFIX : SITE_TITLE_SUFFIX_NP;
+  const image = article.ogImage || article.coverImage || "/logo/logo.png";
   const keywords = resolveKeywords(article, lang);
+  const path = `/article/${article.slug}`;
 
   return {
-    title: `${title} ${suffix}`,
+    title: pageTitle(title, lang),
     description,
     keywords: keywords ? keywords.split(",").map((k) => k.trim()).filter(Boolean) : undefined,
-    alternates: {
-      languages: {
-        "ne-NP": absoluteUrl(`/article/${article.slug}`, "ne"),
-        en: absoluteUrl(`/article/${article.slug}`, "en"),
-      },
-    },
+    alternates: editionAlternates(path, lang, {
+      includeNe: editionAllows(article.languageEdition, "ne"),
+      includeEn: editionAllows(article.languageEdition, "en"),
+    }),
     openGraph: {
       title,
       description,
-      url: absoluteUrl(`/article/${article.slug}`, lang),
+      url: absoluteUrl(path, lang),
       siteName: SITE_CONFIG.name,
       locale: lang === "en" ? "en_US" : "ne_NP",
       images: [{ url: image, width: 1200, height: 630, alt: title }],
@@ -100,15 +107,7 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
   const isEnglish = lang === "en";
   const langQuery = isEnglish ? "?lang=en" : "";
 
-  const article = await prisma.article.findUnique({
-    where: { slug },
-    include: {
-      category: true,
-      author: {
-        select: { id: true, name: true, email: true, image: true },
-      },
-    },
-  });
+  const article = await getArticleBySlug(slug);
 
   if (!article || article.status !== ArticleStatus.PUBLISHED) {
     return notFound();
@@ -118,24 +117,8 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
     return notFound();
   }
 
-  const [articleAds, relatedArticles, latestArticles, trendingArticles] = await Promise.all([
-    prisma.ad.findMany({
-      where: {
-        isActive: true,
-        slot: {
-          in: [AdSlot.IN_ARTICLE, AdSlot.SIDEBAR_TOP, AdSlot.SIDEBAR_BOTTOM],
-        },
-      },
-      select: {
-        id: true,
-        title: true,
-        imageUrl: true,
-        targetUrl: true,
-        scriptCode: true,
-        slot: true,
-      },
-      orderBy: { createdAt: "desc" },
-    }),
+  const [allAds, relatedArticles, latestArticles, trendingArticles] = await Promise.all([
+    getCachedActiveAds(),
     prisma.article.findMany({
       where: {
         categoryId: article.categoryId,
@@ -151,7 +134,7 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
         coverImage: true,
         createdAt: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { publishedAt: "desc" },
       take: 4,
     }),
     prisma.article.findMany({
@@ -168,7 +151,7 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
         coverImage: true,
         createdAt: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { publishedAt: "desc" },
       take: 5,
     }),
     prisma.article.findMany({
@@ -191,6 +174,13 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
     }),
   ]);
 
+  const articleAds = allAds.filter(
+    (a) =>
+      a.slot === AdSlot.IN_ARTICLE ||
+      a.slot === AdSlot.SIDEBAR_TOP ||
+      a.slot === AdSlot.SIDEBAR_BOTTOM
+  );
+
   const inArticleAds = articleAds.filter((a) => a.slot === AdSlot.IN_ARTICLE);
   const inArticleAdTop = inArticleAds[0] ?? null;
   const inArticleAdMid = inArticleAds[1] ?? null;
@@ -209,22 +199,29 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
   const coverSrc =
     optimizeCloudinaryUrl(article.coverImage || undefined, "hero") || article.coverImage;
   const authorName = article.author.name || (isEnglish ? "Editorial desk" : "सम्पादकीय टोली");
+  const publishedAt = article.publishedAt || article.createdAt;
+  const authorUrl = absoluteUrl(`/author/${article.author.id}`, lang);
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "NewsArticle",
-    headline: articleTitle,
-    image: article.coverImage ? [article.coverImage] : [],
-    datePublished: article.createdAt.toISOString(),
-    dateModified: article.updatedAt.toISOString(),
-    author: { "@type": "Person", name: authorName },
-    publisher: {
-      "@type": "Organization",
-      name: SITE_CONFIG.name,
-      logo: { "@type": "ImageObject", url: absoluteUrl("/logo.png") },
-    },
-    description: articleExcerpt || article.metaDescription || "",
-  };
+  const jsonLd = newsArticleJsonLd({
+    title: articleTitle,
+    description: articleExcerpt || resolveMetaDescription(article, lang) || "",
+    url: shareUrl,
+    image: article.coverImage,
+    datePublished: publishedAt,
+    dateModified: article.updatedAt,
+    authorName,
+    authorUrl,
+    lang,
+  });
+
+  const breadcrumbLd = breadcrumbJsonLd(
+    [
+      { name: isEnglish ? "Home" : "गृह", path: "/" },
+      { name: categoryName, path: `/category/${article.category.slug}` },
+      { name: articleTitle, path: `/article/${article.slug}` },
+    ],
+    lang
+  );
 
   return (
     <>
@@ -232,6 +229,10 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
       <main className="w-full bg-white pb-16 text-gray-900">
@@ -254,6 +255,12 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
             >
               {categoryName}
             </Link>
+            <span aria-hidden className="text-gray-300">
+              /
+            </span>
+            <span className="line-clamp-1 font-medium" style={{ color: PORTAL.ink }}>
+              {articleTitle}
+            </span>
           </nav>
 
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:gap-12">
@@ -297,8 +304,8 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
                 <span className="text-gray-300" aria-hidden>
                   ·
                 </span>
-                <time dateTime={article.createdAt.toISOString()}>
-                  {getFormattedNepaliDate(article.createdAt)}
+                <time dateTime={publishedAt.toISOString()}>
+                  {getFormattedNepaliDate(publishedAt)}
                 </time>
                 <span className="text-gray-300" aria-hidden>
                   ·
@@ -312,12 +319,16 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
 
             {coverSrc ? (
               <figure className="mb-8">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={coverSrc}
-                  alt={articleTitle}
-                  className="aspect-[16/10] w-full object-cover bg-gray-100"
-                />
+                <div className="relative aspect-[16/10] w-full overflow-hidden bg-gray-100">
+                  <PortalImage
+                    src={coverSrc}
+                    alt={articleTitle}
+                    fill
+                    priority
+                    sizes="(max-width: 1024px) 100vw, 70vw"
+                    className="object-cover"
+                  />
+                </div>
                 {article.caption ? (
                   <figcaption className="mt-2.5 text-[13px] leading-relaxed text-gray-500">
                     {isEnglish ? "Photo: " : "तस्बिर: "}
@@ -383,7 +394,7 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={thumb}
-                                alt=""
+                                alt={relTitle}
                                 className="h-full w-full object-cover transition-opacity group-hover:opacity-90"
                               />
                             </div>

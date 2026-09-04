@@ -12,6 +12,7 @@ import {
   assertFeaturedPermission,
 } from "@/lib/article-permissions";
 import { writeAuditLog } from "@/lib/audit-log";
+import { invalidatePublicArticles } from "@/lib/cache-invalidation";
 
 export async function GET(
   request: NextRequest,
@@ -194,6 +195,8 @@ export async function PATCH(
       details: `${normalizedStatus}: ${updatedArticle.title}`,
     });
 
+    invalidatePublicArticles();
+
     return apiSuccess(updatedArticle, "Article updated successfully");
   } catch (error) {
     return handleServerError(error, "Failed to update article");
@@ -234,6 +237,8 @@ export async function DELETE(
       entityId: id,
       details: existingArticle.title,
     });
+
+    invalidatePublicArticles();
 
     return apiSuccess(null, "Article deleted successfully");
   } catch (error) {

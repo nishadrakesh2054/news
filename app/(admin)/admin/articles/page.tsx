@@ -113,7 +113,7 @@ export default function AdminArticlesPage() {
   const { data: categoriesData = [] } = useQuery<CategoryOption[]>({
     queryKey: ["admin-categories-filter"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/categories");
+      const res = await fetch("/api/admin/categories?light=1");
       const json = await res.json();
       if (!res.ok) throw new Error("Failed to fetch categories");
       return json.data;
@@ -123,7 +123,7 @@ export default function AdminArticlesPage() {
   const { data: tagsData = [] } = useQuery<TagOption[]>({
     queryKey: ["admin-tags-filter"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/tags");
+      const res = await fetch("/api/admin/tags?light=1");
       const json = await res.json();
       if (!res.ok) throw new Error("Failed to fetch tags");
       return json.data;
@@ -150,6 +150,7 @@ export default function AdminArticlesPage() {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
+        summary: "1",
       });
       if (search.trim()) params.append("search", search.trim());
       if (statusFilter !== "ALL") params.append("status", statusFilter);

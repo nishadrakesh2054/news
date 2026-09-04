@@ -5,13 +5,34 @@ import { requireEditor } from "@/lib/admin-auth";
 import { slugify } from "@/lib/slug";
 import { writeAuditLog } from "@/lib/audit-log";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const galleries = await prisma.gallery.findMany({
-      include: { _count: { select: { items: true } } },
-      orderBy: { createdAt: "desc" },
-    });
-    return apiSuccess(galleries);
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10) || 50));
+    const skip = (page - 1) * limit;
+
+    const [galleries, total] = await Promise.all([
+      prisma.gallery.findMany({
+        select: {
+          id: true,
+          title: true,
+          titleNp: true,
+          slug: true,
+          description: true,
+          coverUrl: true,
+          isPublished: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: { select: { items: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.gallery.count(),
+    ]);
+    return apiSuccess({ items: galleries, page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
   } catch (error) {
     return handleServerError(error, "Failed to fetch galleries");
   }

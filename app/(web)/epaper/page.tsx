@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { Newspaper } from "lucide-react";
@@ -8,6 +9,7 @@ import { SITE_CONFIG } from "@/constants/site";
 import { PORTAL } from "@/constants/portal";
 import { EpaperPdfCard } from "@/components/portal/EpaperPdfCard";
 import { PortalContainer, SectionHeader } from "@/components/portal/SectionHeader";
+import { editionAlternates, pageTitle as seoPageTitle, requestHost } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +17,25 @@ interface PageProps {
   searchParams: Promise<{ lang?: string }>;
 }
 
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const headerList = await headers();
+  const lang = resolveLanguageEdition(params.lang, requestHost(headerList));
+  const title = lang === "en" ? "E-Paper" : "इ-पत्रिका";
+  return {
+    title: seoPageTitle(title, lang),
+    description:
+      lang === "en"
+        ? `${SITE_CONFIG.name} digital newspaper editions.`
+        : `${SITE_CONFIG.nameNp} डिजिटल पत्रिका संस्करणहरू।`,
+    alternates: editionAlternates("/epaper", lang),
+  };
+}
+
 export default async function PublicEPaperPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const headerList = await headers();
-  const lang = resolveLanguageEdition(params.lang, headerList.get("host"));
+  const lang = resolveLanguageEdition(params.lang, requestHost(headerList));
   const isEnglish = lang === "en";
   const langQ = isEnglish ? "?lang=en" : "";
   const homeHref = isEnglish ? "/?lang=en" : "/";

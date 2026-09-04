@@ -50,10 +50,10 @@ export default function AdminBreakingPage() {
   const { data: breakingArticles = [], isLoading, isError, refetch, isFetching } = useQuery<BreakingItem[]>({
     queryKey: ["admin-breaking"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/breaking");
+      const res = await fetch("/api/admin/breaking?limit=100");
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to fetch breaking news");
-      return json.data;
+      return Array.isArray(json.data) ? json.data : json.data?.items ?? [];
     },
   });
 

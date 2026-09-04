@@ -152,7 +152,7 @@ export default function AdminTagsPage() {
 
     const payload = {
       name: name.trim(),
-      nameNp: nameNp.trim() || null,
+      nameNp: nameNp.trim() || undefined,
       slug: autoSlug(slug || name),
     };
 

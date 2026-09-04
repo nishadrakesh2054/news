@@ -9,8 +9,9 @@ import {
   setBreakingExpiry,
 } from "@/lib/breaking-expiry";
 import { sendBreakingArticlePush } from "@/lib/notification-dispatch";
+import { invalidatePublicArticles, invalidatePublicBreaking } from "@/lib/cache-invalidation";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const auth = await requireEditor();
     if (auth.error) return auth.error;
@@ -18,30 +19,44 @@ export async function GET() {
     await clearExpiredBreakingArticles();
     const expiries = await getBreakingExpiries();
 
-    const breakingArticles = await prisma.article.findMany({
-      where: { isBreaking: true },
-      select: {
-        id: true,
-        title: true,
-        titleNp: true,
-        slug: true,
-        status: true,
-        coverImage: true,
-        isBreaking: true,
-        updatedAt: true,
-        category: {
-          select: { name: true, nameNp: true },
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10) || 50));
+    const skip = (page - 1) * limit;
+
+    const where = { isBreaking: true as const };
+    const [breakingArticles, total] = await Promise.all([
+      prisma.article.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          titleNp: true,
+          slug: true,
+          status: true,
+          coverImage: true,
+          isBreaking: true,
+          updatedAt: true,
+          category: {
+            select: { name: true, nameNp: true },
+          },
         },
-      },
-      orderBy: { updatedAt: "desc" },
-    });
+        orderBy: { updatedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.article.count({ where }),
+    ]);
 
     const withExpiry = breakingArticles.map((article) => ({
       ...article,
       breakingExpiresAt: expiries[article.id] ?? null,
     }));
 
-    return apiSuccess(withExpiry, "Breaking news items retrieved successfully");
+    return apiSuccess(
+      { items: withExpiry, page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
+      "Breaking news items retrieved successfully"
+    );
   } catch (error) {
     return handleServerError(error, "Failed to retrieve breaking news items");
   }
@@ -87,6 +102,9 @@ export async function POST(request: NextRequest) {
         slug: article.slug,
       }).catch(() => {});
     }
+
+    invalidatePublicBreaking();
+    invalidatePublicArticles();
 
     return apiSuccess(
       {

@@ -6,12 +6,13 @@ import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
 import { ArrowLeft, Mail, Newspaper, UserRound } from "lucide-react";
 import { absoluteUrl } from "@/lib/site-url";
-import { SITE_CONFIG, SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
+import { SITE_CONFIG } from "@/constants/site";
 import {
   languageEditionWhere,
   resolveArticleTitle,
   resolveLanguageEdition,
 } from "@/lib/language";
+import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 
 interface AuthorProfilePageProps {
   params: Promise<{ id: string }>;
@@ -20,8 +21,7 @@ interface AuthorProfilePageProps {
 
 async function resolvePageLang(searchParamsLang?: string) {
   const headerList = await headers();
-  const host = headerList.get("x-forwarded-host") || headerList.get("host");
-  return resolveLanguageEdition(searchParamsLang, host);
+  return resolveLanguageEdition(searchParamsLang, requestHost(headerList));
 }
 
 export async function generateMetadata({
@@ -38,33 +38,24 @@ export async function generateMetadata({
 
   if (!author) {
     return {
-      title:
-        lang === "en"
-          ? `Author not found ${SITE_TITLE_SUFFIX}`
-          : `लेखक भेटिएन ${SITE_TITLE_SUFFIX_NP}`,
+      title: pageTitle(lang === "en" ? "Author not found" : "लेखक भेटिएन", lang),
     };
   }
 
   const name = author.name || (lang === "en" ? "Author" : "लेखक");
+  const headline = lang === "en" ? `${name} | Author` : `${name} | लेखक प्रोफाइल`;
+  const description =
+    lang === "en"
+      ? `Articles by ${name} | ${SITE_CONFIG.name}`
+      : `${name} द्वारा लेखिएका समाचार, रिपोर्ट, विश्लेषण र विशेष सामग्री | ${SITE_CONFIG.nameNp}`;
+
   return {
-    title: lang === "en" ? `${name} | Author` : `${name} | लेखक प्रोफाइल`,
-    description:
-      lang === "en"
-        ? `Articles by ${name} | ${SITE_CONFIG.name}`
-        : `${name} द्वारा लेखिएका समाचार, रिपोर्ट, विश्लेषण र विशेष सामग्री | ${SITE_CONFIG.nameNp}`,
-    alternates: {
-      canonical: `/author/${id}`,
-      languages: {
-        "ne-NP": absoluteUrl(`/author/${id}`, "ne"),
-        en: absoluteUrl(`/author/${id}`, "en"),
-      },
-    },
+    title: pageTitle(headline, lang),
+    description,
+    alternates: editionAlternates(`/author/${id}`, lang),
     openGraph: {
-      title: lang === "en" ? `${name} | Author` : `${name} | लेखक प्रोफाइल`,
-      description:
-        lang === "en"
-          ? `Articles by ${name} | ${SITE_CONFIG.name}`
-          : `${name} द्वारा लेखिएका समाचार, रिपोर्ट, विश्लेषण र विशेष सामग्री | ${SITE_CONFIG.nameNp}`,
+      title: pageTitle(headline, lang),
+      description,
       url: absoluteUrl(`/author/${id}`, lang),
       type: "profile",
       images: author.image ? [{ url: author.image, width: 640, height: 640, alt: name }] : undefined,

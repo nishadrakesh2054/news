@@ -12,6 +12,7 @@ import {
   assertFeaturedPermission,
 } from "@/lib/article-permissions";
 import { writeAuditLog } from "@/lib/audit-log";
+import { invalidatePublicArticles } from "@/lib/cache-invalidation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,8 +45,8 @@ export async function GET(request: NextRequest) {
       where.OR = [
         { title: { contains: search, mode: "insensitive" } },
         { titleNp: { contains: search, mode: "insensitive" } },
-        { content: { contains: search, mode: "insensitive" } },
-        { contentNp: { contains: search, mode: "insensitive" } },
+        { excerpt: { contains: search, mode: "insensitive" } },
+        { excerptNp: { contains: search, mode: "insensitive" } },
         { district: { contains: search, mode: "insensitive" } },
         { tags: { some: { name: { contains: search, mode: "insensitive" } } } },
       ];
@@ -128,6 +129,8 @@ export async function GET(request: NextRequest) {
       },
     } satisfies Prisma.ArticleSelect;
 
+    const wantSummary = searchParams.get("summary") === "1";
+
     const total = await prisma.article.count({ where });
     const articles = await prisma.article.findMany({
       where,
@@ -137,47 +140,62 @@ export async function GET(request: NextRequest) {
       take: limit,
     });
 
-    const summaryWhere: Prisma.ArticleWhereInput =
-      auth.session!.user.role === Role.AUTHOR
-        ? { authorId: auth.session!.user.id }
-        : {};
+    let summary = {
+      total,
+      published: 0,
+      draft: 0,
+      pending: 0,
+      archived: 0,
+      breaking: 0,
+      scheduled: 0,
+      views: 0,
+    };
 
-    const [statusGroups, viewsAggregate, breakingCount, scheduledCount] = await Promise.all([
-      prisma.article.groupBy({
-        by: ["status"],
-        where: summaryWhere,
-        _count: { _all: true },
-      }),
-      prisma.article.aggregate({
-        where: summaryWhere,
-        _sum: { views: true },
-      }),
-      prisma.article.count({ where: { ...summaryWhere, isBreaking: true } }),
-      prisma.article.count({
-        where: {
-          ...summaryWhere,
-          scheduledAt: { gt: new Date() },
-          status: { in: [ArticleStatus.DRAFT, ArticleStatus.PENDING] },
-        },
-      }),
-    ]);
+    if (wantSummary) {
+      const summaryWhere: Prisma.ArticleWhereInput =
+        auth.session!.user.role === Role.AUTHOR
+          ? { authorId: auth.session!.user.id }
+          : {};
 
-    const statusCount = (value: ArticleStatus) =>
-      statusGroups.find((group) => group.status === value)?._count._all ?? 0;
+      const [statusGroups, viewsAggregate, breakingCount, scheduledCount] = await Promise.all([
+        prisma.article.groupBy({
+          by: ["status"],
+          where: summaryWhere,
+          _count: { _all: true },
+        }),
+        prisma.article.aggregate({
+          where: summaryWhere,
+          _sum: { views: true },
+        }),
+        prisma.article.count({ where: { ...summaryWhere, isBreaking: true } }),
+        prisma.article.count({
+          where: {
+            ...summaryWhere,
+            scheduledAt: { gt: new Date() },
+            status: { in: [ArticleStatus.DRAFT, ArticleStatus.PENDING] },
+          },
+        }),
+      ]);
+
+      const statusCount = (value: ArticleStatus) =>
+        statusGroups.find((group) => group.status === value)?._count._all ?? 0;
+
+      summary = {
+        total,
+        published: statusCount(ArticleStatus.PUBLISHED),
+        draft: statusCount(ArticleStatus.DRAFT),
+        pending: statusCount(ArticleStatus.PENDING),
+        archived: statusCount(ArticleStatus.ARCHIVED),
+        breaking: breakingCount,
+        scheduled: scheduledCount,
+        views: viewsAggregate._sum.views ?? 0,
+      };
+    }
 
     return apiSuccess(
       {
         articles,
-        summary: {
-          total,
-          published: statusCount(ArticleStatus.PUBLISHED),
-          draft: statusCount(ArticleStatus.DRAFT),
-          pending: statusCount(ArticleStatus.PENDING),
-          archived: statusCount(ArticleStatus.ARCHIVED),
-          breaking: breakingCount,
-          scheduled: scheduledCount,
-          views: viewsAggregate._sum.views ?? 0,
-        },
+        summary,
         pagination: {
           total,
           page,
@@ -278,6 +296,10 @@ export async function POST(request: NextRequest) {
       entityId: article.id,
       details: `${article.status}: ${article.title}`,
     });
+
+    if (article.status === ArticleStatus.PUBLISHED) {
+      invalidatePublicArticles();
+    }
 
     return apiSuccess(article, "Article created successfully", 201);
   } catch (error) {

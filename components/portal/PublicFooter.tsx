@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Mail, Phone, MapPin, ShieldCheck } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -18,27 +18,20 @@ interface CategoryItem {
   displayName?: string;
 }
 
-export function PublicFooter() {
+type PublicFooterProps = {
+  categories?: CategoryItem[];
+};
+
+export function PublicFooter({ categories: initialCategories = [] }: PublicFooterProps) {
   const searchParams = useSearchParams();
   const langParam = searchParams.get("lang");
   const isEnglish =
     langParam === "en" ||
     (typeof window !== "undefined" && isEnglishHostname(window.location.hostname));
   const langQ = isEnglish ? "?lang=en" : "";
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const categories = initialCategories.slice(0, 6);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetch(`/api/categories${isEnglish ? "?lang=en" : ""}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && Array.isArray(json.data)) {
-          setCategories(json.data.slice(0, 6));
-        }
-      })
-      .catch(() => {});
-  }, [isEnglish]);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,11 +59,12 @@ export function PublicFooter() {
   };
 
   const quickLinks = [
+    { href: `/about${langQ}`, label: isEnglish ? "About" : "हाम्रो बारे" },
+    { href: `/contact${langQ}`, label: isEnglish ? "Contact" : "सम्पर्क" },
+    { href: `/privacy${langQ}`, label: isEnglish ? "Privacy" : "गोपनीयता" },
     { href: `/editorial-team${langQ}`, label: isEnglish ? "Editorial team" : "सम्पादकीय टोली" },
     { href: `/epaper${langQ}`, label: isEnglish ? "E-Paper" : "इ-पत्रिका" },
     { href: `/media${langQ}`, label: isEnglish ? "Photo & Video" : "मिडिया" },
-    { href: `/search${langQ}`, label: isEnglish ? "Search" : "खोज" },
-    { href: `/unicode${langQ}`, label: isEnglish ? "Unicode tools" : "युनिकोड" },
   ];
 
   const linkClass = "text-white/80 transition-colors hover:text-white";

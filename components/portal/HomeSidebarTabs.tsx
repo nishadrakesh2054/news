@@ -70,7 +70,7 @@ export function HomeSidebarTabs({ recent, popular, lang }: HomeSidebarTabsProps)
                   <div className="h-16 w-16 shrink-0 overflow-hidden bg-gray-200">
                     {image ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={image} alt="" className="h-full w-full object-cover" />
+                      <img src={image} alt={title} className="h-full w-full object-cover" />
                     ) : null}
                   </div>
                   <div className="min-w-0 flex-1 space-y-1">

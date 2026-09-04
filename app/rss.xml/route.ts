@@ -21,9 +21,9 @@ export async function GET() {
     const xml = `<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
-  <title>${SITE_CONFIG.name} — Nepali News RSS</title>
+  <title>${SITE_CONFIG.nameNp} — समाचार RSS</title>
   <link>${siteUrl}</link>
-  <description>${SITE_CONFIG.description}</description>
+  <description>इको माञ्च — नेपालका ताजा समाचार।</description>
   <language>ne-NP</language>
   <atom:link href="${siteUrl}/rss.xml" rel="self" type="application/rss+xml" />
 ${articles

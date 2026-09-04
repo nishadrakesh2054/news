@@ -1,11 +1,35 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
 import { ArrowLeft, Camera, PlayCircle } from "lucide-react";
+import { resolveLanguageEdition } from "@/lib/language";
+import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 
 export const revalidate = 60;
 
-export default async function MediaGalleryPage() {
+type MediaPageProps = {
+  searchParams: Promise<{ lang?: string }>;
+};
+
+export async function generateMetadata({ searchParams }: MediaPageProps): Promise<Metadata> {
+  const sp = await searchParams;
+  const headerList = await headers();
+  const lang = resolveLanguageEdition(sp.lang, requestHost(headerList));
+  const title = lang === "en" ? "Media & photo gallery" : "मिडिया र फोटो ग्यालेरी";
+  return {
+    title: pageTitle(title, lang),
+    description:
+      lang === "en"
+        ? "Multimedia coverage and visual stories."
+        : "दृश्य–श्रव्य सामग्री र फोटो कथाहरू।",
+    alternates: editionAlternates("/media", lang),
+  };
+}
+
+export default async function MediaGalleryPage({ searchParams }: MediaPageProps) {
+  await searchParams;
   let mediaStories: Array<{
     id: string;
     title: string;

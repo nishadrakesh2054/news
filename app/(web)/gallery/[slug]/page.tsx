@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { resolveLanguageEdition } from "@/lib/language";
-import { SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constants/site";
+import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { PORTAL } from "@/constants/portal";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
@@ -21,16 +21,19 @@ export async function generateMetadata({
   const { slug } = await params;
   const sp = await searchParams;
   const headerList = await headers();
-  const lang = resolveLanguageEdition(sp.lang, headerList.get("host"));
+  const lang = resolveLanguageEdition(sp.lang, requestHost(headerList));
   const gallery = await prisma.gallery.findFirst({
     where: { slug, isPublished: true },
     select: { title: true, titleNp: true, description: true },
   });
-  if (!gallery) return { title: `Gallery ${SITE_TITLE_SUFFIX}` };
+  if (!gallery) {
+    return { title: pageTitle(lang === "en" ? "Gallery" : "ग्यालेरी", lang) };
+  }
   const title = lang === "en" ? gallery.title : gallery.titleNp || gallery.title;
   return {
-    title: `${title} ${lang === "en" ? SITE_TITLE_SUFFIX : SITE_TITLE_SUFFIX_NP}`,
+    title: pageTitle(title, lang),
     description: gallery.description || undefined,
+    alternates: editionAlternates(`/gallery/${slug}`, lang),
   };
 }
 
@@ -40,7 +43,7 @@ export default async function GalleryDetailPage({ params, searchParams }: Galler
   const { slug } = await params;
   const sp = await searchParams;
   const headerList = await headers();
-  const lang = resolveLanguageEdition(sp.lang, headerList.get("host"));
+  const lang = resolveLanguageEdition(sp.lang, requestHost(headerList));
   const isEnglish = lang === "en";
   const langQ = isEnglish ? "?lang=en" : "";
 

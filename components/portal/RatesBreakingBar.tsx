@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Zap } from "lucide-react";
@@ -13,8 +13,12 @@ interface BreakingItem {
   slug: string;
 }
 
+type RatesBreakingBarProps = {
+  items?: BreakingItem[];
+};
+
 /** Breaking ticker: marquee scroll; arrows restart from prev/next story. */
-export function RatesBreakingBar() {
+export function RatesBreakingBar({ items = [] }: RatesBreakingBarProps) {
   const searchParams = useSearchParams();
   const langParam = searchParams.get("lang");
   const isEnglish =
@@ -22,38 +26,11 @@ export function RatesBreakingBar() {
     (typeof window !== "undefined" && isEnglishHostname(window.location.hostname));
   const langQ = isEnglish ? "?lang=en" : "";
 
-  const [breaking, setBreaking] = useState<BreakingItem[]>([]);
+  const [breaking] = useState<BreakingItem[]>(items);
   const [startIndex, setStartIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   /** Bumps so arrow clicks remount the marquee even if index wraps. */
   const [tickKey, setTickKey] = useState(0);
-
-  useEffect(() => {
-    fetch(`/api/breaking${langQ}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          setBreaking(
-            json.data.map(
-              (item: {
-                id: string;
-                title: string;
-                titleNp?: string;
-                displayTitle?: string;
-                slug: string;
-              }) => ({
-                id: item.id,
-                title: item.displayTitle || item.titleNp || item.title,
-                slug: item.slug,
-              })
-            )
-          );
-          setStartIndex(0);
-          setTickKey((k) => k + 1);
-        }
-      })
-      .catch(() => {});
-  }, [langQ]);
 
   const ordered = useMemo(() => {
     if (breaking.length === 0) return [];

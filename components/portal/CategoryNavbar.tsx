@@ -15,11 +15,14 @@ interface CategoryItem {
   displayName?: string;
 }
 
-export function CategoryNavbar() {
+type CategoryNavbarProps = {
+  categories?: CategoryItem[];
+};
+
+export function CategoryNavbar({ categories = [] }: CategoryNavbarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,17 +34,6 @@ export function CategoryNavbar() {
     langParam === "en" ||
     (typeof window !== "undefined" && isEnglishHostname(window.location.hostname));
   const langQuery = isEnglish ? "?lang=en" : "";
-
-  useEffect(() => {
-    fetch(`/api/categories${isEnglish ? "?lang=en" : ""}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && Array.isArray(json.data)) {
-          setCategories(json.data);
-        }
-      })
-      .catch(() => {});
-  }, [isEnglish]);
 
   useEffect(() => {
     if (searchOpen) searchInputRef.current?.focus();
