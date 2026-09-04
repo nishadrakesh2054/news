@@ -69,7 +69,7 @@ export default async function TagArchivePage({ params, searchParams }: TagPagePr
   const [tag, sidebarAds, otherTags] = await Promise.all([
     prisma.tag.findUnique({
       where: { slug },
-      select: { id: true, name: true, slug: true },
+      select: { id: true, name: true, nameNp: true, slug: true },
     }),
     prisma.ad.findMany({
       where: {
@@ -91,6 +91,7 @@ export default async function TagArchivePage({ params, searchParams }: TagPagePr
       select: {
         id: true,
         name: true,
+        nameNp: true,
         slug: true,
         _count: { select: { articles: true } },
       },
@@ -99,7 +100,11 @@ export default async function TagArchivePage({ params, searchParams }: TagPagePr
     }),
   ]);
 
-  const tagLabel = tag?.name || slug.replace(/-/g, " ");
+  const tagLabel = tag
+    ? isEnglish
+      ? tag.name || tag.nameNp || slug.replace(/-/g, " ")
+      : tag.nameNp || tag.name || slug.replace(/-/g, " ")
+    : slug.replace(/-/g, " ");
 
   const articles = tag
     ? await prisma.article.findMany({
@@ -322,16 +327,19 @@ export default async function TagArchivePage({ params, searchParams }: TagPagePr
                   />
                 </div>
                 <div className="flex flex-wrap gap-x-1 gap-y-1">
-                  {otherTags.map((t) => (
-                    <Link
-                      key={t.id}
-                      href={`/tag/${t.slug}${langQuery}`}
-                      className="px-2 py-1 text-[13px] font-medium transition-colors hover:underline"
-                      style={{ color: PORTAL.brand }}
-                    >
-                      #{t.name}
-                    </Link>
-                  ))}
+                  {otherTags.map((t) => {
+                    const label = isEnglish ? t.name || t.nameNp : t.nameNp || t.name;
+                    return (
+                      <Link
+                        key={t.id}
+                        href={`/tag/${t.slug}${langQuery}`}
+                        className="px-2 py-1 text-[13px] font-medium transition-colors hover:underline"
+                        style={{ color: PORTAL.brand }}
+                      >
+                        #{label}
+                      </Link>
+                    );
+                  })}
                 </div>
               </section>
             ) : null}

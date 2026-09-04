@@ -13,7 +13,7 @@ import { SITE_CONFIG, SITE_TITLE_SUFFIX, SITE_TITLE_SUFFIX_NP } from "@/constant
 import { TrendingHashtags } from "@/components/portal/TrendingHashtags";
 import { NewsCard } from "@/components/portal/NewsCard";
 import { HomeSidebarTabs } from "@/components/portal/HomeSidebarTabs";
-import { NewsletterMembership } from "@/components/portal/NewsletterMembership";
+import { OpinionPollWidget } from "@/components/portal/OpinionPollWidget";
 import { CategoryGridSection } from "@/components/portal/CategoryGridSection";
 import { OpinionSection } from "@/components/portal/OpinionSection";
 import { ProvinceNewsWidget } from "@/components/portal/ProvinceNewsWidget";
@@ -219,7 +219,9 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
 
             <aside className="flex flex-col gap-4 lg:col-span-3">
               <HomeSidebarTabs recent={recentSidebar} popular={popularSidebar} lang={lang} />
-              <NewsletterMembership isEnglish={isEnglish} />
+              <Suspense fallback={null}>
+                <OpinionPollWidget />
+              </Suspense>
             </aside>
           </div>
         )}

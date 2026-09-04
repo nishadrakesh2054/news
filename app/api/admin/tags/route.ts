@@ -23,12 +23,16 @@ export async function POST(request: NextRequest) {
     const auth = await requireEditor();
     if (auth.error) return auth.error;
 
-    const { name, slug } = await request.json();
+    const { name, nameNp, slug } = await request.json();
     if (!name) return apiError("Tag name is required");
 
     const finalSlug = slugify(slug || name);
     const tag = await prisma.tag.create({
-      data: { name: name.trim(), slug: finalSlug },
+      data: {
+        name: name.trim(),
+        nameNp: typeof nameNp === "string" && nameNp.trim() ? nameNp.trim() : null,
+        slug: finalSlug,
+      },
     });
 
     await writeAuditLog({

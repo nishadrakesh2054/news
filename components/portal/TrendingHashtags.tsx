@@ -6,7 +6,13 @@ import { useSearchParams } from "next/navigation";
 import { isEnglishHostname } from "@/lib/language";
 import { PORTAL } from "@/constants/portal";
 
-type TagItem = { id: string; name: string; slug: string; articlesCount?: number };
+type TagItem = {
+  id: string;
+  name: string;
+  nameNp?: string | null;
+  slug: string;
+  articlesCount?: number;
+};
 
 export function TrendingHashtags() {
   const searchParams = useSearchParams();
@@ -36,15 +42,18 @@ export function TrendingHashtags() {
           {isEnglish ? "Trending Topics:" : "ट्रेन्डिङ विषय:"}
         </span>
         <div className="flex items-center gap-2 whitespace-nowrap">
-          {tags.map((tag) => (
-            <Link
-              key={tag.id}
-              href={`/tag/${tag.slug}${langQ}`}
-              className="rounded border border-[#1957A6]/15 px-2.5 py-1 font-medium text-[#1957A6]/80 hover:border-[#1957A6]/35 hover:bg-[#1957A6]/5 hover:text-[#1957A6]"
-            >
-              #{tag.name.replace(/^#/, "")}
-            </Link>
-          ))}
+          {tags.map((tag) => {
+            const label = (isEnglish ? tag.name || tag.nameNp : tag.nameNp || tag.name) || tag.slug;
+            return (
+              <Link
+                key={tag.id}
+                href={`/tag/${tag.slug}${langQ}`}
+                className="rounded border border-[#1957A6]/15 px-2.5 py-1 font-medium text-[#1957A6]/80 hover:border-[#1957A6]/35 hover:bg-[#1957A6]/5 hover:text-[#1957A6]"
+              >
+                #{label.replace(/^#/, "")}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>

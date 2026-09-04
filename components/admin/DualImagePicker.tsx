@@ -40,7 +40,7 @@ export function DualImagePicker({
   const { data: mediaData } = useQuery({
     queryKey: ["admin-media-library-picker"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/media?limit=24");
+      const res = await fetch("/api/admin/media?type=image&limit=24");
       const json = await res.json();
       if (!res.ok) throw new Error("Failed to load library");
       return json.data;

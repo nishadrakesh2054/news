@@ -32,6 +32,7 @@ export const getCachedTags = unstable_cache(
       select: {
         id: true,
         name: true,
+        nameNp: true,
         slug: true,
         _count: {
           select: {
@@ -44,11 +45,12 @@ export const getCachedTags = unstable_cache(
     return tags.map((tag) => ({
       id: tag.id,
       name: tag.name,
+      nameNp: tag.nameNp,
       slug: tag.slug,
       articlesCount: tag._count.articles,
     }));
   },
-  ["public-tags"],
+  ["public-tags-v2"],
   { revalidate: 300, tags: [CACHE_TAGS.tags] }
 );
 

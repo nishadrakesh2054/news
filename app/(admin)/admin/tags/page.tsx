@@ -25,6 +25,7 @@ import {
 interface TagItem {
   id: string;
   name: string;
+  nameNp: string | null;
   slug: string;
   _count: {
     articles: number;
@@ -37,6 +38,7 @@ export default function AdminTagsPage() {
   const [editingTag, setEditingTag] = useState<TagItem | null>(null);
   const [search, setSearch] = useState("");
   const [name, setName] = useState("");
+  const [nameNp, setNameNp] = useState("");
   const [slug, setSlug] = useState("");
 
   const { data: tags = [], isLoading, isError, refetch, isFetching } = useQuery<TagItem[]>({
@@ -50,7 +52,7 @@ export default function AdminTagsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (payload: { name: string; slug?: string }) => {
+    mutationFn: async (payload: { name: string; nameNp?: string; slug?: string }) => {
       const res = await fetch("/api/admin/tags", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -69,7 +71,13 @@ export default function AdminTagsPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload: { name: string; slug: string } }) => {
+    mutationFn: async ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: { name: string; nameNp?: string | null; slug: string };
+    }) => {
       const res = await fetch(`/api/admin/tags/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -104,6 +112,7 @@ export default function AdminTagsPage() {
   const openCreateModal = () => {
     setEditingTag(null);
     setName("");
+    setNameNp("");
     setSlug("");
     setIsModalOpen(true);
   };
@@ -111,6 +120,7 @@ export default function AdminTagsPage() {
   const openEditModal = (tag: TagItem) => {
     setEditingTag(tag);
     setName(tag.name);
+    setNameNp(tag.nameNp || "");
     setSlug(tag.slug);
     setIsModalOpen(true);
   };
@@ -142,6 +152,7 @@ export default function AdminTagsPage() {
 
     const payload = {
       name: name.trim(),
+      nameNp: nameNp.trim() || null,
       slug: autoSlug(slug || name),
     };
 
@@ -155,7 +166,11 @@ export default function AdminTagsPage() {
   const filteredTags = tags.filter((tag) => {
     if (!search.trim()) return true;
     const term = search.toLowerCase();
-    return tag.name.toLowerCase().includes(term) || tag.slug.toLowerCase().includes(term);
+    return (
+      tag.name.toLowerCase().includes(term) ||
+      (tag.nameNp && tag.nameNp.includes(search.trim())) ||
+      tag.slug.toLowerCase().includes(term)
+    );
   });
 
   const totalArticles = tags.reduce((sum, tag) => sum + tag._count.articles, 0);
@@ -229,7 +244,8 @@ export default function AdminTagsPage() {
             <table className={adminTable}>
               <thead className={adminTableHead}>
                 <tr>
-                  <th className={adminTableHeadCell}>Name</th>
+                  <th className={adminTableHeadCell}>Name (EN)</th>
+                  <th className={adminTableHeadCell}>Name (NP)</th>
                   <th className={adminTableHeadCell}>Slug</th>
                   <th className={adminTableHeadCell}>Articles</th>
                   <th className={`${adminTableHeadCell} text-right`}>Actions</th>
@@ -239,6 +255,7 @@ export default function AdminTagsPage() {
                 {filteredTags.map((tag) => (
                   <tr key={tag.id} className={adminTableRow}>
                     <td className={`${adminTableCell} font-medium text-foreground`}>{tag.name}</td>
+                    <td className={`${adminTableCell} text-foreground`}>{tag.nameNp || "—"}</td>
                     <td className={`${adminTableCell} font-mono text-muted-foreground`}>/{tag.slug}</td>
                     <td className={adminTableCell}>
                       <span className={adminBadgeMuted}>{tag._count.articles}</span>
@@ -299,15 +316,29 @@ export default function AdminTagsPage() {
             <form onSubmit={handleSubmit} className="space-y-3 p-4">
               <div className="space-y-1">
                 <label htmlFor="tag-name" className="text-xs font-medium text-foreground">
-                  Tag name <span className="text-[#C3272E]">*</span>
+                  English name <span className="text-[#C3272E]">*</span>
                 </label>
                 <input
                   id="tag-name"
                   type="text"
                   required
-                  placeholder="Politics"
+                  placeholder="Flood"
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
+                  className={`${adminInput} w-full`}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="tag-name-np" className="text-xs font-medium text-foreground">
+                  Nepali name
+                </label>
+                <input
+                  id="tag-name-np"
+                  type="text"
+                  placeholder="बाढी"
+                  value={nameNp}
+                  onChange={(e) => setNameNp(e.target.value)}
                   className={`${adminInput} w-full`}
                 />
               </div>

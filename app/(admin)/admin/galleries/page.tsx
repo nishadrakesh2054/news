@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X, Search, Images } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Search, Images, ImageIcon } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
+import { DualImagePicker } from "@/components/admin/DualImagePicker";
 import {
   adminBadgeMuted,
   adminBadgeSuccess,
@@ -20,6 +21,7 @@ import {
   adminTableHead,
   adminTableHeadCell,
   adminTableRow,
+  adminTextTruncate,
   adminToolbarRow,
   adminToolbarSearch,
 } from "@/constants/admin-layout";
@@ -283,6 +285,7 @@ export default function AdminGalleriesPage() {
             <table className={adminTable}>
               <thead className={adminTableHead}>
                 <tr>
+                  <th className={adminTableHeadCell}>Cover</th>
                   <th className={adminTableHeadCell}>Title</th>
                   <th className={adminTableHeadCell}>Nepali title</th>
                   <th className={adminTableHeadCell}>Slug</th>
@@ -294,9 +297,25 @@ export default function AdminGalleriesPage() {
               <tbody>
                 {filteredGalleries.map((gallery) => (
                   <tr key={gallery.id} className={adminTableRow}>
-                    <td className={`${adminTableCell} font-medium text-foreground`}>{gallery.title}</td>
-                    <td className={`${adminTableCell} text-muted-foreground`}>
-                      {gallery.titleNp || "—"}
+                    <td className={adminTableCell}>
+                      {gallery.coverUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={gallery.coverUrl}
+                          alt=""
+                          className="h-10 w-14 border border-border/70 object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-14 items-center justify-center border border-dashed border-border/70 bg-muted/20 text-muted-foreground">
+                          <ImageIcon className="h-3.5 w-3.5" />
+                        </div>
+                      )}
+                    </td>
+                    <td className={`${adminTableCell} max-w-xs font-medium text-foreground`}>
+                      <p className={adminTextTruncate}>{gallery.title}</p>
+                    </td>
+                    <td className={`${adminTableCell} max-w-xs text-muted-foreground`}>
+                      <p className={adminTextTruncate}>{gallery.titleNp || "—"}</p>
                     </td>
                     <td className={`${adminTableCell} font-mono text-muted-foreground`}>
                       /{gallery.slug}
@@ -353,7 +372,7 @@ export default function AdminGalleriesPage() {
 
       {isModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className={`${adminPanel} w-full max-w-md`}>
+          <div className={`${adminPanel} w-full max-w-lg`}>
             <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
               <h2 className="text-sm font-semibold text-foreground">
                 {editingGallery ? "Edit gallery" : "New gallery"}
@@ -420,19 +439,12 @@ export default function AdminGalleriesPage() {
                 </div>
               )}
 
-              <div className="space-y-1">
-                <label htmlFor="gallery-cover" className="text-xs font-medium text-foreground">
-                  Cover image URL
-                </label>
-                <input
-                  id="gallery-cover"
-                  type="url"
-                  placeholder="https://…"
-                  value={coverUrl}
-                  onChange={(e) => setCoverUrl(e.target.value)}
-                  className={`${adminInput} w-full font-mono`}
-                />
-              </div>
+              <DualImagePicker
+                label="Cover image"
+                folder="galleries"
+                value={coverUrl}
+                onChange={setCoverUrl}
+              />
 
               <div className="space-y-1">
                 <label htmlFor="gallery-description" className="text-xs font-medium text-foreground">

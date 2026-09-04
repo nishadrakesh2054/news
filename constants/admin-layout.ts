@@ -61,7 +61,11 @@ export const adminTableHeadCell = "px-3 py-2 font-medium";
 export const adminTableRow =
   "border-b border-border/70 last:border-b-0 hover:bg-muted/25";
 
-export const adminTableCell = "px-3 py-2 align-middle";
+export const adminTableCell = "px-3 py-2.5 align-middle";
+
+/** Truncate without clipping Devanagari matras (overflow + tight leading). */
+export const adminTextTruncate =
+  "block max-w-full overflow-hidden text-ellipsis whitespace-nowrap py-0.5 leading-[1.55]";
 
 /* Stats */
 export const adminStatGrid =
@@ -133,16 +137,16 @@ export const adminToolbarSelectStatus = `${adminSelect} w-full min-w-[7.5rem] sm
 
 /* Badges */
 export const adminBadge =
-  "inline-flex items-center rounded-sm border border-border/70 bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-foreground";
+  "inline-flex items-center rounded-sm border border-border/70 bg-muted/40 px-1.5 py-1 text-[10px] font-medium leading-relaxed text-foreground";
 
 export const adminBadgeSuccess =
-  "inline-flex items-center rounded-sm border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300";
+  "inline-flex items-center rounded-sm border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[10px] font-medium leading-relaxed text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300";
 
 export const adminBadgeWarning =
-  "inline-flex items-center rounded-sm border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300";
+  "inline-flex items-center rounded-sm border border-amber-200 bg-amber-50 px-1.5 py-1 text-[10px] font-medium leading-relaxed text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300";
 
 export const adminBadgeMuted =
-  "inline-flex items-center rounded-sm border border-border/70 bg-muted/25 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground";
+  "inline-flex items-center rounded-sm border border-border/70 bg-muted/25 px-1.5 py-1 text-[10px] font-medium leading-relaxed text-muted-foreground";
 
 /* Official / govt-style form tables */
 export const adminFormSection = `${adminPanel} overflow-hidden`;

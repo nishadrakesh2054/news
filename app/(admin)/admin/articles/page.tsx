@@ -37,6 +37,7 @@ import {
   adminTableHead,
   adminTableHeadCell,
   adminTableRow,
+  adminTextTruncate,
   adminToolbarPanel,
   adminToolbarFilters,
   adminToolbarSearch,
@@ -645,11 +646,13 @@ export default function AdminArticlesPage() {
                               </span>
                             ) : null}
                           </div>
-                          <p className="truncate font-medium text-foreground">
+                          <p className={`${adminTextTruncate} font-medium text-foreground`}>
                             {art.titleNp || art.title}
                           </p>
                           {art.titleNp ? (
-                            <p className="truncate text-[11px] text-muted-foreground">{art.title}</p>
+                            <p className={`${adminTextTruncate} text-[11px] text-muted-foreground`}>
+                              {art.title}
+                            </p>
                           ) : null}
                           {isScheduledPending(art) ? (
                             <p className="truncate text-[10px] text-[#0C4EA0]">

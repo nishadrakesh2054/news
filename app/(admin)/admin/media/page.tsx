@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
+import { MediaThumb } from "@/components/admin/MediaThumb";
 import {
   adminBadgeMuted,
   adminBtnDanger,
@@ -356,11 +357,14 @@ export default function AdminMediaPage() {
           {mediaList.map((item) => (
             <div key={item.id} className={`${adminPanel} group overflow-hidden`}>
               <div className="relative flex h-28 items-center justify-center border-b border-border bg-muted/20">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.url}
-                  alt={item.altText || item.filename}
+                <MediaThumb
+                  url={item.url}
+                  mimeType={item.mimeType}
+                  filename={item.filename}
+                  altText={item.altText}
+                  caption={item.caption}
                   className="h-full w-full object-cover"
+                  iconSize="md"
                 />
                 <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
                   <button
@@ -425,11 +429,15 @@ export default function AdminMediaPage() {
                 {mediaList.map((item) => (
                   <tr key={item.id} className={adminTableRow}>
                     <td className={adminTableCell}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.url}
-                        alt={item.filename}
+                      <MediaThumb
+                        url={item.url}
+                        mimeType={item.mimeType}
+                        filename={item.filename}
+                        altText={item.altText}
+                        caption={item.caption}
                         className="h-8 w-8 border border-border object-cover"
+                        fallbackClassName="flex h-8 w-8 items-center justify-center border border-border bg-muted/35 text-muted-foreground"
+                        iconSize="sm"
                       />
                     </td>
                     <td className={adminTableCell}>
@@ -635,12 +643,26 @@ export default function AdminMediaPage() {
 
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
               <div className="mb-3 overflow-hidden rounded-sm border border-border/70 bg-muted/20">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={inspectingItem.url}
-                  alt={inspectingItem.altText || inspectingItem.filename}
-                  className="mx-auto max-h-44 w-full object-contain"
-                />
+                {inspectingItem.mimeType.startsWith("video/") &&
+                inspectingItem.mimeType !== "video/youtube" &&
+                !inspectingItem.url.includes("youtube.com/embed") ? (
+                  <video
+                    src={inspectingItem.url}
+                    controls
+                    className="mx-auto max-h-44 w-full object-contain"
+                  />
+                ) : (
+                  <MediaThumb
+                    url={inspectingItem.url}
+                    mimeType={inspectingItem.mimeType}
+                    filename={inspectingItem.filename}
+                    altText={inspectingItem.altText}
+                    caption={inspectingItem.caption}
+                    className="mx-auto max-h-44 w-full object-contain"
+                    fallbackClassName="flex h-44 w-full items-center justify-center bg-muted/35 text-muted-foreground"
+                    iconSize="lg"
+                  />
+                )}
               </div>
 
               <div className="mb-4 flex gap-2">

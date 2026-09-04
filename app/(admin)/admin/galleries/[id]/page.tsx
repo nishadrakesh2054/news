@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -10,12 +10,15 @@ import {
   ChevronDown,
   ChevronUp,
   ImageIcon,
+  Loader2,
   Plus,
   Save,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminPanel } from "@/components/admin/content";
+import { MediaThumb } from "@/components/admin/MediaThumb";
 import {
   adminBtnGhost,
   adminBtnPrimary,
@@ -29,6 +32,8 @@ type GalleryMedia = {
   filename: string;
   url: string;
   mimeType: string;
+  altText?: string | null;
+  caption?: string | null;
 };
 
 type GalleryItemRow = {
@@ -51,14 +56,22 @@ type MediaOption = {
   id: string;
   filename: string;
   url: string;
+  mimeType: string;
+  altText?: string | null;
+  caption?: string | null;
 };
+
+const MAX_FILE_SIZE = 500 * 1024;
+const VALID_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
 
 export default function AdminGalleryManagePage() {
   const params = useParams<{ id: string }>();
   const galleryId = params.id;
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedMediaId, setSelectedMediaId] = useState("");
   const [captionDraft, setCaptionDraft] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: gallery, isLoading, refetch, isFetching } = useQuery<GalleryDetail>({
     queryKey: ["admin-gallery", galleryId],
@@ -87,23 +100,30 @@ export default function AdminGalleryManagePage() {
     [mediaData?.media, items]
   );
 
+  const invalidateGallery = () => {
+    queryClient.invalidateQueries({ queryKey: ["admin-gallery", galleryId] });
+    queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-media-picker"] });
+  };
+
+  const addMediaToGallery = async (mediaId: string, caption?: string) => {
+    const res = await fetch(`/api/admin/galleries/${galleryId}/items`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mediaId, caption: caption || undefined }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Failed to add photo");
+    return json.data;
+  };
+
   const addMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/admin/galleries/${galleryId}/items`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaId: selectedMediaId, caption: captionDraft || undefined }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to add photo");
-      return json.data;
-    },
+    mutationFn: async () => addMediaToGallery(selectedMediaId, captionDraft),
     onSuccess: () => {
       toast.success("Photo added");
       setSelectedMediaId("");
       setCaptionDraft("");
-      queryClient.invalidateQueries({ queryKey: ["admin-gallery", galleryId] });
-      queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
+      invalidateGallery();
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -118,8 +138,7 @@ export default function AdminGalleryManagePage() {
     },
     onSuccess: () => {
       toast.success("Photo removed");
-      queryClient.invalidateQueries({ queryKey: ["admin-gallery", galleryId] });
-      queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
+      invalidateGallery();
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -172,10 +191,62 @@ export default function AdminGalleryManagePage() {
     reorderMutation.mutate(reordered);
   };
 
+  const handleLocalUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    let added = 0;
+    try {
+      for (const file of Array.from(files)) {
+        if (!VALID_TYPES.includes(file.type)) {
+          toast.error(`"${file.name}" skipped: only PNG, JPG, WEBP, GIF allowed`);
+          continue;
+        }
+        if (file.size > MAX_FILE_SIZE) {
+          toast.error(`"${file.name}" exceeds 500 KB`);
+          continue;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("folder", "galleries");
+        if (captionDraft.trim()) formData.append("caption", captionDraft.trim());
+
+        const uploadRes = await fetch("/api/admin/media", {
+          method: "POST",
+          body: formData,
+        });
+        const uploadJson = await uploadRes.json();
+        if (!uploadRes.ok) {
+          throw new Error(uploadJson.error || `Failed to upload ${file.name}`);
+        }
+
+        const mediaId = uploadJson.data?.[0]?.id as string | undefined;
+        if (!mediaId) throw new Error(`Upload succeeded but no media id for ${file.name}`);
+
+        await addMediaToGallery(mediaId, captionDraft.trim() || undefined);
+        added += 1;
+      }
+
+      if (added > 0) {
+        toast.success(added === 1 ? "Photo uploaded and added" : `${added} photos uploaded and added`);
+        setCaptionDraft("");
+        invalidateGallery();
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const selectedPreview = mediaOptions.find((m) => m.id === selectedMediaId);
+
   return (
     <AdminPageShell
       title={gallery?.titleNp || gallery?.title || "Manage gallery"}
-      description="Add, reorder, and caption gallery photos"
+      description="Upload photos, reorder, and caption gallery images"
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
       actions={
@@ -191,8 +262,63 @@ export default function AdminGalleryManagePage() {
         <p className="text-xs text-destructive">Gallery not found.</p>
       ) : (
         <div className="space-y-4">
-          <AdminPanel title="Add photo from media library">
-            <div className="grid gap-3 p-3 sm:grid-cols-[1fr_auto]">
+          <AdminPanel title="Upload from computer">
+            <div className="space-y-3 p-3">
+              <input
+                type="text"
+                placeholder="Optional caption for uploaded photos…"
+                value={captionDraft}
+                onChange={(e) => setCaptionDraft(e.target.value)}
+                className={adminInput}
+              />
+              <div className="rounded-sm border border-dashed border-border/70 bg-muted/20 p-5 text-center transition-colors hover:border-[#0C4EA0] hover:bg-muted/30">
+                {isUploading ? (
+                  <div className="flex flex-col items-center gap-2 text-[#0C4EA0]">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span className="text-xs font-medium">Uploading…</span>
+                  </div>
+                ) : (
+                  <label className="block cursor-pointer space-y-2">
+                    <Upload className="mx-auto h-5 w-5 text-[#0C4EA0]" />
+                    <p className="text-xs font-medium text-foreground">
+                      Choose image files from your computer
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      PNG, JPG, WEBP, GIF — max 500 KB each · multiple allowed
+                    </p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleLocalUpload(e.target.files)}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+          </AdminPanel>
+
+          <AdminPanel title="Add from media library">
+            <div className="grid gap-3 p-3 sm:grid-cols-[auto_1fr_auto]">
+              {selectedPreview ? (
+                <div className="h-16 w-20 overflow-hidden border border-border/70 bg-muted/20">
+                  <MediaThumb
+                    url={selectedPreview.url}
+                    mimeType={selectedPreview.mimeType || "image/jpeg"}
+                    filename={selectedPreview.filename}
+                    altText={selectedPreview.altText}
+                    caption={selectedPreview.caption}
+                    className="h-full w-full object-cover"
+                    iconSize="sm"
+                  />
+                </div>
+              ) : (
+                <div className="flex h-16 w-20 items-center justify-center border border-dashed border-border/70 bg-muted/15 text-muted-foreground">
+                  <ImageIcon className="h-4 w-4" />
+                </div>
+              )}
               <div className="space-y-2">
                 <select
                   value={selectedMediaId}
@@ -244,18 +370,21 @@ export default function AdminGalleryManagePage() {
 
             {items.length === 0 ? (
               <p className="px-3 py-8 text-center text-xs text-muted-foreground">
-                No photos yet. Upload images in Media library, then add them here.
+                No photos yet. Upload from your computer or pick from the media library.
               </p>
             ) : (
               <div className="grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3">
                 {items.map((item, index) => (
                   <div key={item.id} className="rounded-sm border border-border/70 bg-card p-2">
                     <div className="relative mb-2 aspect-video overflow-hidden bg-muted/20">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.media.url}
-                        alt={item.caption || item.media.filename}
+                      <MediaThumb
+                        url={item.media.url}
+                        mimeType={item.media.mimeType}
+                        filename={item.media.filename}
+                        altText={item.media.altText}
+                        caption={item.media.caption}
                         className="h-full w-full object-cover"
+                        iconSize="md"
                       />
                       <div className="absolute right-1 top-1 flex gap-0.5">
                         <button

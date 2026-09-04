@@ -11,12 +11,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const auth = await requireEditor();
     if (auth.error) return auth.error;
     const { id } = await params;
-    const { name, slug } = await request.json();
+    const { name, nameNp, slug } = await request.json();
 
     const tag = await prisma.tag.update({
       where: { id },
       data: {
         ...(name ? { name: name.trim() } : {}),
+        ...(nameNp !== undefined
+          ? { nameNp: typeof nameNp === "string" && nameNp.trim() ? nameNp.trim() : null }
+          : {}),
         ...(slug ? { slug: slugify(slug) } : {}),
       },
     });

@@ -104,10 +104,10 @@ export function RatesBreakingBar() {
     <div className="w-full border-b border-gray-200 bg-white text-xs">
       <div className={`${PORTAL.container} flex items-center gap-2 py-1.5`}>
         <span
-          className="inline-flex h-7 w-[6.25rem] shrink-0 items-center justify-center gap-1 px-2 text-[11px] font-bold leading-none text-white"
-          style={{ backgroundColor: PORTAL.accent }}
+          className="inline-flex h-7 shrink-0 items-center gap-1 text-[11px] font-bold leading-none"
+          style={{ color: PORTAL.accent }}
         >
-          <Zap className="h-3 w-3 shrink-0 fill-white" />
+          <Zap className="h-3 w-3 shrink-0" style={{ color: PORTAL.accent }} fill="currentColor" />
           {isEnglish ? "Breaking" : "ब्रेकिङ"}
         </span>
 

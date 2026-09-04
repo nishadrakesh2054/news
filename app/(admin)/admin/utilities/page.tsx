@@ -31,6 +31,7 @@ import {
   adminToolbarRow,
   adminToolbarSearch,
 } from "@/constants/admin-layout";
+import { getForexFlagUrl } from "@/lib/forex-flags";
 
 interface ForexItem {
   code: string;
@@ -402,10 +403,10 @@ function UtilitiesEditor({
                         </tr>
                         {isExpanded ? (
                           <tr className="bg-muted/20">
-                            <td colSpan={6} className="px-3 py-3">
-                              <div className="grid max-w-3xl gap-3">
-                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                                  <div className="space-y-1">
+                            <td colSpan={6} className="px-4 py-5 sm:px-5">
+                              <div className="grid w-full gap-5">
+                                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                                  <div className="space-y-1.5">
                                     <label className="text-[10px] font-medium text-muted-foreground">
                                       Lucky number
                                     </label>
@@ -415,10 +416,10 @@ function UtilitiesEditor({
                                       onChange={(e) =>
                                         handleRashiChange(index, "luckyNumber", e.target.value)
                                       }
-                                      className={adminInput}
+                                      className={`${adminInput} w-full`}
                                     />
                                   </div>
-                                  <div className="space-y-1">
+                                  <div className="space-y-1.5">
                                     <label className="text-[10px] font-medium text-muted-foreground">
                                       Lucky color
                                     </label>
@@ -428,10 +429,10 @@ function UtilitiesEditor({
                                       onChange={(e) =>
                                         handleRashiChange(index, "luckyColor", e.target.value)
                                       }
-                                      className={adminInput}
+                                      className={`${adminInput} w-full`}
                                     />
                                   </div>
-                                  <div className="space-y-1">
+                                  <div className="space-y-1.5">
                                     <label className="text-[10px] font-medium text-muted-foreground">
                                       Direction
                                     </label>
@@ -441,10 +442,10 @@ function UtilitiesEditor({
                                       onChange={(e) =>
                                         handleRashiChange(index, "luckyDirection", e.target.value)
                                       }
-                                      className={adminInput}
+                                      className={`${adminInput} w-full`}
                                     />
                                   </div>
-                                  <div className="space-y-1">
+                                  <div className="space-y-1.5">
                                     <label className="text-[10px] font-medium text-muted-foreground">
                                       Luck %
                                     </label>
@@ -458,12 +459,12 @@ function UtilitiesEditor({
                                           Number(e.target.value)
                                         )
                                       }
-                                      className={adminInput}
+                                      className={`${adminInput} w-full`}
                                     />
                                   </div>
                                 </div>
 
-                                <div className="flex flex-wrap gap-1.5">
+                                <div className="flex flex-wrap gap-1.5 border-b border-border/60 pb-3">
                                   {RASHIFAL_PERIODS.map((p) => (
                                     <button
                                       key={p.key}
@@ -474,46 +475,48 @@ function UtilitiesEditor({
                                       }
                                     >
                                       {p.labelEn}
+                                      <span className="ml-1 opacity-70">({p.labelNp})</span>
                                     </button>
                                   ))}
                                 </div>
 
-                                {(
-                                  [
-                                    ["overview", "Overview", 3],
-                                    ["health", "Health", 2],
-                                    ["business", "Business", 2],
-                                    ["love", "Love", 2],
-                                    ["remedy", "Remedy", 2],
-                                  ] as const
-                                ).map(([field, label, rows]) => (
-                                  <div key={`${editPeriod}-${field}`} className="space-y-1">
-                                    <label className="text-xs font-medium text-foreground">
-                                      {label}{" "}
-                                      <span className="font-normal text-muted-foreground">
-                                        (
-                                        {
-                                          RASHIFAL_PERIODS.find((p) => p.key === editPeriod)
-                                            ?.labelEn
+                                <div className="grid w-full gap-4">
+                                  {(
+                                    [
+                                      ["overview", "Overview", 5],
+                                      ["health", "Health", 4],
+                                      ["business", "Business", 4],
+                                      ["love", "Love", 4],
+                                      ["remedy", "Remedy", 4],
+                                    ] as const
+                                  ).map(([field, label, rows]) => (
+                                    <div key={`${editPeriod}-${field}`} className="w-full space-y-1.5">
+                                      <label className="block text-xs font-medium text-foreground">
+                                        {label}
+                                        <span className="ml-1.5 font-normal text-muted-foreground">
+                                          ·{" "}
+                                          {
+                                            RASHIFAL_PERIODS.find((p) => p.key === editPeriod)
+                                              ?.labelEn
+                                          }
+                                        </span>
+                                      </label>
+                                      <textarea
+                                        rows={rows}
+                                        value={r.periods?.[editPeriod]?.[field] || ""}
+                                        onChange={(e) =>
+                                          handlePeriodFieldChange(
+                                            index,
+                                            editPeriod,
+                                            field,
+                                            e.target.value
+                                          )
                                         }
-                                        )
-                                      </span>
-                                    </label>
-                                    <textarea
-                                      rows={rows}
-                                      value={r.periods?.[editPeriod]?.[field] || ""}
-                                      onChange={(e) =>
-                                        handlePeriodFieldChange(
-                                          index,
-                                          editPeriod,
-                                          field,
-                                          e.target.value
-                                        )
-                                      }
-                                      className={`${adminInput} h-auto py-2`}
-                                    />
-                                  </div>
-                                ))}
+                                        className={`${adminInput} min-h-[6.5rem] w-full resize-y px-3 py-3 leading-relaxed`}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             </td>
                           </tr>
@@ -545,6 +548,7 @@ function UtilitiesEditor({
               <table className={adminTable}>
                 <thead className={adminTableHead}>
                   <tr>
+                    <th className={adminTableHeadCell}>Flag</th>
                     <th className={adminTableHeadCell}>Code</th>
                     <th className={adminTableHeadCell}>Currency</th>
                     <th className={adminTableHeadCell}>Unit</th>
@@ -553,15 +557,34 @@ function UtilitiesEditor({
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredForex.map((f, idx) => (
-                    <tr key={f.code ? `${f.code}-${idx}` : `forex-${idx}`} className={adminTableRow}>
-                      <td className={`${adminTableCell} font-mono font-medium`}>{f.code}</td>
-                      <td className={adminTableCell}>{f.nameNp}</td>
-                      <td className={`${adminTableCell} font-mono text-muted-foreground`}>{f.unit}</td>
-                      <td className={`${adminTableCell} font-mono`}>{f.buy}</td>
-                      <td className={`${adminTableCell} text-right font-mono`}>{f.sell}</td>
-                    </tr>
-                  ))}
+                  {filteredForex.map((f, idx) => {
+                    const flagUrl = getForexFlagUrl(f.code);
+                    return (
+                      <tr key={f.code ? `${f.code}-${idx}` : `forex-${idx}`} className={adminTableRow}>
+                        <td className={adminTableCell}>
+                          {flagUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={flagUrl}
+                              alt=""
+                              width={28}
+                              height={20}
+                              className="h-5 w-7 rounded-[2px] object-cover ring-1 ring-border/60"
+                            />
+                          ) : (
+                            <span className="inline-flex h-5 w-7 items-center justify-center rounded-[2px] bg-muted text-[10px] text-muted-foreground">
+                              —
+                            </span>
+                          )}
+                        </td>
+                        <td className={`${adminTableCell} font-mono font-medium`}>{f.code}</td>
+                        <td className={adminTableCell}>{f.nameNp}</td>
+                        <td className={`${adminTableCell} font-mono text-muted-foreground`}>{f.unit}</td>
+                        <td className={`${adminTableCell} font-mono`}>{f.buy}</td>
+                        <td className={`${adminTableCell} text-right font-mono`}>{f.sell}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

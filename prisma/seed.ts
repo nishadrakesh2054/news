@@ -11,6 +11,7 @@ import {
   ArticleType,
   LanguageEdition,
   AdSlot,
+  PollStatus,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -182,23 +183,23 @@ async function main() {
   console.log(`✅ Categories: ${Object.keys(categoryMap).length}`);
 
   const tagsData = [
-    { name: "Flood", slug: "flood" },
-    { name: "Rasuwa", slug: "rasuwa" },
-    { name: "Climate", slug: "climate" },
-    { name: "Cricket", slug: "cricket" },
-    { name: "Parliament", slug: "parliament" },
-    { name: "Banking", slug: "banking" },
-    { name: "Tourism", slug: "tourism" },
-    { name: "5G", slug: "5g" },
-    { name: "Film", slug: "film" },
-    { name: "Hydropower", slug: "hydropower" },
+    { name: "Flood", nameNp: "बाढी", slug: "flood" },
+    { name: "Rasuwa", nameNp: "रसुवा", slug: "rasuwa" },
+    { name: "Climate", nameNp: "जलवायु", slug: "climate" },
+    { name: "Cricket", nameNp: "क्रिकेट", slug: "cricket" },
+    { name: "Parliament", nameNp: "संसद", slug: "parliament" },
+    { name: "Banking", nameNp: "बैंकिङ", slug: "banking" },
+    { name: "Tourism", nameNp: "पर्यटन", slug: "tourism" },
+    { name: "5G", nameNp: "५जी", slug: "5g" },
+    { name: "Film", nameNp: "चलचित्र", slug: "film" },
+    { name: "Hydropower", nameNp: "जलविद्युत्", slug: "hydropower" },
   ];
   const tagMap: Record<string, string> = {};
   for (const tag of tagsData) {
     const row = await prisma.tag.upsert({
       where: { slug: tag.slug },
-      update: { name: tag.name },
-      create: { name: tag.name, slug: tag.slug },
+      update: { name: tag.name, nameNp: tag.nameNp },
+      create: { name: tag.name, nameNp: tag.nameNp, slug: tag.slug },
     });
     tagMap[tag.slug] = row.id;
   }
@@ -1155,6 +1156,40 @@ async function main() {
     }
   }
   console.log(`✅ E-paper editions ready: ${epaperEditions.length}`);
+
+  // Active opinion poll for homepage widget
+  const pollQuestionNp = "के सरकारको पछिल्लो आर्थिक नीतिले युवा उद्यमीलाई प्रोत्साहन गर्छ?";
+  await prisma.poll.updateMany({
+    where: { status: PollStatus.ACTIVE },
+    data: { status: PollStatus.CLOSED },
+  });
+  const existingPoll = await prisma.poll.findFirst({ where: { questionNp: pollQuestionNp } });
+  if (existingPoll) {
+    await prisma.poll.update({
+      where: { id: existingPoll.id },
+      data: { status: PollStatus.ACTIVE },
+    });
+  } else {
+    const pollExpires = new Date();
+    pollExpires.setDate(pollExpires.getDate() + 30);
+    await prisma.poll.create({
+      data: {
+        question: "Does the government's latest economic policy encourage young entrepreneurs?",
+        questionNp: pollQuestionNp,
+        status: PollStatus.ACTIVE,
+        expiresAt: pollExpires,
+        options: {
+          create: [
+            { option: "Yes", optionNp: "गर्छ", votes: 42 },
+            { option: "No", optionNp: "गर्दैन", votes: 28 },
+            { option: "Can't say", optionNp: "भन्न सकिन्न", votes: 15 },
+            { option: "Need more time", optionNp: "समय चाहिन्छ", votes: 9 },
+          ],
+        },
+      },
+    });
+  }
+  console.log("✅ Opinion poll ready (active)");
 
   const published = await prisma.article.count({ where: { status: ArticleStatus.PUBLISHED } });
   const both = await prisma.article.count({ where: { languageEdition: LanguageEdition.BOTH } });

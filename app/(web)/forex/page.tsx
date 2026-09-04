@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getFormattedNepaliDate } from "@/lib/nepaliDate";
+import { getForexFlagUrl } from "@/lib/forex-flags";
 import { PORTAL } from "@/constants/portal";
 
 interface ForexCurrencyRate {
@@ -12,26 +13,6 @@ interface ForexCurrencyRate {
   buy: string;
   sell: string;
 }
-
-const FLAG_MAP: Record<string, string> = {
-  USD: "🇺🇸",
-  INR: "🇮🇳",
-  EUR: "🇪🇺",
-  GBP: "🇬🇧",
-  AUD: "🇦🇺",
-  CAD: "🇨🇦",
-  JPY: "🇯🇵",
-  QAR: "🇶🇦",
-  AED: "🇦🇪",
-  SAR: "🇸🇦",
-  MYR: "🇲🇾",
-  KRW: "🇰🇷",
-  KWD: "🇰🇼",
-  BHD: "🇧🇭",
-  CHF: "🇨🇭",
-  CNY: "🇨🇳",
-  SGD: "🇸🇬",
-};
 
 export default function ForexPage() {
   const [forexRates, setForexRates] = useState<ForexCurrencyRate[]>([]);
@@ -119,34 +100,49 @@ export default function ForexPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {forexRates.map((rate, idx) => (
-                  <tr key={rate.code ? `${rate.code}-${idx}` : `forex-${idx}`}>
-                    <td className="py-2 pr-2 tabular-nums text-gray-400">{idx + 1}</td>
-                    <td className="py-2 pr-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm leading-none" aria-hidden>
-                          {FLAG_MAP[rate.code] || "🌐"}
-                        </span>
-                        <span className="font-bold" style={{ color: PORTAL.ink }}>
-                          {rate.code}
-                        </span>
-                        <span className="truncate text-[12px] text-gray-500">
-                          {rate.nameNp}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-2 pr-3 tabular-nums text-gray-600">{rate.unit}</td>
-                    <td
-                      className="py-2 pr-3 text-right font-semibold tabular-nums"
-                      style={{ color: PORTAL.brand }}
-                    >
-                      {rate.buy}
-                    </td>
-                    <td className="py-2 text-right font-semibold tabular-nums text-gray-800">
-                      {rate.sell}
-                    </td>
-                  </tr>
-                ))}
+                {forexRates.map((rate, idx) => {
+                  const flagUrl = getForexFlagUrl(rate.code);
+                  return (
+                    <tr key={rate.code ? `${rate.code}-${idx}` : `forex-${idx}`}>
+                      <td className="py-2 pr-2 tabular-nums text-gray-400">{idx + 1}</td>
+                      <td className="py-2 pr-3">
+                        <div className="flex items-center gap-2">
+                          {flagUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={flagUrl}
+                              alt=""
+                              width={28}
+                              height={20}
+                              className="h-4 w-6 shrink-0 object-cover"
+                            />
+                          ) : (
+                            <span
+                              className="inline-block h-4 w-6 shrink-0 bg-gray-200"
+                              aria-hidden
+                            />
+                          )}
+                          <span className="font-bold" style={{ color: PORTAL.ink }}>
+                            {rate.code}
+                          </span>
+                          <span className="truncate text-[12px] text-gray-500">
+                            {rate.nameNp}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-2 pr-3 tabular-nums text-gray-600">{rate.unit}</td>
+                      <td
+                        className="py-2 pr-3 text-right font-semibold tabular-nums"
+                        style={{ color: PORTAL.brand }}
+                      >
+                        {rate.buy}
+                      </td>
+                      <td className="py-2 text-right font-semibold tabular-nums text-gray-800">
+                        {rate.sell}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

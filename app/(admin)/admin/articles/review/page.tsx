@@ -18,6 +18,7 @@ import {
   adminTableHead,
   adminTableHeadCell,
   adminTableRow,
+  adminTextTruncate,
 } from "@/constants/admin-layout";
 
 interface ReviewArticle {
@@ -124,7 +125,7 @@ export default function AdminArticleReviewPage() {
                 {articles.map((article) => (
                   <tr key={article.id} className={adminTableRow}>
                     <td className={`${adminTableCell} max-w-md`}>
-                      <p className="truncate font-medium text-foreground">
+                      <p className={`${adminTextTruncate} font-medium text-foreground`}>
                         {article.titleNp || article.title}
                       </p>
                       {article.scheduledAt ? (

@@ -6,7 +6,13 @@ const globalForPrisma = globalThis as unknown as {
 
 /** Neon pooler + `channel_binding=require` often fails on serverless TCP. */
 export function resolveDatabaseUrl(): string {
-  const raw = process.env.DATABASE_URL?.trim() || "";
+  let raw = process.env.DATABASE_URL?.trim() || "";
+  if (
+    (raw.startsWith('"') && raw.endsWith('"')) ||
+    (raw.startsWith("'") && raw.endsWith("'"))
+  ) {
+    raw = raw.slice(1, -1).trim();
+  }
   if (!raw) return "";
   try {
     const url = new URL(raw);
@@ -37,9 +43,17 @@ function createPrismaClient() {
 
 /** CMS models added after initial dev-server boot — recreate client if stale. */
 function isStalePrismaClient(client: PrismaClient) {
+  const c = client as PrismaClient & {
+    gallery?: unknown;
+    menu?: unknown;
+    tag?: { fields?: unknown };
+  };
+  // Recreate when newer schema fields are missing from a warm client.
+  const tagDelegate = (client as unknown as { tag?: { findMany?: unknown } }).tag;
   return (
-    typeof (client as PrismaClient & { gallery?: unknown }).gallery === "undefined" ||
-    typeof (client as PrismaClient & { menu?: unknown }).menu === "undefined"
+    typeof c.gallery === "undefined" ||
+    typeof c.menu === "undefined" ||
+    typeof tagDelegate?.findMany !== "function"
   );
 }
 

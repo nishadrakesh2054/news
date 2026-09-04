@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Mail, Phone, MapPin, ShieldCheck } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { FacebookIcon, TwitterIcon, YoutubeIcon } from "./SocialIcons";
 import { SITE_CONFIG } from "@/constants/site";
 import { isEnglishHostname } from "@/lib/language";
@@ -25,6 +26,8 @@ export function PublicFooter() {
     (typeof window !== "undefined" && isEnglishHostname(window.location.hostname));
   const langQ = isEnglish ? "?lang=en" : "";
   const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetch(`/api/categories${isEnglish ? "?lang=en" : ""}`)
@@ -36,6 +39,31 @@ export function PublicFooter() {
       })
       .catch(() => {});
   }, [isEnglish]);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          source: "footer",
+          locale: isEnglish ? "en" : "ne",
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Subscription failed");
+      toast.success(json.message || (isEnglish ? "Subscribed" : "सदस्यता सफल भयो"));
+      setEmail("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const quickLinks = [
     { href: `/editorial-team${langQ}`, label: isEnglish ? "Editorial team" : "सम्पादकीय टोली" },
@@ -171,6 +199,30 @@ export function PublicFooter() {
                 <span>{SITE_CONFIG.domain}</span>
               </li>
             </ul>
+
+            <div className="space-y-2 border-t border-white/15 pt-4">
+              <p className="text-xs font-bold text-white">
+                {isEnglish ? "Newsletter" : "न्यूजलेटर"}
+              </p>
+              <form onSubmit={handleSubscribe} className="flex gap-2">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={isEnglish ? "Email" : "इमेल"}
+                  className="min-w-0 flex-1 border border-white/25 bg-white/10 px-2.5 py-2 text-xs text-white outline-none placeholder:text-white/50 focus:border-white/50"
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="shrink-0 px-3 py-2 text-xs font-bold text-white disabled:opacity-60"
+                  style={{ backgroundColor: PORTAL.accent }}
+                >
+                  {loading ? "…" : isEnglish ? "Join" : "सदस्यता"}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
