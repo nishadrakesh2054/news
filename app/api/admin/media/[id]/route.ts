@@ -53,7 +53,8 @@ export async function DELETE(
 
     if (media.publicId) {
       try {
-        await cloudinary.uploader.destroy(media.publicId);
+        const resourceType = media.mimeType.startsWith("video/") ? "video" : "image";
+        await cloudinary.uploader.destroy(media.publicId, { resource_type: resourceType });
       } catch (err) {
         console.error("Cloudinary asset deletion error:", err);
       }

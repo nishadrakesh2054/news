@@ -14,47 +14,59 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get("status") as CommentStatus | null;
+    const statusParam = searchParams.get("status");
+    const status =
+      statusParam &&
+      statusParam !== "ALL" &&
+      Object.values(CommentStatus).includes(statusParam as CommentStatus)
+        ? (statusParam as CommentStatus)
+        : null;
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "15");
 
     const where: Prisma.CommentWhereInput = {};
-    if (status && Object.values(CommentStatus).includes(status)) {
+    if (status) {
       where.status = status;
     }
 
-    const total = await prisma.comment.count({ where });
-
-    const comments = await prisma.comment.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit,
-      include: {
-        article: {
-          select: {
-            id: true,
-            title: true,
-            titleNp: true,
-            slug: true,
+    const [total, comments, pending, approved, rejected, spam] = await Promise.all([
+      prisma.comment.count({ where }),
+      prisma.comment.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          article: {
+            select: {
+              id: true,
+              title: true,
+              titleNp: true,
+              slug: true,
+            },
+          },
+          author: {
+            select: {
+              name: true,
+              email: true,
+            },
           },
         },
-        author: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-      },
-    });
+      }),
+      prisma.comment.count({ where: { status: CommentStatus.PENDING } }),
+      prisma.comment.count({ where: { status: CommentStatus.APPROVED } }),
+      prisma.comment.count({ where: { status: CommentStatus.REJECTED } }),
+      prisma.comment.count({ where: { status: CommentStatus.SPAM } }),
+    ]);
 
     return apiSuccess({
       comments,
+      counts: { pending, approved, rejected, spam, all: pending + approved + rejected + spam },
       pagination: {
         total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(total / limit) || 1,
       },
     });
   } catch (error) {

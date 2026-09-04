@@ -15,7 +15,7 @@ const SHORTCUTS = [
   { href: "/admin/articles/new", label: "New article" },
   { href: "/admin/breaking", label: "Breaking news" },
   { href: "/admin/live", label: "Live coverage" },
-  { href: "/admin/homepage", label: "Homepage" },
+  { href: "/admin/featured", label: "Featured" },
   { href: "/admin/articles", label: "All articles" },
   { href: "/admin/analytics", label: "Analytics" },
 ] as const;

@@ -7,6 +7,9 @@ import { Check, ExternalLink, Search, ShieldAlert, Trash2, X } from "lucide-reac
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
 import {
+  adminBadgeMuted,
+  adminBadgeSuccess,
+  adminBadgeWarning,
   adminBtnGhost,
   adminBtnSecondary,
   adminInput,
@@ -41,30 +44,52 @@ interface AdminComment {
 }
 
 const STATUS_OPTIONS = [
+  { value: "ALL", label: "All statuses" },
   { value: "PENDING", label: "Pending" },
   { value: "APPROVED", label: "Approved" },
   { value: "REJECTED", label: "Rejected" },
   { value: "SPAM", label: "Spam" },
 ];
 
+function statusBadgeClass(status: AdminComment["status"]) {
+  switch (status) {
+    case "APPROVED":
+      return adminBadgeSuccess;
+    case "PENDING":
+      return adminBadgeWarning;
+    case "SPAM":
+      return "inline-flex items-center rounded-sm border border-[#C3272E]/30 bg-[#C3272E]/10 px-1.5 py-1 text-[10px] font-medium leading-relaxed text-[#C3272E]";
+    default:
+      return adminBadgeMuted;
+  }
+}
+
 export default function AdminCommentsPage() {
   const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState("PENDING");
+  // Default ALL — admin/editor posts auto-approve and were invisible under Pending-only.
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["admin-comments", statusFilter],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/comments?status=${statusFilter}`);
+      const params = new URLSearchParams({ limit: "30" });
+      if (statusFilter !== "ALL") params.set("status", statusFilter);
+      const res = await fetch(`/api/admin/comments?${params.toString()}`);
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || "Failed to load comments");
-      return json.data as { comments: AdminComment[]; pagination: { total: number } };
+      return json.data as {
+        comments: AdminComment[];
+        counts?: { pending: number; approved: number; rejected: number; spam: number; all: number };
+        pagination: { total: number };
+      };
     },
   });
 
   const comments = data?.comments ?? [];
   const total = data?.pagination?.total ?? comments.length;
+  const counts = data?.counts;
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -156,22 +181,27 @@ export default function AdminCommentsPage() {
     >
       <AdminStatsStrip
         stats={[
-          { label: "Queue", value: statusFilter.toLowerCase() },
-          { label: "Total in view", value: total },
-          { label: "Showing", value: filtered.length },
-          { label: "Status filter", value: STATUS_OPTIONS.find((s) => s.value === statusFilter)?.label ?? "—" },
+          { label: "All", value: counts?.all ?? total },
+          { label: "Pending", value: counts?.pending ?? "—" },
+          { label: "Approved", value: counts?.approved ?? "—" },
+          { label: "Spam / rejected", value: (counts?.spam ?? 0) + (counts?.rejected ?? 0) },
         ]}
       />
 
       <div className={adminToolbarRow}>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setSelectedIds([]);
+          }}
           className={adminToolbarSelectStatus}
         >
           {STATUS_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
+              {option.value === "PENDING" && counts ? ` (${counts.pending})` : ""}
+              {option.value === "APPROVED" && counts ? ` (${counts.approved})` : ""}
             </option>
           ))}
         </select>
@@ -241,7 +271,11 @@ export default function AdminCommentsPage() {
         ) : isError ? (
           <p className="px-3 py-8 text-center text-xs text-destructive">Failed to load comments.</p>
         ) : filtered.length === 0 ? (
-          <p className="px-3 py-8 text-center text-xs text-muted-foreground">No comments found.</p>
+          <p className="px-3 py-8 text-center text-xs text-muted-foreground">
+            {statusFilter === "PENDING"
+              ? "No pending comments. Switch to All or Approved to see published ones."
+              : "No comments found."}
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className={adminTable}>
@@ -257,6 +291,7 @@ export default function AdminCommentsPage() {
                   </th>
                   <th className={adminTableHeadCell}>Author</th>
                   <th className={adminTableHeadCell}>Comment</th>
+                  <th className={adminTableHeadCell}>Status</th>
                   <th className={adminTableHeadCell}>Story</th>
                   <th className={adminTableHeadCell}>Date</th>
                   <th className={`${adminTableHeadCell} text-right`}>Actions</th>
@@ -284,7 +319,10 @@ export default function AdminCommentsPage() {
                       )}
                     </td>
                     <td className={`${adminTableCell} max-w-md`}>
-                      <p className="line-clamp-3 text-foreground">{comment.content}</p>
+                      <p className="line-clamp-3 leading-relaxed text-foreground">{comment.content}</p>
+                    </td>
+                    <td className={adminTableCell}>
+                      <span className={statusBadgeClass(comment.status)}>{comment.status}</span>
                     </td>
                     <td className={adminTableCell}>
                       <a
@@ -304,7 +342,7 @@ export default function AdminCommentsPage() {
                     </td>
                     <td className={`${adminTableCell} text-right`}>
                       <div className="inline-flex items-center gap-1">
-                        {statusFilter !== "APPROVED" ? (
+                        {comment.status !== "APPROVED" ? (
                           <button
                             type="button"
                             onClick={() => updateMutation.mutate({ id: comment.id, status: "APPROVED" })}
@@ -314,7 +352,7 @@ export default function AdminCommentsPage() {
                             <Check className="h-3 w-3" />
                           </button>
                         ) : null}
-                        {statusFilter !== "REJECTED" ? (
+                        {comment.status !== "REJECTED" ? (
                           <button
                             type="button"
                             onClick={() => updateMutation.mutate({ id: comment.id, status: "REJECTED" })}
@@ -324,7 +362,7 @@ export default function AdminCommentsPage() {
                             <X className="h-3 w-3" />
                           </button>
                         ) : null}
-                        {statusFilter !== "SPAM" ? (
+                        {comment.status !== "SPAM" ? (
                           <button
                             type="button"
                             onClick={() => updateMutation.mutate({ id: comment.id, status: "SPAM" })}

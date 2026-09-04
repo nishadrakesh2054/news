@@ -53,5 +53,8 @@ AGENTS.md
 CLAUDE.md
 .neon
 
+# Local media uploads (fallback when Cloudinary unavailable)
+/public/uploads/
+
 # Sentry Config File
 .env.sentry-build-plugin
