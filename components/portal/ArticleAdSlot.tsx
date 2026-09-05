@@ -21,7 +21,9 @@ export function ArticleAdSlot({
   variant = "inline",
   className = "",
 }: ArticleAdSlotProps) {
-  const list = (ads && ads.length > 0 ? ads : ad ? [ad] : []).filter(
+  const raw: RotatingAd[] =
+    ads && ads.length > 0 ? ads : ad ? [{ ...ad, isActive: true }] : [];
+  const list = raw.filter(
     (a) => a.isActive !== false && (a.imageUrl || a.scriptCode)
   );
   if (list.length === 0) return null;
