@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireEditor } from "@/lib/admin-auth";
 import { writeAuditLog } from "@/lib/audit-log";
+import { invalidatePublicMedia } from "@/lib/cache-invalidation";
 
 export async function GET(
   _request: NextRequest,
@@ -66,6 +67,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     });
 
     await writeAuditLog({ userId: auth.session!.user.id, action: "UPDATE", entity: "Gallery", entityId: id });
+    invalidatePublicMedia();
     return apiSuccess(gallery);
   } catch (error) {
     return handleServerError(error, "Failed to update gallery");
@@ -80,6 +82,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
     await prisma.gallery.delete({ where: { id } });
     await writeAuditLog({ userId: auth.session!.user.id, action: "DELETE", entity: "Gallery", entityId: id });
+    invalidatePublicMedia();
     return apiSuccess(null, "Gallery deleted");
   } catch (error) {
     return handleServerError(error, "Failed to delete gallery");

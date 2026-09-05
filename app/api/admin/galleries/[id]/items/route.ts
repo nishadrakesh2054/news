@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireEditor } from "@/lib/admin-auth";
+import { invalidatePublicMedia } from "@/lib/cache-invalidation";
 
 export async function POST(
   request: NextRequest,
@@ -50,6 +51,7 @@ export async function POST(
       });
     }
 
+    invalidatePublicMedia();
     return apiSuccess(item, "Photo added to gallery", 201);
   } catch (error) {
     return handleServerError(error, "Failed to add gallery item");
@@ -93,6 +95,7 @@ export async function PUT(
       },
     });
 
+    invalidatePublicMedia();
     return apiSuccess(gallery, "Gallery items reordered");
   } catch (error) {
     return handleServerError(error, "Failed to reorder gallery items");

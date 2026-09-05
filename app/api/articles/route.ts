@@ -1,13 +1,20 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus, ArticleType, Prisma } from "@prisma/client";
-import { apiSuccess, handleServerError } from "@/lib/api-response";
+import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { MESSAGES } from "@/constants/messages";
 import { articleListSelect, mapArticleListItem } from "@/lib/article-selects";
 import { languageEditionWhere, resolveLanguageFromRequest } from "@/lib/language";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const rate = checkRateLimit(`articles:${ip}`, 120, 60 * 1000);
+    if (!rate.allowed) {
+      return apiError("Too many requests. Please try again later.", 429);
+    }
+
     const { searchParams } = new URL(request.url);
     const lang = resolveLanguageFromRequest(request);
     const categorySlug = searchParams.get("category") || "";

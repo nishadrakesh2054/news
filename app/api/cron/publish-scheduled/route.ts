@@ -4,6 +4,7 @@ import { ArticleStatus } from "@prisma/client";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
 import { verifyCronSecret } from "@/lib/admin-auth";
 import { getJsonSetting } from "@/lib/settings-store";
+import { invalidatePublicArticles } from "@/lib/cache-invalidation";
 
 const DEFAULT_MAINTENANCE = {
   maintenanceMode: false,
@@ -24,9 +25,10 @@ export async function GET(request: NextRequest) {
 
     const now = new Date();
 
+    // Only editor-approved PENDING items — never auto-publish author DRAFTs.
     const scheduledArticles = await prisma.article.findMany({
       where: {
-        status: { in: [ArticleStatus.DRAFT, ArticleStatus.PENDING] },
+        status: ArticleStatus.PENDING,
         scheduledAt: { lte: now },
       },
       select: { id: true, title: true, titleNp: true },
@@ -45,6 +47,8 @@ export async function GET(request: NextRequest) {
         publishedAt: now,
       },
     });
+
+    invalidatePublicArticles();
 
     return apiSuccess(
       {

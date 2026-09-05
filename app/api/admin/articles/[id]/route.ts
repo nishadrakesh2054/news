@@ -10,6 +10,7 @@ import {
   assertArticleStatusPermission,
   assertBreakingPermission,
   assertFeaturedPermission,
+  assertSchedulePermission,
 } from "@/lib/article-permissions";
 import { writeAuditLog } from "@/lib/audit-log";
 import { invalidatePublicArticles } from "@/lib/cache-invalidation";
@@ -124,6 +125,13 @@ export async function PATCH(
       data.status === ArticleStatus.PUBLISHED && isFutureScheduledDate(scheduledAtInput)
         ? null
         : scheduledAtInput;
+
+    const scheduleDenied = assertSchedulePermission(
+      session.user.role,
+      scheduledAt,
+      existingArticle.scheduledAt
+    );
+    if (scheduleDenied) return scheduleDenied;
 
     const normalizedStatus = normalizeStatusForSchedule(newStatus, scheduledAt);
 

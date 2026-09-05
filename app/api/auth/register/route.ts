@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { MESSAGES } from "@/constants/messages";
 import { validatePassword } from "@/lib/password-policy";
@@ -26,8 +26,11 @@ export async function POST(request: NextRequest) {
       return apiError(passwordError, 400);
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+    const bootstrapEmail = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
+
     const existingUser = await prisma.user.findUnique({
-      where: { email: email.trim().toLowerCase() },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
@@ -36,33 +39,43 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const userCount = await prisma.user.count();
-    const normalizedEmail = email.trim().toLowerCase();
-    const bootstrapEmail = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
-    // First user only: ADMIN if empty DB, optionally matching BOOTSTRAP_ADMIN_EMAIL when set.
-    const userRole: Role =
-      userCount === 0 && (!bootstrapEmail || normalizedEmail === bootstrapEmail)
-        ? Role.ADMIN
-        : Role.READER;
+    // Serializable txn: only one first-admin race winner; others become READER.
+    const user = await prisma.$transaction(
+      async (tx) => {
+        const adminCount = await tx.user.count({ where: { role: Role.ADMIN } });
+        const userRole: Role =
+          adminCount === 0 &&
+          (!bootstrapEmail || normalizedEmail === bootstrapEmail)
+            ? Role.ADMIN
+            : Role.READER;
 
-    const user = await prisma.user.create({
-      data: {
-        name: String(name).trim(),
-        email: normalizedEmail,
-        password: hashedPassword,
-        role: userRole,
+        return tx.user.create({
+          data: {
+            name: String(name).trim(),
+            email: normalizedEmail,
+            password: hashedPassword,
+            role: userRole,
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            createdAt: true,
+          },
+        });
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      },
-    });
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+    );
 
     return apiSuccess(user, MESSAGES.AUTH.REGISTER_SUCCESS, 201);
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return apiError(MESSAGES.AUTH.EMAIL_EXISTS, 400);
+    }
     return handleServerError(error, MESSAGES.AUTH.REGISTER_ERROR);
   }
 }

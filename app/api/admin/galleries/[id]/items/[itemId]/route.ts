@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireEditor } from "@/lib/admin-auth";
+import { invalidatePublicMedia } from "@/lib/cache-invalidation";
 
 export async function PATCH(
   request: NextRequest,
@@ -28,6 +29,7 @@ export async function PATCH(
       include: { media: true },
     });
 
+    invalidatePublicMedia();
     return apiSuccess(updated, "Caption updated");
   } catch (error) {
     return handleServerError(error, "Failed to update gallery item");
@@ -54,6 +56,7 @@ export async function DELETE(
 
     await prisma.galleryItem.delete({ where: { id: itemId } });
 
+    invalidatePublicMedia();
     return apiSuccess({ id: itemId }, "Photo removed from gallery");
   } catch (error) {
     return handleServerError(error, "Failed to delete gallery item");

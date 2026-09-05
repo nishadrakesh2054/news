@@ -4,6 +4,7 @@ import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireStaff } from "@/lib/admin-auth";
 import { sanitizeLiveUpdateHtml } from "@/lib/sanitize-html";
+import { invalidatePublicArticles } from "@/lib/cache-invalidation";
 
 async function assertLiveUpdateAccess(
   session: { user: { id: string; role: Role } },
@@ -53,6 +54,7 @@ export async function PATCH(
       data: { updatedAt: new Date() },
     });
 
+    invalidatePublicArticles();
     return apiSuccess(updated, "Live update edited");
   } catch (error) {
     return handleServerError(error, "Failed to update live update");
@@ -80,6 +82,7 @@ export async function DELETE(
 
     await prisma.liveUpdate.delete({ where: { id } });
 
+    invalidatePublicArticles();
     return apiSuccess({ id }, "Live update deleted");
   } catch (error) {
     return handleServerError(error, "Failed to delete live update");

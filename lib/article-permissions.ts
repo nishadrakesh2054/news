@@ -1,6 +1,7 @@
 import { ArticleStatus, Role } from "@prisma/client";
 import { apiError } from "@/lib/api-response";
 import type { NextResponse } from "next/server";
+import { isFutureScheduledDate } from "@/lib/article-scheduling";
 
 const PRIVILEGED_STATUSES: ArticleStatus[] = [
   ArticleStatus.PUBLISHED,
@@ -30,4 +31,30 @@ export function assertFeaturedPermission(role: Role, isFeatured: boolean): NextR
   if (!isFeatured) return null;
   if (role === Role.ADMIN || role === Role.EDITOR) return null;
   return apiError("Unauthorized: Only editors or admins can feature articles", 403) as NextResponse;
+}
+
+/**
+ * Authors must not introduce future schedules — cron would auto-publish and bypass review.
+ * Editors/admins may schedule; authors may keep an existing editor-set schedule when editing.
+ */
+export function assertSchedulePermission(
+  role: Role,
+  scheduledAt: Date | null | undefined,
+  previousScheduledAt?: Date | null
+): NextResponse | null {
+  if (role === Role.ADMIN || role === Role.EDITOR) return null;
+  if (!isFutureScheduledDate(scheduledAt)) return null;
+
+  if (
+    previousScheduledAt &&
+    scheduledAt &&
+    previousScheduledAt.getTime() === scheduledAt.getTime()
+  ) {
+    return null;
+  }
+
+  return apiError(
+    "Unauthorized: Only editors or admins can schedule articles for automatic publish",
+    403
+  ) as NextResponse;
 }

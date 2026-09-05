@@ -10,6 +10,7 @@ import {
   assertArticleStatusPermission,
   assertBreakingPermission,
   assertFeaturedPermission,
+  assertSchedulePermission,
 } from "@/lib/article-permissions";
 import { writeAuditLog } from "@/lib/audit-log";
 import { invalidatePublicArticles } from "@/lib/cache-invalidation";
@@ -226,6 +227,8 @@ export async function POST(request: NextRequest) {
 
     const statusDenied = assertArticleStatusPermission(role, data.status ?? ArticleStatus.DRAFT);
     if (statusDenied) return statusDenied;
+    const scheduleDenied = assertSchedulePermission(role, data.scheduledAt ?? null);
+    if (scheduleDenied) return scheduleDenied;
     const breakingDenied = assertBreakingPermission(role, Boolean(data.isBreaking));
     if (breakingDenied) return breakingDenied;
     const featuredDenied = assertFeaturedPermission(role, Boolean(data.isFeatured));

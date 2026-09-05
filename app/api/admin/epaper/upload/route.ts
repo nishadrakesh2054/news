@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
+import { invalidatePublicMedia } from "@/lib/cache-invalidation";
 
 const MAX_PDF_SIZE = 20 * 1024 * 1024;
 const MAX_COVER_SIZE = 5 * 1024 * 1024;
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    invalidatePublicMedia();
     return apiSuccess(epaper, "E-paper edition uploaded", 201);
   } catch (error) {
     return handleServerError(error, "Failed to upload e-paper");

@@ -4,6 +4,7 @@ import path from "path";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireEditor } from "@/lib/admin-auth";
+import { invalidatePublicMedia } from "@/lib/cache-invalidation";
 import { parseYoutubeVideoId, youtubeEmbedUrl, youtubeThumbnailUrl } from "@/lib/youtube";
 import cloudinary from "@/lib/cloudinary";
 
@@ -147,6 +148,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      invalidatePublicMedia();
       return apiSuccess(
         uploaded.length === 1 ? uploaded[0] : uploaded,
         uploaded.length === 1 ? "Video uploaded" : `${uploaded.length} videos uploaded`,
@@ -180,6 +182,7 @@ export async function POST(request: NextRequest) {
       include: { uploader: { select: { name: true } } },
     });
 
+    invalidatePublicMedia();
     return apiSuccess(media, asReel ? "Reel added" : "YouTube video added", 201);
   } catch (error) {
     if (error instanceof Error && (error.message.includes("rejected") || error.message.includes("exceeds"))) {

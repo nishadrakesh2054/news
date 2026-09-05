@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { requireStaff } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import cloudinary from "@/lib/cloudinary";
 
@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     const auth = await requireStaff();
     if (auth.error) return auth.error;
 
+    const session = auth.session!;
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
     const folder = searchParams.get("folder") || "ALL";
@@ -28,6 +29,11 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "12");
 
     const where: Prisma.MediaWhereInput = {};
+
+    // Authors only see their own uploads; editors/admins see the library.
+    if (session.user.role === Role.AUTHOR) {
+      where.uploaderId = session.user.id;
+    }
 
     if (search) {
       where.OR = [
@@ -44,6 +50,11 @@ export async function GET(request: NextRequest) {
     if (type !== "ALL") {
       where.mimeType = { startsWith: type };
     }
+
+    const aggregateWhere =
+      session.user.role === Role.AUTHOR
+        ? { uploaderId: session.user.id }
+        : {};
 
     const [total, mediaList, aggregate, imageCount] = await Promise.all([
       prisma.media.count({ where }),
@@ -71,11 +82,15 @@ export async function GET(request: NextRequest) {
         },
       }),
       prisma.media.aggregate({
+        where: aggregateWhere,
         _sum: { size: true },
         _count: { id: true },
       }),
       prisma.media.count({
-        where: { mimeType: { startsWith: "image" } },
+        where: {
+          ...aggregateWhere,
+          mimeType: { startsWith: "image" },
+        },
       }),
     ]);
 

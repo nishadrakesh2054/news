@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ArticleType } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireEditor } from "@/lib/admin-auth";
+import { invalidatePublicArticles } from "@/lib/cache-invalidation";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,6 +25,7 @@ export async function POST(request: NextRequest) {
       data: { type: ArticleType.STANDARD },
     });
 
+    invalidatePublicArticles();
     return apiSuccess(updated, "Live coverage ended — article moved to standard format");
   } catch (error) {
     return handleServerError(error, "Failed to end live coverage");

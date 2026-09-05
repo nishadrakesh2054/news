@@ -1,12 +1,19 @@
 import { NextRequest } from "next/server";
-import { apiSuccess, handleServerError } from "@/lib/api-response";
+import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { mapArticleListItem } from "@/lib/article-selects";
 import { parseSearchPagination } from "@/lib/search";
 import { searchPublishedArticles } from "@/lib/article-search";
 import { resolveLanguageFromRequest } from "@/lib/language";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const rate = checkRateLimit(`search:${ip}`, 60, 60 * 1000);
+    if (!rate.allowed) {
+      return apiError("Too many search requests. Please try again later.", 429);
+    }
+
     const { searchParams } = new URL(request.url);
     const lang = resolveLanguageFromRequest(request);
     const query = searchParams.get("q") || "";

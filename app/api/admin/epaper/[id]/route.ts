@@ -3,6 +3,7 @@ import cloudinary from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireEditor } from "@/lib/admin-auth";
+import { invalidatePublicMedia } from "@/lib/cache-invalidation";
 
 const MAX_PDF_SIZE = 20 * 1024 * 1024;
 const MAX_COVER_SIZE = 5 * 1024 * 1024;
@@ -101,6 +102,7 @@ export async function PATCH(
       data,
     });
 
+    invalidatePublicMedia();
     return apiSuccess(epaper, "Edition updated");
   } catch (error) {
     return handleServerError(error, "Failed to update edition");
@@ -124,6 +126,7 @@ export async function DELETE(
 
     await prisma.ePaper.delete({ where: { id } });
 
+    invalidatePublicMedia();
     return apiSuccess(null, "Edition deleted");
   } catch (error) {
     return handleServerError(error, "Failed to delete edition");

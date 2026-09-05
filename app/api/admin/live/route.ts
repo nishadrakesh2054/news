@@ -4,6 +4,7 @@ import { ArticleType, Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireStaff } from "@/lib/admin-auth";
 import { sanitizeLiveUpdateHtml } from "@/lib/sanitize-html";
+import { invalidatePublicArticles } from "@/lib/cache-invalidation";
 
 export async function GET(request: NextRequest) {
   try {
@@ -99,6 +100,7 @@ export async function POST(request: NextRequest) {
       data: { updatedAt: new Date() },
     });
 
+    invalidatePublicArticles();
     return apiSuccess(liveUpdate, "Live update posted successfully", 201);
   } catch (error) {
     return handleServerError(error, "Failed to post live update");

@@ -55,10 +55,15 @@ export function checkRateLimit(
 
 /** Prefer rightmost trusted proxy hop when behind a reverse proxy. */
 export function getClientIp(request: Request): string {
-  const realIp = request.headers.get("x-real-ip")?.trim();
+  return getClientIpFromHeaders(request.headers);
+}
+
+/** Shared IP extraction for Request headers and Next.js `headers()`. */
+export function getClientIpFromHeaders(headersList: Headers): string {
+  const realIp = headersList.get("x-real-ip")?.trim();
   if (realIp) return realIp;
 
-  const forwarded = request.headers.get("x-forwarded-for");
+  const forwarded = headersList.get("x-forwarded-for");
   if (forwarded) {
     const parts = forwarded.split(",").map((p) => p.trim()).filter(Boolean);
     // Last hop is typically the edge proxy's view of the client on Vercel/Cloudflare

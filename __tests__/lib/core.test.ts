@@ -4,6 +4,7 @@ import {
   assertArticleStatusPermission,
   assertBreakingPermission,
   assertFeaturedPermission,
+  assertSchedulePermission,
 } from "@/lib/article-permissions";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
 import { buildArticleSearchOr, parseSearchPagination } from "@/lib/search";
@@ -46,6 +47,14 @@ describe("article permissions", () => {
 
   it("blocks authors from featuring", () => {
     expect(assertFeaturedPermission(Role.AUTHOR, true)).not.toBeNull();
+  });
+
+  it("blocks authors from scheduling future publish", () => {
+    const future = new Date(Date.now() + 60 * 60 * 1000);
+    expect(assertSchedulePermission(Role.AUTHOR, future)).not.toBeNull();
+    expect(assertSchedulePermission(Role.EDITOR, future)).toBeNull();
+    expect(assertSchedulePermission(Role.AUTHOR, null)).toBeNull();
+    expect(assertSchedulePermission(Role.AUTHOR, future, future)).toBeNull();
   });
 });
 

@@ -29,3 +29,8 @@ export function invalidatePublicArticles() {
   invalidatePublicHome();
   invalidatePublicBreaking();
 }
+
+/** Galleries, reels/videos, and e-paper are cached under the home tag. */
+export function invalidatePublicMedia() {
+  invalidatePublicHome();
+}

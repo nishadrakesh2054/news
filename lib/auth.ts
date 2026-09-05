@@ -4,14 +4,12 @@ import bcrypt from "bcryptjs";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit, getClientIpFromHeaders } from "@/lib/rate-limit";
 
 async function clientIpFromHeaders(): Promise<string> {
   try {
     const h = await headers();
-    const forwarded = h.get("x-forwarded-for");
-    if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
-    return h.get("x-real-ip") || "unknown";
+    return getClientIpFromHeaders(h);
   } catch {
     return "unknown";
   }
