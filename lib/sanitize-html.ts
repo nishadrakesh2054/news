@@ -1,6 +1,9 @@
-import DOMPurify from "isomorphic-dompurify";
+/**
+ * SSR-safe HTML sanitizers — no jsdom / isomorphic-dompurify.
+ * (Those crash on Vercel Node 24: ERR_REQUIRE_ESM in html-encoding-sniffer.)
+ */
 
-const ALLOWED_TAGS = [
+const ALLOWED_TAGS = new Set([
   "p",
   "br",
   "strong",
@@ -36,9 +39,11 @@ const ALLOWED_TAGS = [
   "tr",
   "th",
   "td",
-];
+]);
 
-const ALLOWED_ATTR = [
+const VOID_TAGS = new Set(["br", "hr", "img"]);
+
+const ALLOWED_ATTR = new Set([
   "class",
   "title",
   "href",
@@ -50,7 +55,7 @@ const ALLOWED_ATTR = [
   "height",
   "colspan",
   "rowspan",
-];
+]);
 
 /** Reject javascript:, data:, and protocol-relative // URLs. */
 function isSafeUrl(value: string): boolean {
@@ -65,38 +70,81 @@ function isSafeUrl(value: string): boolean {
   return lower.startsWith("https://") || lower.startsWith("http://");
 }
 
-let hooksRegistered = false;
-
-function ensureHooks() {
-  if (hooksRegistered) return;
-  hooksRegistered = true;
-  DOMPurify.addHook("afterSanitizeAttributes", (node) => {
-    if (!node || typeof (node as Element).hasAttribute !== "function") return;
-    const el = node as Element;
-    if (el.hasAttribute("href") && !isSafeUrl(el.getAttribute("href") || "")) {
-      el.removeAttribute("href");
-    }
-    if (el.hasAttribute("src") && !isSafeUrl(el.getAttribute("src") || "")) {
-      el.removeAttribute("src");
-    }
-    if (el.tagName === "A") {
-      el.setAttribute("rel", "noopener noreferrer");
-    }
-  });
+function decodeAttrValue(raw: string): string {
+  return raw
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
 }
 
-/** Sanitize rich HTML from the article editor before save and on public render. */
+function sanitizeAttributes(tag: string, attrText: string): string {
+  if (!attrText?.trim()) {
+    return tag === "a" ? ' rel="noopener noreferrer"' : "";
+  }
+
+  const kept: string[] = [];
+  const attrRe =
+    /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  let match: RegExpExecArray | null;
+  while ((match = attrRe.exec(attrText)) !== null) {
+    const name = match[1].toLowerCase();
+    if (name.startsWith("on")) continue;
+    if (!ALLOWED_ATTR.has(name)) continue;
+
+    const raw = match[2] ?? match[3] ?? match[4] ?? "";
+    const value = decodeAttrValue(raw);
+
+    if ((name === "href" || name === "src") && !isSafeUrl(value)) {
+      continue;
+    }
+
+    const escaped = value.replace(/"/g, "&quot;");
+    kept.push(`${name}="${escaped}"`);
+  }
+
+  if (tag === "a") {
+    const withoutRel = kept.filter((a) => !a.startsWith("rel="));
+    withoutRel.push('rel="noopener noreferrer"');
+    return withoutRel.length ? ` ${withoutRel.join(" ")}` : "";
+  }
+
+  return kept.length ? ` ${kept.join(" ")}` : "";
+}
+
+/**
+ * Allowlist-based sanitizer for article / live HTML.
+ * Strips scripts, event handlers, and unsafe URLs without DOM APIs.
+ */
 export function sanitizeArticleHtml(html: string | null | undefined): string {
   if (!html?.trim()) return "";
-  ensureHooks();
 
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS,
-    ALLOWED_ATTR,
-    ALLOW_DATA_ATTR: false,
-    FORBID_TAGS: ["script", "style", "iframe", "object", "embed", "form", "input"],
-    FORBID_ATTR: ["style", "onerror", "onload", "onclick"],
+  let out = html
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<(script|style|iframe|object|embed|form|textarea|button|svg|math|link|meta|base)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
+    .replace(/<\/?(script|style|iframe|object|embed|form|input|textarea|button|svg|math|link|meta|base)\b[^>]*\/?>/gi, "");
+
+  out = out.replace(/<\/?([a-zA-Z][\w:-]*)(\s[^>]*)?\/?>/g, (full, rawTag: string, rawAttrs?: string) => {
+    const isClose = full.startsWith("</");
+    const selfClosing = /\/\s*>$/.test(full);
+    const tag = rawTag.toLowerCase();
+
+    if (!ALLOWED_TAGS.has(tag)) return "";
+
+    if (isClose) {
+      if (VOID_TAGS.has(tag)) return "";
+      return `</${tag}>`;
+    }
+
+    const attrs = sanitizeAttributes(tag, rawAttrs || "");
+    if (VOID_TAGS.has(tag) || selfClosing) {
+      return `<${tag}${attrs} />`;
+    }
+    return `<${tag}${attrs}>`;
   });
+
+  return out;
 }
 
 /** Sanitize live-update HTML (same policy as articles). */

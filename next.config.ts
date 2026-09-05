@@ -12,6 +12,9 @@ const cspDirectives = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   // Next.js + analytics; tighten further once nonce-based CSP is adopted
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://www.googleadservices.com https://connect.facebook.net",
+  // Next.js / Sentry / analytics may use blob: workers
+  "worker-src 'self' blob:",
+  "child-src 'self' blob:",
   "connect-src 'self' https: wss:",
   "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
   "upgrade-insecure-requests",
