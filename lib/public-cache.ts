@@ -136,7 +136,7 @@ async function loadHomePayload(lang: LanguageEditionType) {
       where: whereClause,
       select: homeArticleSelect,
       orderBy: { views: "desc" },
-      take: 6,
+      take: 5,
     }),
   ]);
 
@@ -217,10 +217,11 @@ export const getCachedActiveAds = unstable_cache(
         targetUrl: true,
         scriptCode: true,
         isActive: true,
+        sortOrder: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     }),
-  ["public-active-ads"],
+  ["public-active-ads-v2"],
   { revalidate: 120, tags: [CACHE_TAGS.ads] }
 );
 
@@ -242,13 +243,27 @@ export function getCachedBreaking(lang: LanguageEditionType) {
         orderBy: { updatedAt: "desc" },
         take: 20,
       });
-      return rows.map((item) => ({
-        id: item.id,
-        title: resolveArticleTitle(item, lang),
-        slug: item.slug,
-      }));
+
+      return rows
+        .map((item) => {
+          const en = item.title?.trim() || "";
+          const np = item.titleNp?.trim() || "";
+
+          // English edition: only show a real English headline (skip Nepali-only copies).
+          if (lang === "en") {
+            if (!en || (np && en === np)) return null;
+            return { id: item.id, title: en, slug: item.slug };
+          }
+
+          return {
+            id: item.id,
+            title: resolveArticleTitle(item, lang),
+            slug: item.slug,
+          };
+        })
+        .filter((item): item is { id: string; title: string; slug: string } => item != null);
     },
-    [`public-breaking-${lang}`],
+    [`public-breaking-${lang}-v2`],
     { revalidate: 60, tags: [CACHE_TAGS.breaking] }
   )();
 }

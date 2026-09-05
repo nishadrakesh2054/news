@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Home, Menu, Search, X } from "lucide-react";
+import { ChevronRight, Home, Menu, Search, X } from "lucide-react";
 import { isEnglishHostname } from "@/lib/language";
 import { PORTAL } from "@/constants/portal";
 
@@ -89,8 +89,9 @@ export function CategoryNavbar({ categories = [] }: CategoryNavbarProps) {
         {isEnglish ? "Home" : "गृह"}
       </Link>
       {categories.map((cat) => {
-        const label =
-          cat.displayName || (isEnglish ? cat.name || cat.nameNp : cat.nameNp || cat.name);
+        const label = isEnglish
+          ? cat.name || cat.nameNp || cat.displayName
+          : cat.nameNp || cat.name || cat.displayName;
         const active = pathname === `/category/${cat.slug}`;
         return (
           <Link
@@ -161,7 +162,7 @@ export function CategoryNavbar({ categories = [] }: CategoryNavbarProps) {
                 aria-label={isEnglish ? "Search" : "खोज"}
                 title={isEnglish ? "Search" : "खोज"}
               >
-                <Search className="h-5 w-5" />
+                <Search className="h-4 w-4" />
               </button>
             )}
           </div>
@@ -183,26 +184,39 @@ export function CategoryNavbar({ categories = [] }: CategoryNavbarProps) {
 
       {mobileOpen ? (
         <div
-          className="border-t border-white/20 md:absolute md:right-4 md:mt-0 md:w-64 md:border md:border-gray-200 md:bg-white md:text-gray-900 md:shadow-lg"
+          className="md:absolute md:right-4 md:mt-0 md:w-64 md:bg-white md:text-gray-900 md:shadow-lg"
           style={{ backgroundColor: PORTAL.brand }}
         >
-          <div className={`${PORTAL.container} flex flex-col py-2 md:bg-white md:px-0`}>
-            <div className="md:hidden">{links}</div>
-            <div className="hidden flex-col md:flex">
+          <div className={`${PORTAL.container} flex flex-col md:bg-white md:px-0`}>
+            <div className="flex flex-col md:hidden">
+              <Link
+                href={`/${langQuery}`}
+                onClick={closeMobile}
+                className={`inline-flex items-center gap-1.5 px-3 py-2.5 text-sm font-bold ${
+                  pathname === "/" ? "text-white" : "text-white/95 hover:bg-black/10"
+                }`}
+                style={pathname === "/" ? { backgroundColor: PORTAL.accent } : undefined}
+              >
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/70" aria-hidden />
+                <Home className="h-4 w-4" />
+                {isEnglish ? "Home" : "गृह"}
+              </Link>
               {categories.map((cat) => {
-                const label =
-                  cat.displayName || (isEnglish ? cat.name || cat.nameNp : cat.nameNp || cat.name);
+                const label = isEnglish
+                  ? cat.name || cat.nameNp || cat.displayName
+                  : cat.nameNp || cat.name || cat.displayName;
                 const active = pathname === `/category/${cat.slug}`;
                 return (
                   <Link
                     key={cat.id}
                     href={`/category/${cat.slug}${langQuery}`}
                     onClick={closeMobile}
-                    className={`border-b border-gray-100 px-4 py-2.5 text-sm font-semibold ${
-                      active ? "text-white" : "text-gray-900 hover:bg-gray-50"
+                    className={`inline-flex items-center gap-1.5 px-3 py-2.5 text-sm font-bold ${
+                      active ? "text-white" : "text-white/95 hover:bg-black/10"
                     }`}
                     style={active ? { backgroundColor: PORTAL.accent } : undefined}
                   >
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/70" aria-hidden />
                     {label}
                   </Link>
                 );
@@ -210,11 +224,61 @@ export function CategoryNavbar({ categories = [] }: CategoryNavbarProps) {
               <Link
                 href={`/epaper${langQuery}`}
                 onClick={closeMobile}
-                className={`border-b border-gray-100 px-4 py-2.5 text-sm font-semibold ${
-                  pathname === "/epaper" ? "text-white" : "text-gray-900 hover:bg-gray-50"
+                className={`inline-flex items-center gap-1.5 px-3 py-2.5 text-sm font-bold ${
+                  pathname === "/epaper" ? "text-white" : "text-white/95 hover:bg-black/10"
                 }`}
                 style={pathname === "/epaper" ? { backgroundColor: PORTAL.accent } : undefined}
               >
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/70" aria-hidden />
+                {isEnglish ? "E-Paper" : "इ-पत्रिका"}
+              </Link>
+            </div>
+            <div className="hidden flex-col md:flex">
+              {categories.map((cat) => {
+                const label = isEnglish
+                  ? cat.name || cat.nameNp || cat.displayName
+                  : cat.nameNp || cat.name || cat.displayName;
+                const active = pathname === `/category/${cat.slug}`;
+                return (
+                  <Link
+                    key={cat.id}
+                    href={`/category/${cat.slug}${langQuery}`}
+                    onClick={closeMobile}
+                    className={`group inline-flex items-center gap-1.5 border-b border-gray-200 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                      active
+                        ? "text-white"
+                        : "text-gray-900 hover:bg-[#C41E3A] hover:text-white"
+                    }`}
+                    style={active ? { backgroundColor: PORTAL.accent } : undefined}
+                  >
+                    <ChevronRight
+                      className={`h-3.5 w-3.5 shrink-0 transition-colors ${
+                        active ? "text-white/80" : "text-gray-400 group-hover:text-white/80"
+                      }`}
+                      aria-hidden
+                    />
+                    {label}
+                  </Link>
+                );
+              })}
+              <Link
+                href={`/epaper${langQuery}`}
+                onClick={closeMobile}
+                className={`group inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                  pathname === "/epaper"
+                    ? "text-white"
+                    : "text-gray-900 hover:bg-[#C41E3A] hover:text-white"
+                }`}
+                style={pathname === "/epaper" ? { backgroundColor: PORTAL.accent } : undefined}
+              >
+                <ChevronRight
+                  className={`h-3.5 w-3.5 shrink-0 transition-colors ${
+                    pathname === "/epaper"
+                      ? "text-white/80"
+                      : "text-gray-400 group-hover:text-white/80"
+                  }`}
+                  aria-hidden
+                />
                 {isEnglish ? "E-Paper" : "इ-पत्रिका"}
               </Link>
             </div>

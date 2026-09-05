@@ -5,7 +5,7 @@ import {
   resolveArticleTitle,
   resolveCategoryName,
 } from "@/lib/language";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { formatTimeAgo } from "@/lib/nepaliDate";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { PortalImage } from "@/components/portal/PortalImage";
 import { PORTAL } from "@/constants/portal";
@@ -66,8 +66,9 @@ export function NewsCard({
       article.coverImage,
       variant === "lead" ? "hero" : "card"
     ) || article.coverImage;
-  const when = formatTimeAgoNp(
-    typeof article.createdAt === "string" ? new Date(article.createdAt) : article.createdAt
+  const when = formatTimeAgo(
+    typeof article.createdAt === "string" ? new Date(article.createdAt) : article.createdAt,
+    lang
   );
 
   if (variant === "lead" || variant === "stack") {
@@ -88,9 +89,10 @@ export function NewsCard({
             alt={title}
             fill
             priority={priority}
+            quality={isLead ? 90 : 75}
             sizes={
               isLead
-                ? "(max-width: 1024px) 100vw, 70vw"
+                ? "(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 960px"
                 : "(max-width: 1024px) 100vw, 35vw"
             }
             className="absolute inset-0 z-0 object-cover transition-transform duration-300 group-hover:scale-[1.02]"

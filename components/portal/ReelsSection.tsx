@@ -5,7 +5,6 @@ import { Play, X } from "lucide-react";
 import type { LanguageEditionType } from "@/lib/language";
 import { parseYoutubeVideoId } from "@/lib/youtube";
 import { SectionHeader } from "@/components/portal/SectionHeader";
-import { PORTAL } from "@/constants/portal";
 
 type VideoItem = {
   id: string;
@@ -20,6 +19,8 @@ type VideoItem = {
 type ReelsSectionProps = {
   lang?: LanguageEditionType | string;
   videos?: VideoItem[];
+  /** Hide title + rule (e.g. when the parent page already has a heading). */
+  showHeader?: boolean;
 };
 
 function thumbFor(video: VideoItem): string | null {
@@ -48,7 +49,7 @@ function embedIdFor(video: VideoItem): string | null {
   );
 }
 
-export function ReelsSection({ lang = "ne", videos = [] }: ReelsSectionProps) {
+export function ReelsSection({ lang = "ne", videos = [], showHeader = true }: ReelsSectionProps) {
   const isEnglish = lang === "en";
   const langQ = isEnglish ? "?lang=en" : "";
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -73,12 +74,14 @@ export function ReelsSection({ lang = "ne", videos = [] }: ReelsSectionProps) {
   if (videos.length === 0) return null;
 
   return (
-    <section className="py-2">
-      <SectionHeader
-        title={isEnglish ? "Reels" : "रिल्स"}
-        href={`/media${langQ}`}
-        linkLabel={isEnglish ? "More videos" : "थप भिडियो"}
-      />
+    <section className={showHeader ? "py-2" : undefined}>
+      {showHeader ? (
+        <SectionHeader
+          title={isEnglish ? "Reels" : "रिल्स"}
+          href={`/media${langQ}`}
+          linkLabel={isEnglish ? "More videos" : "थप भिडियो"}
+        />
+      ) : null}
 
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
         {videos.map((video) => {
@@ -100,18 +103,12 @@ export function ReelsSection({ lang = "ne", videos = [] }: ReelsSectionProps) {
                 />
               ) : null}
               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-              <span
-                className="absolute left-2 top-2 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white"
-                style={{ backgroundColor: PORTAL.accent }}
-              >
-                {isEnglish ? "Reel" : "रिल"}
-              </span>
               <span className="absolute inset-0 flex items-center justify-center">
                 <span
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full text-white"
                   style={{ backgroundColor: "rgba(25, 87, 166, 0.85)" }}
                 >
-                  <Play className="h-4 w-4 fill-white" />
+                  <Play className="h-3 w-3 fill-white" />
                 </span>
               </span>
               <span className="absolute inset-x-0 bottom-0 z-10 p-2.5">

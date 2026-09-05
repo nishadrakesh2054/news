@@ -2,6 +2,7 @@
  * Helper functions for Nepali Devanagari numbers and B.S. dates
  */
 import { getBikramSambatDate, toNepaliDigits } from "@/lib/bs-calendar";
+import type { LanguageEditionType } from "@/lib/language";
 
 export function toDevanagariDigits(num: number | string): string {
   return toNepaliDigits(num);
@@ -26,10 +27,40 @@ export function getFormattedNepaliDate(date: Date = new Date()): string {
   }
 }
 
-export function formatTimeAgoNp(dateInput: Date | string): string {
+function getFormattedEnglishDate(date: Date): string {
+  return date.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/** Relative time — English on `en`, Nepali (Devanagari) on `ne`. */
+export function formatTimeAgo(
+  dateInput: Date | string,
+  lang: LanguageEditionType = "ne"
+): string {
   const date = new Date(dateInput);
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (lang === "en") {
+    if (diffInSeconds < 60) return "Just now";
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) {
+      return diffInMinutes === 1 ? "1 minute ago" : `${diffInMinutes} minutes ago`;
+    }
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+      return diffInHours === 1 ? "1 hour ago" : `${diffInHours} hours ago`;
+    }
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 30) {
+      return diffInDays === 1 ? "1 day ago" : `${diffInDays} days ago`;
+    }
+    return getFormattedEnglishDate(date);
+  }
 
   if (diffInSeconds < 60) {
     return "भर्खरै";
@@ -51,4 +82,9 @@ export function formatTimeAgoNp(dateInput: Date | string): string {
   }
 
   return getFormattedNepaliDate(date);
+}
+
+/** @deprecated Prefer formatTimeAgo(date, lang) */
+export function formatTimeAgoNp(dateInput: Date | string): string {
+  return formatTimeAgo(dateInput, "ne");
 }

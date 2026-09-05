@@ -100,10 +100,12 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
     popularArticles,
   } = home;
 
-  const sidebarAdTop =
-    activeAds.find((a) => a.slot === "SIDEBAR_TOP" && a.isActive !== false) || null;
-  const sidebarAdBottom =
-    activeAds.find((a) => a.slot === "SIDEBAR_BOTTOM" && a.isActive !== false) || null;
+  const sidebarAdsTop = activeAds
+    .filter((a) => a.slot === "SIDEBAR_TOP" && a.isActive !== false)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const sidebarAdsBottom = activeAds
+    .filter((a) => a.slot === "SIDEBAR_BOTTOM" && a.isActive !== false)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   const featured = publishedArticles.filter((a) => a.isFeatured);
   const mainStories = (
@@ -113,8 +115,8 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
   ).slice(0, 2);
   const mainIds = new Set(mainStories.map((a) => a.id));
   const rest = publishedArticles.filter((a) => !mainIds.has(a.id));
-  const recentSidebar = rest.slice(0, 6);
-  const popularSidebar = popularArticles;
+  const recentSidebar = rest.slice(0, 5);
+  const popularSidebar = popularArticles.slice(0, 5);
   const latestBelow = rest.slice(0, 6);
 
   const emptyLabel = isEnglish ? "No stories available yet." : "कुनै समाचार उपलब्ध छैन।";
@@ -219,8 +221,8 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
           <LatestNewsSection
             articles={latestBelow}
             lang={lang}
-            adTop={sidebarAdTop}
-            adBottom={sidebarAdBottom}
+            adsTop={sidebarAdsTop}
+            adsBottom={sidebarAdsBottom}
           />
         </PortalContainer>
       ) : null}
@@ -233,7 +235,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         <OpinionSection articles={opinionArticles} lang={lang} />
       </PortalContainer>
 
-      <PortalContainer className="py-6">
+      <PortalContainer className="space-y-6 py-4 sm:py-5">
         <CategoryGridSection
           title="Economy & Business"
           titleNp="अर्थतन्त्र"
@@ -241,9 +243,6 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
           articles={economyArticles}
           lang={lang}
         />
-      </PortalContainer>
-
-      <PortalContainer className="py-6">
         <CategoryGridSection
           title="Sports & Entertainment"
           titleNp="खेलकुद र मनोरञ्जन"

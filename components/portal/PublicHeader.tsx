@@ -6,23 +6,26 @@ import { Globe, Calendar } from "lucide-react";
 import { FacebookIcon, TwitterIcon, YoutubeIcon } from "./SocialIcons";
 import { getFormattedNepaliDate } from "@/lib/nepaliDate";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { AdUnit, type AdUnitData } from "@/components/portal/AdUnit";
+import {
+  HeaderLeaderboardRotator,
+  type LeaderboardAd,
+} from "@/components/portal/HeaderLeaderboardRotator";
 import { TopbarUtilitiesMenu } from "@/components/portal/TopbarUtilitiesMenu";
 import { SITE_CONFIG } from "@/constants/site";
 import { editionPathHref } from "@/lib/site-url";
 import { isEnglishHostname } from "@/lib/language";
 import { PORTAL } from "@/constants/portal";
 
-interface AdItem extends AdUnitData {
-  slot?: string;
-  isActive?: boolean;
-}
-
 type PublicHeaderProps = {
-  leaderboardAd?: AdItem | null;
+  leaderboardAds?: LeaderboardAd[];
+  /** @deprecated use leaderboardAds */
+  leaderboardAd?: LeaderboardAd | null;
 };
 
-export function PublicHeader({ leaderboardAd = null }: PublicHeaderProps) {
+export function PublicHeader({
+  leaderboardAds,
+  leaderboardAd = null,
+}: PublicHeaderProps) {
   const [nepaliDateStr] = useState(() => getFormattedNepaliDate());
   const [englishDateStr] = useState(() =>
     new Date().toLocaleDateString("en-US", {
@@ -55,6 +58,12 @@ export function PublicHeader({ leaderboardAd = null }: PublicHeaderProps) {
   };
 
   const homeHref = isEnglish ? "/?lang=en" : "/";
+  const ads =
+    leaderboardAds && leaderboardAds.length > 0
+      ? leaderboardAds
+      : leaderboardAd
+        ? [leaderboardAd]
+        : [];
 
   return (
     <header className="w-full select-none bg-white">
@@ -99,20 +108,7 @@ export function PublicHeader({ leaderboardAd = null }: PublicHeaderProps) {
           />
         </Link>
 
-        {leaderboardAd ? (
-          <AdUnit
-            ad={leaderboardAd}
-            path="/"
-            className="hidden h-[72px] w-full max-w-[728px] border border-gray-200 lg:block xl:h-[90px]"
-          />
-        ) : (
-          <div
-            className="hidden h-[72px] w-full max-w-[728px] items-center justify-center border border-gray-200 text-xs font-medium text-gray-500 xl:h-[90px] lg:flex"
-            style={{ backgroundColor: PORTAL.surface }}
-          >
-            {isEnglish ? `${SITE_CONFIG.name} Ad · 728×90` : `विज्ञापन · ७२८×९०`}
-          </div>
-        )}
+        <HeaderLeaderboardRotator ads={ads} isEnglish={isEnglish} intervalMs={3000} />
       </div>
     </header>
   );

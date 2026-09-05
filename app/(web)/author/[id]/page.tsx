@@ -4,15 +4,18 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
-import { ArrowLeft, Mail, Newspaper, UserRound } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { absoluteUrl } from "@/lib/site-url";
 import { SITE_CONFIG } from "@/constants/site";
 import {
   languageEditionWhere,
-  resolveArticleTitle,
+  resolveAuthorName,
   resolveLanguageEdition,
 } from "@/lib/language";
 import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
+import { NewsCard } from "@/components/portal/NewsCard";
+import { PortalContainer } from "@/components/portal/SectionHeader";
+import { PORTAL } from "@/constants/portal";
 
 interface AuthorProfilePageProps {
   params: Promise<{ id: string }>;
@@ -42,12 +45,12 @@ export async function generateMetadata({
     };
   }
 
-  const name = author.name || (lang === "en" ? "Author" : "लेखक");
-  const headline = lang === "en" ? `${name} | Author` : `${name} | लेखक प्रोफाइल`;
+  const name = resolveAuthorName(author.name, lang);
+  const headline = lang === "en" ? `${name} | Author` : `${name} | लेखक`;
   const description =
     lang === "en"
       ? `Articles by ${name} | ${SITE_CONFIG.name}`
-      : `${name} द्वारा लेखिएका समाचार, रिपोर्ट, विश्लेषण र विशेष सामग्री | ${SITE_CONFIG.nameNp}`;
+      : `${name} द्वारा लेखिएका समाचार | ${SITE_CONFIG.nameNp}`;
 
   return {
     title: pageTitle(headline, lang),
@@ -73,14 +76,13 @@ export default async function AuthorProfilePage({
   const query = await searchParams;
   const lang = await resolvePageLang(query.lang);
   const isEnglish = lang === "en";
-  const langQuery = isEnglish ? "?lang=en" : "";
+  const homeHref = isEnglish ? "/?lang=en" : "/";
 
   const author = await prisma.user.findUnique({
     where: { id },
     select: {
       id: true,
       name: true,
-      email: true,
       image: true,
       articles: {
         where: {
@@ -92,11 +94,17 @@ export default async function AuthorProfilePage({
           title: true,
           titleNp: true,
           slug: true,
+          excerpt: true,
+          excerptNp: true,
           coverImage: true,
           createdAt: true,
+          views: true,
+          category: {
+            select: { name: true, nameNp: true, slug: true },
+          },
         },
         orderBy: { createdAt: "desc" },
-        take: 8,
+        take: 24,
       },
     },
   });
@@ -105,12 +113,14 @@ export default async function AuthorProfilePage({
     notFound();
   }
 
+  const displayName = resolveAuthorName(author.name, lang);
+  const initial = displayName.charAt(0).toUpperCase();
+
   const authorJsonLd = {
     "@context": "https://schema.org",
     "@type": "Person",
-    name: author.name,
+    name: displayName,
     image: author.image || undefined,
-    sameAs: author.email ? `mailto:${author.email}` : undefined,
     url: absoluteUrl(`/author/${author.id}`, lang),
   };
 
@@ -121,102 +131,114 @@ export default async function AuthorProfilePage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(authorJsonLd) }}
       />
 
-      <main className="w-full bg-background pb-16">
-        <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-          <Link
-            href={isEnglish ? "/?lang=en" : "/"}
-            className="inline-flex items-center gap-2 text-xs font-semibold text-[#027081] hover:underline"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            {isEnglish ? "Back to home" : "गृहपृष्ठमा फर्कनुहोस्"}
-          </Link>
+      <main className="w-full bg-white pb-16 text-gray-900">
+        <PortalContainer className="py-8 sm:py-10">
+          <nav className="mb-8 flex flex-wrap items-center gap-1.5 text-[12px] text-gray-400">
+            <Link
+              href={homeHref}
+              className="transition-colors hover:underline"
+              style={{ color: PORTAL.brand }}
+            >
+              {isEnglish ? "Home" : "गृह"}
+            </Link>
+            <span aria-hidden className="text-gray-300">
+              /
+            </span>
+            <span className="font-medium" style={{ color: PORTAL.ink }}>
+              {displayName}
+            </span>
+          </nav>
 
-          <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-              <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-[#027081]/10 text-[#027081] text-2xl font-extrabold ring-4 ring-[#027081]/10">
-                {author.image ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={author.image} alt={author.name} className="h-full w-full object-cover" />
-                ) : (
-                  author.name.charAt(0).toUpperCase()
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[#027081]">
-                  <UserRound className="h-5 w-5" />
-                  <span className="text-xs font-bold uppercase tracking-[0.12em]">
-                    {isEnglish ? "Author profile" : "लेखक प्रोफाइल"}
-                  </span>
-                </div>
-                <h1 className="text-3xl font-extrabold text-foreground font-serif">{author.name}</h1>
-                <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1.5">
-                    <Mail className="h-3.5 w-3.5" />
-                    {author.email}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Newspaper className="h-3.5 w-3.5" />
-                    {author.articles.length}{" "}
-                    {isEnglish ? "published articles" : "प्रकाशित लेख"}
-                  </span>
-                </div>
-              </div>
+          <header className="mb-10 flex flex-col gap-5 border-b border-gray-200 pb-8 sm:flex-row sm:items-center">
+            <div
+              className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden text-2xl font-extrabold text-white sm:h-24 sm:w-24"
+              style={{ backgroundColor: PORTAL.brand }}
+            >
+              {author.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={author.image}
+                  alt={displayName}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initial
+              )}
             </div>
-          </section>
 
-          <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-            <div className="flex items-center justify-between pb-4 border-b border-border/60">
-              <h2 className="text-xl font-extrabold text-foreground font-serif">
-                {isEnglish ? "Articles by this author" : "लेखकका समाचार"}
+            <div className="min-w-0 space-y-2">
+              <p
+                className="text-[11px] font-bold uppercase tracking-wide"
+                style={{ color: PORTAL.accent }}
+              >
+                {isEnglish ? "Author" : "लेखक"}
+              </p>
+              <h1
+                className="text-3xl font-extrabold tracking-tight sm:text-4xl"
+                style={{ color: PORTAL.brand }}
+              >
+                {displayName}
+              </h1>
+              <p className="text-sm text-gray-500">
+                {author.articles.length}{" "}
+                {isEnglish
+                  ? author.articles.length === 1
+                    ? "published article"
+                    : "published articles"
+                  : "प्रकाशित समाचार"}
+              </p>
+            </div>
+          </header>
+
+          <section>
+            <div className="mb-4 flex items-center gap-3">
+              <h2
+                className="shrink-0 text-sm font-extrabold sm:text-base"
+                style={{ color: PORTAL.brand }}
+              >
+                {isEnglish ? "Articles by this author" : "यस लेखकका समाचार"}
               </h2>
+              <div
+                className="h-px min-w-4 flex-1"
+                style={{ backgroundColor: PORTAL.accent, opacity: 0.35 }}
+              />
             </div>
 
             {author.articles.length > 0 ? (
-              <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-                {author.articles.map((article) => {
-                  const title = resolveArticleTitle(article, lang);
-                  return (
-                    <Link
-                      key={article.id}
-                      href={`/article/${article.slug}${langQuery}`}
-                      className="group flex gap-3 rounded-xl border border-border/40 bg-muted/20 hover:bg-muted/40 transition-colors p-3"
-                    >
-                      {article.coverImage && (
-                        <div className="h-20 w-20 overflow-hidden rounded-lg bg-muted shrink-0">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={article.coverImage}
-                            alt={title}
-                            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
-                      )}
-                      <div className="min-w-0 space-y-1">
-                        <h3 className="text-sm font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
-                          {title}
-                        </h3>
-                        <span className="text-[10px] text-muted-foreground font-mono block">
-                          {new Date(article.createdAt).toLocaleDateString("en-GB", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                })}
+              <div>
+                {author.articles.map((article) => (
+                  <NewsCard
+                    key={article.id}
+                    article={{
+                      ...article,
+                      author: { name: displayName },
+                    }}
+                    lang={lang}
+                    variant="list"
+                    showExcerpt
+                  />
+                ))}
               </div>
             ) : (
-              <div className="mt-5 rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">
+              <p className="border border-dashed border-gray-200 px-4 py-12 text-center text-sm text-gray-500">
                 {isEnglish
                   ? "No published articles from this author yet."
                   : "यो लेखकद्वारा हाल प्रकाशित कुनै समाचार छैन।"}
-              </div>
+              </p>
             )}
           </section>
-        </div>
+
+          <div className="mt-10">
+            <Link
+              href={homeHref}
+              className="inline-flex items-center gap-1 text-sm font-bold hover:underline"
+              style={{ color: PORTAL.brand }}
+            >
+              <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {isEnglish ? "Back to home" : "गृहपृष्ठमा फर्कनुहोस्"}
+            </Link>
+          </div>
+        </PortalContainer>
       </main>
     </>
   );

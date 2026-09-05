@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { formatTimeAgo } from "@/lib/nepaliDate";
 import { Search as SearchIcon, Newspaper, ArrowLeft } from "lucide-react";
 import { getCachedCategories } from "@/lib/public-cache";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
@@ -168,7 +168,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
                     <div className="space-y-2">
                       <span className="text-[11px] text-muted-foreground font-mono block">
-                        {formatTimeAgoNp(art.publishedAt ?? art.createdAt)}
+                        {formatTimeAgo(art.publishedAt ?? art.createdAt, lang)}
                       </span>
                       <h2 className="text-base font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
                         <Link href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}>

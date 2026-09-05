@@ -7,7 +7,7 @@ import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { PORTAL } from "@/constants/portal";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { formatTimeAgo } from "@/lib/nepaliDate";
 
 type GalleriesIndexProps = {
   searchParams: Promise<{ lang?: string }>;
@@ -100,7 +100,7 @@ export default async function GalleriesIndexPage({ searchParams }: GalleriesInde
                 ) ||
                 gallery.coverUrl ||
                 gallery.items[0]?.media?.url;
-              const when = formatTimeAgoNp(gallery.createdAt);
+              const when = formatTimeAgo(gallery.createdAt, lang);
 
               return (
                 <Link

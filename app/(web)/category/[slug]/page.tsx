@@ -18,7 +18,7 @@ import { PortalContainer } from "@/components/portal/SectionHeader";
 import { NewsCard } from "@/components/portal/NewsCard";
 import { ArticleAdSlot } from "@/components/portal/ArticleAdSlot";
 import { PORTAL } from "@/constants/portal";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { formatTimeAgo } from "@/lib/nepaliDate";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -125,8 +125,10 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
         targetUrl: true,
         scriptCode: true,
         slot: true,
+        isActive: true,
+        sortOrder: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     }),
   ]);
 
@@ -143,8 +145,8 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
   const popular = [...articles]
     .sort((a, b) => (b.views || 0) - (a.views || 0))
     .slice(0, 6);
-  const adTop = sidebarAds.find((a) => a.slot === AdSlot.SIDEBAR_TOP) ?? null;
-  const adBottom = sidebarAds.find((a) => a.slot === AdSlot.SIDEBAR_BOTTOM) ?? null;
+  const adsTop = sidebarAds.filter((a) => a.slot === AdSlot.SIDEBAR_TOP);
+  const adsBottom = sidebarAds.filter((a) => a.slot === AdSlot.SIDEBAR_BOTTOM);
   const pagePath = `/category/${category.slug}`;
 
   const breadcrumbSchema = {
@@ -277,7 +279,7 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
 
             <aside className="min-w-0 space-y-8 border-t pt-8 lg:sticky lg:top-24 lg:border-t-0 lg:pt-0 lg:self-start" style={{ borderColor: PORTAL.rule }}>
               <ArticleAdSlot
-                ad={adTop}
+                ads={adsTop}
                 path={pagePath}
                 isEnglish={isEnglish}
                 variant="sidebar"
@@ -325,7 +327,7 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
                                 {art.views?.toLocaleString() || 0}{" "}
                                 {isEnglish ? "views" : "पढिएको"}
                                 {" · "}
-                                {formatTimeAgoNp(art.createdAt)}
+                                {formatTimeAgo(art.createdAt, lang)}
                               </span>
                             </div>
                           </Link>
@@ -337,7 +339,7 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
               ) : null}
 
               <ArticleAdSlot
-                ad={adBottom}
+                ads={adsBottom}
                 path={pagePath}
                 isEnglish={isEnglish}
                 variant="sidebar"

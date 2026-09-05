@@ -1,10 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { formatTimeAgo } from "@/lib/nepaliDate";
 import { resolveArticleTitle } from "@/lib/language";
 import { PORTAL } from "@/constants/portal";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
-import { ArticleAdSlot } from "@/components/portal/ArticleAdSlot";
+import { SidebarAdRotator, type RotatingAd } from "@/components/portal/SidebarAdRotator";
 import type { AdUnitData } from "@/components/portal/AdUnit";
 
 type SidebarArticle = {
@@ -23,7 +23,11 @@ type ArticleSidebarProps = {
   lang: "ne" | "en";
   langQuery: string;
   path: string;
+  adsTop?: RotatingAd[];
+  adsBottom?: RotatingAd[];
+  /** @deprecated prefer adsTop */
   adTop?: AdUnitData | null;
+  /** @deprecated prefer adsBottom */
   adBottom?: AdUnitData | null;
 };
 
@@ -82,7 +86,7 @@ function NewsList({
                   {title}
                 </h3>
                 <span className="mt-1 block text-[11px] text-gray-400">
-                  {formatTimeAgoNp(item.createdAt)}
+                  {formatTimeAgo(item.createdAt, lang)}
                 </span>
               </div>
             </Link>
@@ -114,18 +118,24 @@ export function ArticleSidebar({
   lang,
   langQuery,
   path,
+  adsTop,
+  adsBottom,
   adTop,
   adBottom,
 }: ArticleSidebarProps) {
   const isEnglish = lang === "en";
+  const topAds = adsTop && adsTop.length > 0 ? adsTop : adTop ? [adTop] : [];
+  const bottomAds =
+    adsBottom && adsBottom.length > 0 ? adsBottom : adBottom ? [adBottom] : [];
 
   return (
     <aside className="space-y-8 lg:sticky lg:top-24">
-      <ArticleAdSlot
-        ad={adTop}
-        path={path}
+      <SidebarAdRotator
+        ads={topAds}
         isEnglish={isEnglish}
-        variant="sidebar"
+        label="1"
+        path={path}
+        showPlaceholder={false}
       />
 
       {latest.length > 0 ? (
@@ -135,11 +145,12 @@ export function ArticleSidebar({
         </section>
       ) : null}
 
-      <ArticleAdSlot
-        ad={adBottom}
-        path={path}
+      <SidebarAdRotator
+        ads={bottomAds}
         isEnglish={isEnglish}
-        variant="sidebar"
+        label="2"
+        path={path}
+        showPlaceholder={false}
       />
 
       {trending.length > 0 ? (

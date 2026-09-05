@@ -15,6 +15,7 @@ type AdUnitProps = {
   ad: AdUnitData;
   className?: string;
   imageClassName?: string;
+  /** @deprecated badge overlay removed */
   label?: string;
   path?: string;
 };
@@ -22,8 +23,7 @@ type AdUnitProps = {
 export function AdUnit({
   ad,
   className = "",
-  imageClassName = "w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-200 rounded-none",
-  label = "विज्ञापन",
+  imageClassName = "w-full h-full object-cover rounded-none",
   path,
 }: AdUnitProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,9 +84,6 @@ export function AdUnit({
           className="w-full"
           dangerouslySetInnerHTML={{ __html: safeScript }}
         />
-        <span className="absolute top-1 right-1 bg-black text-white text-[9px] px-1.5 py-0.5 font-mono uppercase rounded-none">
-          {label}
-        </span>
       </div>
     );
   }
@@ -97,12 +94,9 @@ export function AdUnit({
 
   return (
     <div ref={containerRef} className={`relative overflow-hidden ${className}`}>
-      <a href={clickHref} target="_blank" rel="noreferrer" className="block w-full h-full group">
+      <a href={clickHref} target="_blank" rel="noreferrer" className="block h-full w-full group">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={ad.imageUrl} alt={ad.title} className={imageClassName} />
-        <span className="absolute top-1 right-1 bg-black text-white text-[9px] px-1.5 py-0.5 font-mono uppercase rounded-none">
-          {label}
-        </span>
       </a>
     </div>
   );

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { LanguageEditionType } from "@/lib/language";
 import { resolveArticleTitle, resolveCategoryName } from "@/lib/language";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { formatTimeAgo } from "@/lib/nepaliDate";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { PORTAL } from "@/constants/portal";
 import type { PortalArticleCard } from "@/components/portal/NewsCard";
@@ -55,13 +55,14 @@ export function HomeSidebarTabs({ recent, popular, lang }: HomeSidebarTabsProps)
             {isEnglish ? "No articles yet." : "समाचार उपलब्ध छैन।"}
           </li>
         ) : (
-          items.slice(0, 6).map((art) => {
+          items.slice(0, 5).map((art) => {
             const title = resolveArticleTitle(art, lang);
             const category = art.category ? resolveCategoryName(art.category, lang) : null;
             const href = lang === "en" ? `/article/${art.slug}?lang=en` : `/article/${art.slug}`;
             const image = optimizeCloudinaryUrl(art.coverImage, "thumbnail") || art.coverImage;
-            const when = formatTimeAgoNp(
-              typeof art.createdAt === "string" ? new Date(art.createdAt) : art.createdAt
+            const when = formatTimeAgo(
+              typeof art.createdAt === "string" ? new Date(art.createdAt) : art.createdAt,
+              lang
             );
 
             return (

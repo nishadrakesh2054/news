@@ -2,39 +2,125 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { X } from "lucide-react";
 import { AdUnit, type AdUnitData } from "@/components/portal/AdUnit";
 
-type FooterAd = AdUnitData & { slot?: string; isActive?: boolean };
+export type StickyFooterAdItem = AdUnitData & {
+  slot?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+};
 
-export function StickyFooterAd() {
+type StickyFooterAdProps = {
+  ads?: StickyFooterAdItem[];
+  intervalMs?: number;
+  fadeMs?: number;
+};
+
+/** Prefer crisp full-size Cloudinary delivery for 728×90 banners. */
+function leaderboardImageUrl(url: string | null | undefined): string | null | undefined {
+  if (!url || !url.includes("res.cloudinary.com") || !url.includes("/upload/")) {
+    return url;
+  }
+  return url.replace(
+    /\/upload\/(?:[^/]+\/)?/,
+    "/upload/c_fit,w_1456,h_180,q_auto:best,f_auto,dpr_2.0/"
+  );
+}
+
+/** Fixed bottom banner — full 728×90; rotates STICKY_FOOTER ads; hidden when none active. */
+export function StickyFooterAd({
+  ads = [],
+  intervalMs = 3500,
+  fadeMs = 700,
+}: StickyFooterAdProps) {
   const pathname = usePathname();
-  const [ad, setAd] = useState<FooterAd | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  const items = ads
+    .filter((a) => a.isActive !== false && (a.imageUrl || a.scriptCode))
+    .slice()
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .map((a) => ({
+      ...a,
+      imageUrl: a.imageUrl ? leaderboardImageUrl(a.imageUrl) : a.imageUrl,
+    }));
 
   useEffect(() => {
-    fetch("/api/ads")
-      .then((res) => res.json())
-      .then((json) => {
-        if (!json.success || !Array.isArray(json.data)) return;
-        const footerAd = json.data.find(
-          (item: FooterAd) => item.slot === "STICKY_FOOTER" && item.isActive !== false
-        );
-        if (footerAd) setAd(footerAd);
-      })
-      .catch(() => {});
-  }, []);
+    setDismissed(false);
+    setActive(0);
+  }, [pathname, items.map((a) => a.id).join(",")]);
 
-  if (!ad) return null;
+  useEffect(() => {
+    if (items.length <= 1 || paused || dismissed) return;
+    const id = window.setInterval(() => {
+      setActive((i) => (i + 1) % items.length);
+    }, intervalMs);
+    return () => window.clearInterval(id);
+  }, [items.length, paused, dismissed, intervalMs]);
+
+  if (dismissed || items.length === 0) return null;
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-sm shadow-lg">
-      <div className="max-w-[1480px] mx-auto px-4 py-2">
-        <AdUnit
-          ad={ad}
-          path={pathname}
-          className="w-full max-h-20 border border-border rounded-none"
-          imageClassName="w-full h-20 object-cover rounded-none"
-        />
+    <>
+      {/* Spacer matches full 728×90 banner + thin bar padding */}
+      <div className="h-[98px]" aria-hidden />
+      <div
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        <div className="relative mx-auto h-[90px] w-full max-w-[728px]">
+          <button
+            type="button"
+            onClick={() => setDismissed(true)}
+            className="absolute right-1 top-1 z-10 inline-flex h-6 w-6 items-center justify-center bg-black/50 text-white hover:bg-black/70"
+            aria-label="Close ad"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+
+          {items.length === 1 ? (
+            <AdUnit
+              ad={items[0]}
+              path={pathname}
+              className="h-full w-full overflow-hidden"
+              imageClassName="h-full w-full object-contain object-center"
+            />
+          ) : (
+            <div className="relative h-full w-full overflow-hidden">
+              {items.map((ad, i) => {
+                const isOn = i === active;
+                return (
+                  <div
+                    key={ad.id}
+                    className="absolute inset-0 will-change-[opacity,transform]"
+                    style={{
+                      opacity: isOn ? 1 : 0,
+                      transform: isOn
+                        ? "translate3d(0,0,0) scale(1)"
+                        : "translate3d(8px,0,0) scale(0.985)",
+                      transition: `opacity ${fadeMs}ms cubic-bezier(0.22, 1, 0.36, 1), transform ${fadeMs}ms cubic-bezier(0.22, 1, 0.36, 1)`,
+                      pointerEvents: isOn ? "auto" : "none",
+                      zIndex: isOn ? 2 : 1,
+                    }}
+                    aria-hidden={!isOn}
+                  >
+                    <AdUnit
+                      ad={ad}
+                      path={pathname}
+                      className="h-full w-full overflow-hidden"
+                      imageClassName="h-full w-full object-contain object-center"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

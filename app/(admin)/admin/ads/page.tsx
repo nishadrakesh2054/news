@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Code, ExternalLink, ImageIcon, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { Code, ExternalLink, ImageIcon, Pencil, Plus, Search, Trash2, X, ChevronUp, ChevronDown } from "lucide-react";
 import { AdSlot } from "@prisma/client";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
@@ -36,6 +36,7 @@ interface AdItem {
   targetUrl: string | null;
   scriptCode: string | null;
   isActive: boolean;
+  sortOrder: number;
   clicks: number;
   impressions: number;
   createdAt: string;
@@ -43,10 +44,19 @@ interface AdItem {
 
 const SLOT_LABELS: Record<AdSlot, string> = {
   HEADER_LEADERBOARD: "Header leaderboard",
-  SIDEBAR_TOP: "Sidebar top (home + article)",
-  SIDEBAR_BOTTOM: "Sidebar bottom (home + article)",
+  SIDEBAR_TOP: "Sidebar top (rotating)",
+  SIDEBAR_BOTTOM: "Sidebar bottom (rotating)",
   IN_ARTICLE: "In-article (article page)",
   STICKY_FOOTER: "Sticky footer",
+};
+
+/** Recommended banner size per placement (width*height). */
+const SLOT_SIZES: Record<AdSlot, string> = {
+  HEADER_LEADERBOARD: "728*90",
+  SIDEBAR_TOP: "300*250",
+  SIDEBAR_BOTTOM: "300*250",
+  IN_ARTICLE: "600*200",
+  STICKY_FOOTER: "728*90",
 };
 
 export default function AdminAdsPage() {
@@ -63,6 +73,7 @@ export default function AdminAdsPage() {
   const [targetUrl, setTargetUrl] = useState("");
   const [scriptCode, setScriptCode] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [sortOrder, setSortOrder] = useState(0);
 
   const { data: ads = [], isLoading, isError, refetch, isFetching } = useQuery<AdItem[]>({
     queryKey: ["admin-ads"],
@@ -104,13 +115,37 @@ export default function AdminAdsPage() {
       if (!res.ok) throw new Error(json.error || "Failed to update ad");
       return json.data;
     },
-    onSuccess: () => {
-      toast.success("Ad unit updated");
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-ads"] });
+      // Only toast/close when editing from the modal (has title or image fields), not silent order toggles
+      if (variables.payload.sortOrder !== undefined && Object.keys(variables.payload).length === 1) {
+        return;
+      }
+      if (variables.payload.isActive !== undefined && Object.keys(variables.payload).length === 1) {
+        toast.success(variables.payload.isActive ? "Ad activated" : "Ad paused");
+        return;
+      }
+      toast.success("Ad unit updated");
       closeModal();
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  const moveAd = (ad: AdItem, direction: -1 | 1) => {
+    const sameSlot = [...ads]
+      .filter((a) => a.slot === ad.slot)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.title.localeCompare(b.title));
+    const idx = sameSlot.findIndex((a) => a.id === ad.id);
+    const swapWith = sameSlot[idx + direction];
+    if (!swapWith) return;
+    const aOrder = ad.sortOrder ?? idx;
+    const bOrder = swapWith.sortOrder ?? idx + direction;
+    // If orders are equal, assign sequential then swap
+    const nextA = bOrder === aOrder ? aOrder + direction : bOrder;
+    const nextB = bOrder === aOrder ? aOrder : aOrder;
+    updateMutation.mutate({ id: ad.id, payload: { sortOrder: nextA } });
+    updateMutation.mutate({ id: swapWith.id, payload: { sortOrder: nextB } });
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -134,6 +169,10 @@ export default function AdminAdsPage() {
     setTargetUrl("");
     setScriptCode("");
     setIsActive(true);
+    const maxOrder = ads
+      .filter((a) => a.slot === AdSlot.HEADER_LEADERBOARD)
+      .reduce((m, a) => Math.max(m, a.sortOrder ?? 0), -1);
+    setSortOrder(maxOrder + 1);
     setIsModalOpen(true);
   };
 
@@ -145,6 +184,7 @@ export default function AdminAdsPage() {
     setTargetUrl(ad.targetUrl || "");
     setScriptCode(ad.scriptCode || "");
     setIsActive(ad.isActive);
+    setSortOrder(ad.sortOrder ?? 0);
     setIsModalOpen(true);
   };
 
@@ -167,6 +207,7 @@ export default function AdminAdsPage() {
       targetUrl: targetUrl || undefined,
       scriptCode: scriptCode || undefined,
       isActive,
+      sortOrder,
     };
 
     if (editingAd) {
@@ -177,18 +218,23 @@ export default function AdminAdsPage() {
   };
 
   const filteredAds = useMemo(() => {
-    return ads.filter((ad) => {
-      const matchesSearch =
-        search.trim() === "" ||
-        ad.title.toLowerCase().includes(search.toLowerCase()) ||
-        (ad.targetUrl && ad.targetUrl.toLowerCase().includes(search.toLowerCase()));
-      const matchesSlot = slotFilter === "ALL" || ad.slot === slotFilter;
-      const matchesStatus =
-        statusFilter === "ALL" ||
-        (statusFilter === "ACTIVE" && ad.isActive) ||
-        (statusFilter === "PAUSED" && !ad.isActive);
-      return matchesSearch && matchesSlot && matchesStatus;
-    });
+    return ads
+      .filter((ad) => {
+        const matchesSearch =
+          search.trim() === "" ||
+          ad.title.toLowerCase().includes(search.toLowerCase()) ||
+          (ad.targetUrl && ad.targetUrl.toLowerCase().includes(search.toLowerCase()));
+        const matchesSlot = slotFilter === "ALL" || ad.slot === slotFilter;
+        const matchesStatus =
+          statusFilter === "ALL" ||
+          (statusFilter === "ACTIVE" && ad.isActive) ||
+          (statusFilter === "PAUSED" && !ad.isActive);
+        return matchesSearch && matchesSlot && matchesStatus;
+      })
+      .sort((a, b) => {
+        if (a.slot !== b.slot) return a.slot.localeCompare(b.slot);
+        return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+      });
   }, [ads, search, slotFilter, statusFilter]);
 
   const totalImpressions = ads.reduce((sum, a) => sum + (a.impressions || 0), 0);
@@ -200,7 +246,7 @@ export default function AdminAdsPage() {
   return (
     <AdminPageShell
       title="Advertisements"
-      description="Manage banner units, placements, and ad scripts"
+      description="Multiple header leaderboards rotate by display order · manage banners & scripts"
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
       actions={
@@ -226,11 +272,11 @@ export default function AdminAdsPage() {
           className={adminToolbarSelectMd}
         >
           <option value="ALL">All placements</option>
-          <option value="HEADER_LEADERBOARD">Header leaderboard</option>
-          <option value="SIDEBAR_TOP">Sidebar top (ad 1)</option>
-          <option value="SIDEBAR_BOTTOM">Sidebar bottom (ad 2)</option>
-          <option value="IN_ARTICLE">In-article</option>
-          <option value="STICKY_FOOTER">Sticky footer</option>
+          <option value="HEADER_LEADERBOARD">Header · 728*90</option>
+          <option value="SIDEBAR_TOP">Sidebar top · 300*250</option>
+          <option value="SIDEBAR_BOTTOM">Sidebar bottom · 300*250</option>
+          <option value="IN_ARTICLE">In-article · 600*200</option>
+          <option value="STICKY_FOOTER">Sticky footer · 728*90</option>
         </select>
 
         <select
@@ -292,6 +338,7 @@ export default function AdminAdsPage() {
             <table className={adminTable}>
               <thead className={adminTableHead}>
                 <tr>
+                  <th className={adminTableHeadCell}>Order</th>
                   <th className={adminTableHeadCell}>Ad unit</th>
                   <th className={adminTableHeadCell}>Placement</th>
                   <th className={adminTableHeadCell}>Status</th>
@@ -301,11 +348,40 @@ export default function AdminAdsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredAds.map((ad) => {
+                {filteredAds.map((ad, rowIndex) => {
+                  const impressions = ad.impressions ?? 0;
+                  const clicks = ad.clicks ?? 0;
                   const ctr =
-                    ad.impressions > 0 ? ((ad.clicks / ad.impressions) * 100).toFixed(2) : "0.00";
+                    impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) : "0.00";
+                  const sameSlot = filteredAds.filter((a) => a.slot === ad.slot);
+                  const slotIdx = sameSlot.findIndex((a) => a.id === ad.id);
                   return (
                     <tr key={ad.id} className={adminTableRow}>
+                      <td className={adminTableCell}>
+                        <div className="flex items-center gap-0.5">
+                          <button
+                            type="button"
+                            title="Move earlier"
+                            disabled={slotIdx <= 0 || updateMutation.isPending}
+                            onClick={() => moveAd(ad, -1)}
+                            className={adminBtnGhost}
+                          >
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="min-w-5 text-center font-mono text-[11px] tabular-nums text-muted-foreground">
+                            {ad.sortOrder ?? rowIndex}
+                          </span>
+                          <button
+                            type="button"
+                            title="Move later"
+                            disabled={slotIdx >= sameSlot.length - 1 || updateMutation.isPending}
+                            onClick={() => moveAd(ad, 1)}
+                            className={adminBtnGhost}
+                          >
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
                       <td className={`${adminTableCell} max-w-md`}>
                         <div className="flex items-center gap-2.5">
                           {ad.imageUrl ? (
@@ -343,7 +419,12 @@ export default function AdminAdsPage() {
                         </div>
                       </td>
                       <td className={adminTableCell}>
-                        <span className={adminBadgeMuted}>{SLOT_LABELS[ad.slot] ?? ad.slot}</span>
+                        <span className="inline-flex flex-col gap-0.5">
+                          <span className={adminBadgeMuted}>{SLOT_LABELS[ad.slot] ?? ad.slot}</span>
+                          <span className="text-[10px] font-normal text-muted-foreground">
+                            {SLOT_SIZES[ad.slot]}
+                          </span>
+                        </span>
                       </td>
                       <td className={adminTableCell}>
                         <button
@@ -364,10 +445,10 @@ export default function AdminAdsPage() {
                         </button>
                       </td>
                       <td className={`${adminTableCell} font-mono tabular-nums text-muted-foreground`}>
-                        {ad.impressions.toLocaleString()}
+                        {impressions.toLocaleString()}
                       </td>
                       <td className={`${adminTableCell} font-mono tabular-nums`}>
-                        <span className="text-foreground">{ad.clicks.toLocaleString()}</span>
+                        <span className="text-foreground">{clicks.toLocaleString()}</span>
                         <span className="ml-1.5 text-[10px] text-muted-foreground">{ctr}%</span>
                       </td>
                       <td className={`${adminTableCell} text-right`}>
@@ -457,11 +538,37 @@ export default function AdminAdsPage() {
                         <option value="IN_ARTICLE">In-article inline</option>
                         <option value="STICKY_FOOTER">Sticky footer</option>
                       </select>
+                      <p className="text-[10px] text-muted-foreground">
+                        Size: {SLOT_SIZES[slot]}
+                      </p>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-foreground">Banner image</p>
+                    <label htmlFor="ad-order" className="text-xs font-medium text-foreground">
+                      Display order
+                    </label>
+                    <input
+                      id="ad-order"
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(Number(e.target.value) || 0)}
+                      className={`${adminInput} w-full max-w-[8rem] font-mono`}
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Lower number shows first. Multiple ads in the same placement (header / sidebar) rotate every ~3.5s in this order.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-foreground">
+                      Banner image{" "}
+                      <span className="font-normal text-muted-foreground">
+                        ({SLOT_SIZES[slot]})
+                      </span>
+                    </p>
                     <DualImagePicker
                       value={imageUrl}
                       onChange={setImageUrl}

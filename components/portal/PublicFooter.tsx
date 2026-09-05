@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mail, Phone, MapPin, ShieldCheck } from "lucide-react";
+import { ChevronRight, Mail, Phone, MapPin } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { FacebookIcon, TwitterIcon, YoutubeIcon } from "./SocialIcons";
@@ -21,6 +21,15 @@ interface CategoryItem {
 type PublicFooterProps = {
   categories?: CategoryItem[];
 };
+
+function FooterHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h4 className="mb-2 flex items-center gap-1.5 text-[13px] font-extrabold text-white">
+      <span className="inline-block h-3.5 w-0.5 shrink-0 bg-white" />
+      {children}
+    </h4>
+  );
+}
 
 export function PublicFooter({ categories: initialCategories = [] }: PublicFooterProps) {
   const searchParams = useSearchParams();
@@ -62,109 +71,114 @@ export function PublicFooter({ categories: initialCategories = [] }: PublicFoote
     { href: `/about${langQ}`, label: isEnglish ? "About" : "हाम्रो बारे" },
     { href: `/contact${langQ}`, label: isEnglish ? "Contact" : "सम्पर्क" },
     { href: `/privacy${langQ}`, label: isEnglish ? "Privacy" : "गोपनीयता" },
-    { href: `/editorial-team${langQ}`, label: isEnglish ? "Editorial team" : "सम्पादकीय टोली" },
     { href: `/epaper${langQ}`, label: isEnglish ? "E-Paper" : "इ-पत्रिका" },
     { href: `/media${langQ}`, label: isEnglish ? "Photo & Video" : "मिडिया" },
   ];
 
-  const linkClass = "text-white/80 transition-colors hover:text-white";
+  const sectionLinks =
+    categories.length > 0
+      ? categories.map((cat) => ({
+          href: `/category/${cat.slug}${langQ}`,
+          label: isEnglish
+            ? cat.name || cat.nameNp || cat.displayName || ""
+            : cat.nameNp || cat.name || cat.displayName || "",
+        }))
+      : [
+          {
+            href: `/category/politics${langQ}`,
+            label: isEnglish ? "Politics" : "राजनीति",
+          },
+          {
+            href: `/category/economy${langQ}`,
+            label: isEnglish ? "Economy" : "अर्थतन्त्र",
+          },
+        ];
+
+  const linkClass =
+    "group inline-flex items-center gap-0.5 text-xs text-white/75 transition-colors hover:text-white";
 
   return (
     <footer className="w-full select-none text-white" style={{ backgroundColor: PORTAL.brand }}>
-      <div className="h-1 w-full" style={{ backgroundColor: PORTAL.accent }} />
+      <div className="border-b border-white/10 bg-black/10">
+        <div
+          className={`${PORTAL.container} flex flex-wrap items-center justify-between gap-2 py-1.5 text-[10px] font-semibold text-white/70`}
+        >
+          <p>
+            {isEnglish ? SITE_CONFIG.name.toUpperCase() : SITE_CONFIG.nameNp}
+            <span className="mx-1.5 text-white/30">|</span>
+            {isEnglish ? "Digital news from Nepal" : "नेपालको डिजिटल समाचार"}
+          </p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+            <Link href={`/rashifal${langQ}`} className="hover:text-white">
+              {isEnglish ? "Horoscope" : "राशिफल"}
+            </Link>
+            <Link href={`/forex${langQ}`} className="hover:text-white">
+              {isEnglish ? "Forex" : "विदेशी विनिमय"}
+            </Link>
+            <Link href={`/gold-rate${langQ}`} className="hover:text-white">
+              {isEnglish ? "Gold" : "सुन चाँदी"}
+            </Link>
+          </div>
+        </div>
+      </div>
 
-      <div className={`${PORTAL.container} py-12`}>
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8">
-          <div className="space-y-4 lg:col-span-4">
+      <div className={`${PORTAL.container} py-5 sm:py-6`}>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-12 lg:gap-x-6 lg:gap-y-5">
+          <div className="lg:col-span-4">
             <Link href={isEnglish ? "/?lang=en" : "/"} className="inline-block">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/newslogo.png"
                 alt={isEnglish ? SITE_CONFIG.name : SITE_CONFIG.nameNp}
-                className="h-11 w-auto object-contain brightness-0 invert opacity-95 transition-opacity hover:opacity-100"
+                className="h-11 w-auto object-contain brightness-0 invert"
               />
             </Link>
-            <p className="max-w-sm text-sm leading-relaxed text-white/75">
+            <p className="mt-2.5 max-w-sm text-xs leading-5 text-white/70">
               {isEnglish
                 ? "Independent digital journalism from Nepal — news, analysis, and public-interest reporting."
                 : "नेपालको विश्वसनीय डिजिटल समाचार — निष्पक्ष पत्रकारिता र सार्वजनिक हितप्रति समर्पित।"}
             </p>
-            <div className="flex items-center gap-2 text-xs text-white/70">
-              <ShieldCheck className="h-4 w-4 shrink-0 text-white" />
-              <span>{isEnglish ? "Registered digital publication" : "दर्ता भएको डिजिटल प्रकाशन"}</span>
-            </div>
-            <div className="flex items-center gap-2 pt-1">
+            <div className="mt-2.5 flex items-center gap-0.5">
               <a
                 href="https://facebook.com"
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Facebook"
-                className="inline-flex h-9 w-9 items-center justify-center border border-white/25 text-white/85 transition-colors hover:border-white/60 hover:bg-white/10 hover:text-white"
+                className="inline-flex h-7 w-7 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
               >
-                <FacebookIcon className="h-4 w-4" />
+                <FacebookIcon className="h-3.5 w-3.5" />
               </a>
               <a
                 href={`https://twitter.com/${SITE_CONFIG.twitter.replace("@", "")}`}
                 target="_blank"
                 rel="noreferrer"
                 aria-label="X / Twitter"
-                className="inline-flex h-9 w-9 items-center justify-center border border-white/25 text-white/85 transition-colors hover:border-white/60 hover:bg-white/10 hover:text-white"
+                className="inline-flex h-7 w-7 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
               >
-                <TwitterIcon className="h-4 w-4" />
+                <TwitterIcon className="h-3.5 w-3.5" />
               </a>
               <a
                 href="https://youtube.com"
                 target="_blank"
                 rel="noreferrer"
                 aria-label="YouTube"
-                className="inline-flex h-9 w-9 items-center justify-center border border-white/25 text-white/85 transition-colors hover:border-white/60 hover:bg-white/10 hover:text-white"
+                className="inline-flex h-7 w-7 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
               >
-                <YoutubeIcon className="h-4 w-4" />
+                <YoutubeIcon className="h-3.5 w-3.5" />
               </a>
             </div>
           </div>
 
-          <div className="space-y-4 lg:col-span-2">
-            <h4 className="text-xs font-bold uppercase tracking-[0.14em] text-white">
-              {isEnglish ? "Sections" : "वर्गहरू"}
-            </h4>
-            <div className="h-px w-10 bg-white/40" />
-            <ul className="space-y-2.5 text-sm">
-              {categories.length > 0 ? (
-                categories.map((cat) => (
-                  <li key={cat.id}>
-                    <Link href={`/category/${cat.slug}${langQ}`} className={linkClass}>
-                      {cat.displayName ||
-                        (isEnglish ? cat.name || cat.nameNp : cat.nameNp || cat.name)}
-                    </Link>
-                  </li>
-                ))
-              ) : (
-                <>
-                  <li>
-                    <Link href={`/category/politics${langQ}`} className={linkClass}>
-                      {isEnglish ? "Politics" : "राजनीति"}
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href={`/category/economy${langQ}`} className={linkClass}>
-                      {isEnglish ? "Economy" : "अर्थतन्त्र"}
-                    </Link>
-                  </li>
-                </>
-              )}
-            </ul>
-          </div>
-
-          <div className="space-y-4 lg:col-span-3">
-            <h4 className="text-xs font-bold uppercase tracking-[0.14em] text-white">
-              {isEnglish ? "Explore" : "अन्वेषण"}
-            </h4>
-            <div className="h-px w-10 bg-white/40" />
-            <ul className="space-y-2.5 text-sm">
-              {quickLinks.map((item) => (
+          <div className="lg:col-span-2">
+            <FooterHeading>{isEnglish ? "Sections" : "वर्गहरू"}</FooterHeading>
+            <ul className="space-y-1">
+              {sectionLinks.map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className={linkClass}>
+                    <ChevronRight
+                      className="h-3 w-3 shrink-0 text-white/65 transition-colors group-hover:text-white"
+                      aria-hidden
+                    />
                     {item.label}
                   </Link>
                 </li>
@@ -172,48 +186,70 @@ export function PublicFooter({ categories: initialCategories = [] }: PublicFoote
             </ul>
           </div>
 
-          <div className="space-y-4 lg:col-span-3">
-            <h4 className="text-xs font-bold uppercase tracking-[0.14em] text-white">
-              {isEnglish ? "Contact" : "सम्पर्क"}
-            </h4>
-            <div className="h-px w-10 bg-white/40" />
-            <ul className="space-y-3 text-sm text-white/80">
-              <li className="flex items-start gap-2.5">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-white" />
+          <div className="lg:col-span-3">
+            <FooterHeading>{isEnglish ? "Explore" : "अन्वेषण"}</FooterHeading>
+            <ul className="space-y-1">
+              {quickLinks.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href} className={linkClass}>
+                    <ChevronRight
+                      className="h-3 w-3 shrink-0 text-white/65 transition-colors group-hover:text-white"
+                      aria-hidden
+                    />
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="lg:col-span-3">
+            <FooterHeading>{isEnglish ? "Contact" : "सम्पर्क"}</FooterHeading>
+            <ul className="space-y-1.5 text-xs text-white/75">
+              <li className="flex items-start gap-1.5">
+                <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-white/50" />
                 <span>{isEnglish ? "Kathmandu, Nepal" : "काठमाडौँ, नेपाल"}</span>
               </li>
-              <li className="flex items-center gap-2.5">
-                <Mail className="h-4 w-4 shrink-0 text-white" />
+              <li className="flex items-center gap-1.5">
+                <Mail className="h-3 w-3 shrink-0 text-white/50" />
                 <a href={`mailto:${SITE_CONFIG.email}`} className="hover:text-white">
                   {SITE_CONFIG.email}
                 </a>
               </li>
-              <li className="flex items-center gap-2.5">
-                <Phone className="h-4 w-4 shrink-0 text-white" />
-                <span>{SITE_CONFIG.domain}</span>
+              <li className="flex items-center gap-1.5">
+                <Phone className="h-3 w-3 shrink-0 text-white/50" />
+                <span className="flex items-center gap-1.5 whitespace-nowrap">
+                  <a href="tel:+9779800000001" className="hover:text-white">
+                    +977 980-0000001
+                  </a>
+                  <span className="text-white/25">·</span>
+                  <a href="tel:+9779800000002" className="hover:text-white">
+                    +977 980-0000002
+                  </a>
+                </span>
               </li>
             </ul>
 
-            <div className="space-y-2 border-t border-white/15 pt-4">
-              <p className="text-xs font-bold text-white">
-                {isEnglish ? "Newsletter" : "न्यूजलेटर"}
+            <div className="mt-3">
+              <p className="mb-1.5 text-[11px] font-bold text-white">
+                {isEnglish ? "Get news in your inbox" : "इमेलमा समाचार पाउनुहोस्"}
               </p>
-              <form onSubmit={handleSubscribe} className="flex gap-2">
+              <form onSubmit={handleSubscribe} className="flex">
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={isEnglish ? "Email" : "इमेल"}
-                  className="min-w-0 flex-1 border border-white/25 bg-white/10 px-2.5 py-2 text-xs text-white outline-none placeholder:text-white/50 focus:border-white/50"
+                  placeholder={isEnglish ? "Your email" : "तपाईंको इमेल"}
+                  className="min-w-0 flex-1 border-0 bg-white/10 px-2.5 py-1.5 text-[11px] text-white outline-none placeholder:text-white/45 focus:bg-white/15"
                 />
                 <button
                   type="submit"
                   disabled={loading}
-                  className="shrink-0 px-3 py-2 text-xs font-bold text-white disabled:opacity-60"
+                  className="shrink-0 px-2.5 py-1.5 text-[11px] font-extrabold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                   style={{ backgroundColor: PORTAL.accent }}
                 >
-                  {loading ? "…" : isEnglish ? "Join" : "सदस्यता"}
+                  {loading ? "…" : isEnglish ? "Subscribe" : "सदस्यता"}
                 </button>
               </form>
             </div>
@@ -221,22 +257,31 @@ export function PublicFooter({ categories: initialCategories = [] }: PublicFoote
         </div>
       </div>
 
-      <div className="border-t border-white/15 bg-black/15">
+      <div className="bg-[#0E3A73]">
         <div
-          className={`${PORTAL.container} flex flex-col items-center justify-between gap-3 py-4 text-xs text-white/70 sm:flex-row`}
+          className={`${PORTAL.container} flex flex-col items-start justify-between gap-1.5 py-2 text-[10px] text-white/60 sm:flex-row sm:items-center`}
         >
           <p>
             © {new Date().getFullYear()} {isEnglish ? SITE_CONFIG.name : SITE_CONFIG.nameNp}
             {isEnglish ? ". All rights reserved." : "। सर्वाधिकार सुरक्षित।"}
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-            <Link href={`/editorial-team${langQ}`} className="hover:text-white">
-              {isEnglish ? "Editorial" : "सम्पादकीय"}
+          <nav className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+            <Link href={`/about${langQ}`} className="hover:text-white">
+              {isEnglish ? "About" : "हाम्रो बारे"}
             </Link>
+            <span className="text-white/25">·</span>
+            <Link href={`/privacy${langQ}`} className="hover:text-white">
+              {isEnglish ? "Privacy" : "गोपनीयता"}
+            </Link>
+            <span className="text-white/25">·</span>
+            <Link href={`/contact${langQ}`} className="hover:text-white">
+              {isEnglish ? "Contact" : "सम्पर्क"}
+            </Link>
+            <span className="text-white/25">·</span>
             <Link href={`/epaper${langQ}`} className="hover:text-white">
               {isEnglish ? "E-Paper" : "इ-पत्रिका"}
             </Link>
-          </div>
+          </nav>
         </div>
       </div>
     </footer>

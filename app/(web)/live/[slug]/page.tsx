@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Radio, Clock, User, ChevronRight, RefreshCw } from "lucide-react";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { formatTimeAgo } from "@/lib/nepaliDate";
 import { sanitizeLiveUpdateHtml } from "@/lib/sanitize-html";
+import { isEnglishHostname } from "@/lib/language";
 
 interface LiveUpdateItem {
   id: string;
@@ -30,7 +31,12 @@ interface LiveArticleDetail {
 
 export default function LiveCoveragePage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const slug = params?.slug as string;
+  const isEnglish =
+    searchParams.get("lang") === "en" ||
+    (typeof window !== "undefined" && isEnglishHostname(window.location.hostname));
+  const lang = isEnglish ? "en" : "ne";
 
   const [article, setArticle] = useState<LiveArticleDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -121,7 +127,7 @@ export default function LiveCoveragePage() {
               </span>
             </div>
             <span className="text-[11px] font-mono text-muted-foreground">
-              अन्तिम अपडेट: {formatTimeAgoNp(lastUpdated)}
+              {isEnglish ? "Last update:" : "अन्तिम अपडेट:"} {formatTimeAgo(lastUpdated, lang)}
             </span>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-foreground">
@@ -178,7 +184,7 @@ export default function LiveCoveragePage() {
             </div>
             <div className="rounded-xl border border-border bg-muted/20 p-3">
               <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">अन्तिम अपडेट</p>
-              <p className="mt-1 text-base font-extrabold text-[#027081]">{formatTimeAgoNp(lastUpdated)}</p>
+              <p className="mt-1 text-base font-extrabold text-[#027081]">{formatTimeAgo(lastUpdated, lang)}</p>
             </div>
           </div>
 
@@ -237,7 +243,7 @@ export default function LiveCoveragePage() {
                         {update.title}
                       </h4>
                       <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-0.5 rounded">
-                        {formatTimeAgoNp(update.createdAt)}
+                        {formatTimeAgo(update.createdAt, lang)}
                       </span>
                     </div>
 

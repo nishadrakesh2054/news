@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
+import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { ArticleStatus } from "@prisma/client";
-import { ArrowLeft, Camera, PlayCircle } from "lucide-react";
 import { resolveLanguageEdition } from "@/lib/language";
 import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
+import { PortalContainer } from "@/components/portal/SectionHeader";
+import { PhotoFeatureSection } from "@/components/portal/PhotoFeatureSection";
+import { ReelsSection } from "@/components/portal/ReelsSection";
+import { PORTAL } from "@/constants/portal";
+import { getCachedReels } from "@/lib/public-cache";
 
 export const revalidate = 60;
 
@@ -17,116 +21,116 @@ export async function generateMetadata({ searchParams }: MediaPageProps): Promis
   const sp = await searchParams;
   const headerList = await headers();
   const lang = resolveLanguageEdition(sp.lang, requestHost(headerList));
-  const title = lang === "en" ? "Media & photo gallery" : "मिडिया र फोटो ग्यालेरी";
+  const title = lang === "en" ? "Media" : "मिडिया";
   return {
     title: pageTitle(title, lang),
     description:
       lang === "en"
-        ? "Multimedia coverage and visual stories."
-        : "दृश्य–श्रव्य सामग्री र फोटो कथाहरू।",
+        ? "Photo galleries and video reels from Echo Manch."
+        : "इको माञ्चका फोटो ग्यालेरी र भिडियो रिल्स।",
     alternates: editionAlternates("/media", lang),
   };
 }
 
 export default async function MediaGalleryPage({ searchParams }: MediaPageProps) {
-  await searchParams;
-  let mediaStories: Array<{
-    id: string;
-    title: string;
-    titleNp: string | null;
-    slug: string;
-    coverImage: string | null;
-    excerpt: string | null;
-    createdAt: Date;
-  }> = [];
+  const sp = await searchParams;
+  const headerList = await headers();
+  const lang = resolveLanguageEdition(sp.lang, requestHost(headerList));
+  const isEnglish = lang === "en";
+  const langQ = isEnglish ? "?lang=en" : "";
 
-  try {
-    mediaStories = await prisma.article.findMany({
-      where: {
-        status: ArticleStatus.PUBLISHED,
-        coverImage: { not: null },
-      },
+  const [galleries, reels] = await Promise.all([
+    prisma.gallery.findMany({
+      where: { isPublished: true },
+      orderBy: { createdAt: "desc" },
+      take: 12,
       select: {
         id: true,
         title: true,
         titleNp: true,
         slug: true,
-        coverImage: true,
-        excerpt: true,
+        description: true,
+        coverUrl: true,
         createdAt: true,
+        _count: { select: { items: true } },
       },
-      orderBy: { createdAt: "desc" },
-      take: 12,
-    });
-  } catch {
-    mediaStories = [];
-  }
+    }),
+    getCachedReels(),
+  ]);
+
+  const hasContent = galleries.length > 0 || reels.length > 0;
 
   return (
-    <main className="w-full bg-background pb-16">
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-[#027081] hover:underline"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          गृहपृष्ठमा फर्कनुहोस्
-        </Link>
+    <main className="w-full bg-white pb-16 text-gray-900">
+      <PortalContainer className="py-6 sm:py-8">
+        <h1 className="sr-only">{isEnglish ? "Media" : "मिडिया"}</h1>
 
-        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <div className="flex items-center gap-3 text-[#027081]">
-            <Camera className="h-8 w-8" />
-            <div>
-              <h1 className="text-3xl font-extrabold text-foreground font-serif">मिडिया र फोटो ग्यालेरी</h1>
-              <p className="text-xs text-muted-foreground">दृश्य–श्रव्य सामग्री र फोटो कथाहरू</p>
-            </div>
-          </div>
-        </section>
+        <nav className="mb-6 text-[12px] text-gray-400">
+          <Link href={isEnglish ? "/?lang=en" : "/"} className="hover:underline" style={{ color: PORTAL.brand }}>
+            {isEnglish ? "Home" : "गृह"}
+          </Link>
+          <span className="mx-1.5">/</span>
+          <span style={{ color: PORTAL.ink }}>{isEnglish ? "Media" : "मिडिया"}</span>
+        </nav>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mediaStories.map((article) => (
-            <Link
-              key={article.id}
-              href={`/article/${article.slug}`}
-              className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-all"
-            >
-              <div className="relative h-60 overflow-hidden">
-                {article.coverImage && (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={article.coverImage}
-                    alt={article.titleNp || article.title}
-                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                )}
-                <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-transparent" />
-                <div className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
-                  <PlayCircle className="h-3 w-3" />
-                  ग्यालेरी
-                </div>
-              </div>
-
-              <div className="p-4 space-y-2">
-                <span className="text-[10px] text-muted-foreground font-mono block">
-                  {new Date(article.createdAt).toLocaleDateString("ne-NP", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </span>
-                <h2 className="text-base font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
-                  {article.titleNp || article.title}
+        {!hasContent ? (
+          <p className="border border-dashed border-gray-300 px-4 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "No media published yet." : "अहिले कुनै मिडिया प्रकाशित छैन।"}
+          </p>
+        ) : (
+          <div className="space-y-10">
+            {galleries.length > 0 ? (
+              <section className="space-y-4">
+                <h2 className="text-lg font-extrabold sm:text-xl" style={{ color: PORTAL.brand }}>
+                  {isEnglish ? "Photo galleries" : "फोटो ग्यालेरी"}
                 </h2>
-                {article.excerpt && (
-                  <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                    {article.excerpt}
-                  </p>
-                )}
-              </div>
-            </Link>
-          ))}
+                <PhotoFeatureSection
+                  lang={lang}
+                  showHeader={false}
+                  galleries={galleries.map((g) => ({
+                    id: g.id,
+                    title: g.title,
+                    titleNp: g.titleNp,
+                    slug: g.slug,
+                    description: g.description,
+                    coverUrl: g.coverUrl,
+                    createdAt: g.createdAt.toISOString(),
+                    itemCount: g._count.items,
+                  }))}
+                />
+              </section>
+            ) : null}
+
+            {reels.length > 0 ? (
+              <section className="space-y-4">
+                <h2 className="text-lg font-extrabold sm:text-xl" style={{ color: PORTAL.brand }}>
+                  {isEnglish ? "Reels" : "रिल्स"}
+                </h2>
+                <ReelsSection lang={lang} videos={reels} showHeader={false} />
+              </section>
+            ) : null}
+          </div>
+        )}
+
+        <div className="mt-12 flex flex-wrap gap-x-6 gap-y-3 text-sm">
+          <Link
+            href={`/galleries${langQ}`}
+            className="inline-flex items-center gap-1 font-bold hover:underline"
+            style={{ color: PORTAL.brand }}
+          >
+            <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {isEnglish ? "All photo galleries" : "सबै फोटो ग्यालेरी"}
+          </Link>
+          <Link
+            href={isEnglish ? "/?lang=en" : "/"}
+            className="inline-flex items-center gap-1 font-bold hover:underline"
+            style={{ color: PORTAL.brand }}
+          >
+            <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {isEnglish ? "Back to home" : "गृहपृष्ठ"}
+          </Link>
         </div>
-      </div>
+      </PortalContainer>
     </main>
   );
 }

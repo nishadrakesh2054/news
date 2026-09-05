@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { formatTimeAgo } from "@/lib/nepaliDate";
 import { MapPin, ChevronRight } from "lucide-react";
 import { PROVINCES } from "@/components/portal/ProvinceNewsWidget";
 import { resolveLanguageEdition } from "@/lib/language";
@@ -42,7 +42,10 @@ export async function generateMetadata({
 
 export default async function ProvinceArchivePage({ params, searchParams }: ProvincePageProps) {
   const { slug } = await params;
-  await searchParams;
+  const sp = await searchParams;
+  const headerList = await headers();
+  const lang = resolveLanguageEdition(sp.lang, requestHost(headerList));
+  const isEnglish = lang === "en";
 
   const provinceObj = PROVINCES.find((p) => p.slug === slug);
   if (!provinceObj) {
@@ -69,6 +72,8 @@ export default async function ProvinceArchivePage({ params, searchParams }: Prov
     take: 30,
   });
 
+  const provinceName = isEnglish ? provinceObj.nameEn : provinceObj.name;
+
   return (
     <main className="w-full bg-background pb-16 pt-6">
       <div className="max-w-7xl mx-auto px-4 space-y-8">
@@ -76,18 +81,22 @@ export default async function ProvinceArchivePage({ params, searchParams }: Prov
         <div className="border-b-2 border-[#027081] pb-4 flex items-center justify-between">
           <div className="space-y-1">
             <nav className="flex items-center space-x-2 text-xs text-muted-foreground pb-1">
-              <Link href="/" className="hover:text-[#027081]">गृह</Link>
+              <Link href={isEnglish ? "/?lang=en" : "/"} className="hover:text-[#027081]">
+                {isEnglish ? "Home" : "गृह"}
+              </Link>
               <ChevronRight className="h-3 w-3" />
-              <span>प्रदेश समाचार</span>
+              <span>{isEnglish ? "Province news" : "प्रदेश समाचार"}</span>
             </nav>
             <h1 className="text-3xl font-extrabold text-[#027081] font-serif flex items-center gap-2">
               <MapPin className="h-7 w-7" />
-              <span>{provinceObj.name}का समाचार</span>
+              <span>
+                {isEnglish ? `${provinceName} news` : `${provinceName}का समाचार`}
+              </span>
             </h1>
           </div>
 
           <span className="bg-[#027081]/10 text-[#027081] text-xs font-bold px-3 py-1.5 rounded-lg font-mono">
-            {articles.length} समाचार
+            {articles.length} {isEnglish ? "stories" : "समाचार"}
           </span>
         </div>
 
@@ -117,12 +126,12 @@ export default async function ProvinceArchivePage({ params, searchParams }: Prov
                 <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
                   <div className="space-y-2">
                     <span className="text-[11px] font-mono text-muted-foreground block">
-                      {formatTimeAgoNp(art.createdAt)}
+                      {formatTimeAgo(art.createdAt, lang)}
                     </span>
 
                     <h2 className="text-base font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif">
-                      <Link href={`/article/${art.slug}`}>
-                        {art.titleNp || art.title}
+                      <Link href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}>
+                        {isEnglish ? art.title || art.titleNp : art.titleNp || art.title}
                       </Link>
                     </h2>
 
@@ -134,7 +143,7 @@ export default async function ProvinceArchivePage({ params, searchParams }: Prov
                   </div>
 
                   <div className="pt-2 border-t border-border/30 text-[11px] font-semibold text-[#027081] flex items-center gap-1">
-                    <span>थप पढ्नुहोस्</span>
+                    <span>{isEnglish ? "Read more" : "थप पढ्नुहोस्"}</span>
                     <ChevronRight className="h-3 w-3" />
                   </div>
                 </div>
@@ -143,7 +152,9 @@ export default async function ProvinceArchivePage({ params, searchParams }: Prov
           </div>
         ) : (
           <div className="p-12 text-center text-muted-foreground rounded-2xl border border-dashed">
-            {provinceObj.name}मा हाल कुनै विशेष समाचार प्रकाशित भएको छैन।
+            {isEnglish
+              ? `No stories from ${provinceName} yet.`
+              : `${provinceName}मा हाल कुनै विशेष समाचार प्रकाशित भएको छैन।`}
           </div>
         )}
       </div>

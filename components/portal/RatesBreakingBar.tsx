@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Zap } from "lucide-react";
-import { isEnglishHostname } from "@/lib/language";
+import { isEnglishHostname, type LanguageEditionType } from "@/lib/language";
 import { PORTAL } from "@/constants/portal";
 
 interface BreakingItem {
@@ -15,18 +15,24 @@ interface BreakingItem {
 
 type RatesBreakingBarProps = {
   items?: BreakingItem[];
+  /** Server-resolved edition — keeps ticker language in sync with layout. */
+  lang?: LanguageEditionType;
 };
 
 /** Breaking ticker: marquee scroll; arrows restart from prev/next story. */
-export function RatesBreakingBar({ items = [] }: RatesBreakingBarProps) {
+export function RatesBreakingBar({ items = [], lang }: RatesBreakingBarProps) {
   const searchParams = useSearchParams();
   const langParam = searchParams.get("lang");
   const isEnglish =
-    langParam === "en" ||
-    (typeof window !== "undefined" && isEnglishHostname(window.location.hostname));
+    lang === "en" ||
+    (!lang &&
+      (langParam === "en" ||
+        (typeof window !== "undefined" && isEnglishHostname(window.location.hostname))));
   const langQ = isEnglish ? "?lang=en" : "";
 
-  const [breaking] = useState<BreakingItem[]>(items);
+  // Always follow latest server items (do not freeze first paint in useState).
+  const breaking = items;
+
   const [startIndex, setStartIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   /** Bumps so arrow clicks remount the marquee even if index wraps. */
@@ -34,7 +40,8 @@ export function RatesBreakingBar({ items = [] }: RatesBreakingBarProps) {
 
   const ordered = useMemo(() => {
     if (breaking.length === 0) return [];
-    return [...breaking.slice(startIndex), ...breaking.slice(0, startIndex)];
+    const safeIndex = startIndex % breaking.length;
+    return [...breaking.slice(safeIndex), ...breaking.slice(0, safeIndex)];
   }, [breaking, startIndex]);
 
   const durationSec = Math.max(18, ordered.length * 8);
@@ -54,12 +61,13 @@ export function RatesBreakingBar({ items = [] }: RatesBreakingBarProps) {
   if (breaking.length === 0) return null;
 
   const linkClass =
-    "inline-flex items-center whitespace-nowrap px-4 py-0.5 text-xs font-medium leading-normal text-gray-900 hover:underline";
+    "inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-0.5 text-xs font-medium leading-normal text-gray-900 hover:underline";
 
   const track = (
     <>
       {ordered.map((item) => (
         <Link key={`${tickKey}-${item.id}-a`} href={`/article/${item.slug}${langQ}`} className={linkClass}>
+          <ChevronRight className="h-3 w-3 shrink-0 text-gray-400" aria-hidden />
           {item.title}
         </Link>
       ))}
@@ -71,6 +79,7 @@ export function RatesBreakingBar({ items = [] }: RatesBreakingBarProps) {
           aria-hidden
           tabIndex={-1}
         >
+          <ChevronRight className="h-3 w-3 shrink-0 text-gray-400" aria-hidden />
           {item.title}
         </Link>
       ))}
@@ -96,10 +105,11 @@ export function RatesBreakingBar({ items = [] }: RatesBreakingBarProps) {
           {breaking.length === 1 ? (
             <Link
               href={`/article/${breaking[0].slug}${langQ}`}
-              className="block truncate py-0.5 text-xs font-medium leading-normal text-gray-900 hover:underline"
+              className="inline-flex max-w-full items-center gap-1.5 truncate py-0.5 text-xs font-medium leading-normal text-gray-900 hover:underline"
               title={breaking[0].title}
             >
-              {breaking[0].title}
+              <ChevronRight className="h-3 w-3 shrink-0 text-gray-400" aria-hidden />
+              <span className="truncate">{breaking[0].title}</span>
             </Link>
           ) : (
             <div

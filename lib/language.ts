@@ -202,3 +202,26 @@ export function resolveCategoryDescription(
 export function htmlLang(lang: LanguageEditionType): string {
   return lang === "en" ? "en" : "ne";
 }
+
+/** Display name for bylines — supports "नेपाली / English" stored names. */
+export function resolveAuthorName(
+  name: string | null | undefined,
+  lang: LanguageEditionType = "ne"
+): string {
+  const raw = name?.trim();
+  if (!raw) {
+    return lang === "en" ? "Editorial desk" : "सम्पादकीय टोली";
+  }
+
+  if (raw.includes(" / ")) {
+    const [left, right] = raw.split(" / ").map((part) => part.trim());
+    if (lang === "en") return right || left || raw;
+    return left || right || raw;
+  }
+
+  if (lang === "en" && (raw === "सम्पादकीय टोली" || raw.startsWith("सम्पादकीय"))) {
+    return "Editorial desk";
+  }
+
+  return raw;
+}

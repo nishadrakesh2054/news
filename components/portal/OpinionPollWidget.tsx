@@ -153,10 +153,17 @@ export function OpinionPollWidget() {
               >
                 <span
                   className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
-                    isSelected ? "border-white bg-white/20" : "border-gray-300"
+                    isSelected ? "border-white bg-white/25" : ""
                   }`}
+                  style={
+                    isSelected
+                      ? undefined
+                      : { borderColor: "rgba(25, 87, 166, 0.55)" }
+                  }
                 >
-                  {isSelected ? <span className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
+                  {isSelected ? (
+                    <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                  ) : null}
                 </span>
                 {label}
               </button>

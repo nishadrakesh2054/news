@@ -2,7 +2,6 @@
 
 import { useSearchParams } from "next/navigation";
 import { isEnglishHostname } from "@/lib/language";
-import { SITE_CONFIG } from "@/constants/site";
 import { SectionHeader, PortalContainer } from "@/components/portal/SectionHeader";
 import { EpaperPdfCard, type EpaperCardItem } from "@/components/portal/EpaperPdfCard";
 
@@ -25,11 +24,7 @@ export function EpaperSection({ editions = [] }: EpaperSectionProps) {
     <section className="w-full">
       <PortalContainer className="py-6 sm:py-8">
         <SectionHeader
-          title={
-            isEnglish
-              ? `${SITE_CONFIG.name} special materials`
-              : `${SITE_CONFIG.nameNp} विशेष सामग्रीहरू`
-          }
+          title={isEnglish ? "Special materials" : "विशेष सामग्रीहरू"}
           href={`/epaper${langQ}`}
           linkLabel={isEnglish ? "More" : "थप"}
         />

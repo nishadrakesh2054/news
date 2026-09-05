@@ -3,7 +3,8 @@ export type ImagePreset = "thumbnail" | "card" | "hero" | "og" | "avatar";
 const PRESETS: Record<ImagePreset, string> = {
   thumbnail: "c_fill,w_200,h_150,f_auto,q_auto",
   card: "c_fill,w_640,h_360,f_auto,q_auto",
-  hero: "c_fill,w_1200,h_675,f_auto,q_auto",
+  /** Large lead / main-story frames (retina ~960–1200 CSS px wide). */
+  hero: "c_fill,w_1920,h_1080,f_auto,q_auto:good",
   og: "c_fill,w_1200,h_630,f_auto,q_auto",
   avatar: "c_fill,w_80,h_80,f_auto,q_auto,g_face",
 };

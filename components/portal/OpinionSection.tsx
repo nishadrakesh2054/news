@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { formatTimeAgo } from "@/lib/nepaliDate";
 import {
   resolveArticleExcerpt,
   resolveArticleTitle,
@@ -42,8 +42,9 @@ export function OpinionSection({ articles, lang = "ne" }: OpinionSectionProps) {
         {items.map((art) => {
           const title = resolveArticleTitle(art, edition);
           const excerpt = resolveArticleExcerpt(art, edition);
-          const when = formatTimeAgoNp(
-            typeof art.createdAt === "string" ? new Date(art.createdAt) : art.createdAt
+          const when = formatTimeAgo(
+            typeof art.createdAt === "string" ? new Date(art.createdAt) : art.createdAt,
+            edition
           );
 
           return (

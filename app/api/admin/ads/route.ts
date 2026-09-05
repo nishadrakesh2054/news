@@ -36,10 +36,13 @@ export async function GET(request: NextRequest) {
           targetUrl: true,
           scriptCode: true,
           isActive: true,
+          sortOrder: true,
+          clicks: true,
+          impressions: true,
           createdAt: true,
           updatedAt: true,
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
         skip,
         take: limit,
       }),
@@ -60,7 +63,7 @@ export async function POST(request: NextRequest) {
     const auth = await requireAdmin();
     if (auth.error) return auth.error;
 
-    const { title, slot, imageUrl, targetUrl, scriptCode, isActive } = await request.json();
+    const { title, slot, imageUrl, targetUrl, scriptCode, isActive, sortOrder } = await request.json();
 
     if (!title || !slot || !Object.values(AdSlot).includes(slot)) {
       return apiError("Valid title and ad slot are required", 400);
@@ -79,6 +82,7 @@ export async function POST(request: NextRequest) {
         targetUrl: trimmedTarget,
         scriptCode: scriptCode ? sanitizeAdScriptCode(scriptCode) || null : null,
         isActive: Boolean(isActive ?? true),
+        sortOrder: typeof sortOrder === "number" && Number.isFinite(sortOrder) ? Math.trunc(sortOrder) : 0,
       },
     });
 

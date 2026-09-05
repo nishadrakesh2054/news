@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { LanguageEditionType } from "@/lib/language";
 import { resolveArticleTitle } from "@/lib/language";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { formatTimeAgo } from "@/lib/nepaliDate";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { PORTAL } from "@/constants/portal";
 
@@ -91,8 +91,9 @@ export function ProvinceNewsWidget({ articles, lang = "ne" }: ProvinceNewsWidget
           {filteredArticles.slice(0, 6).map((art) => {
             const title = resolveArticleTitle(art, lang);
             const image = optimizeCloudinaryUrl(art.coverImage, "thumbnail") || art.coverImage;
-            const when = formatTimeAgoNp(
-              typeof art.createdAt === "string" ? new Date(art.createdAt) : art.createdAt
+            const when = formatTimeAgo(
+              typeof art.createdAt === "string" ? new Date(art.createdAt) : art.createdAt,
+              lang
             );
 
             return (

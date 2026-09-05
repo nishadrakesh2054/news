@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   Sparkles,
   Type,
-  TrendingUp,
   Coins,
   DollarSign,
   ChevronRight,
@@ -27,14 +26,6 @@ export function NepaliUtilityWidget() {
       icon: DollarSign,
       color: "bg-emerald-500 text-white",
       iconBg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-    },
-    {
-      title: "सेयर बजार",
-      desc: "आजको नेप्से परिसूचक तथा सेयर कारोबार विवरण",
-      href: "/share-market",
-      icon: TrendingUp,
-      color: "bg-teal-500 text-white",
-      iconBg: "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20",
     },
     {
       title: "सुन चाँदीको भाउ",

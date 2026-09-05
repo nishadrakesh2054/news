@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Camera } from "lucide-react";
 import type { LanguageEditionType } from "@/lib/language";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { formatTimeAgo } from "@/lib/nepaliDate";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { SectionHeader } from "@/components/portal/SectionHeader";
-import { PORTAL } from "@/constants/portal";
 
 type GalleryCard = {
   id: string;
@@ -22,21 +20,29 @@ type GalleryCard = {
 type PhotoFeatureSectionProps = {
   lang?: LanguageEditionType | string;
   galleries?: GalleryCard[];
+  /** Hide title + rule (e.g. when the parent page already has a heading). */
+  showHeader?: boolean;
 };
 
-export function PhotoFeatureSection({ lang = "ne", galleries = [] }: PhotoFeatureSectionProps) {
+export function PhotoFeatureSection({
+  lang = "ne",
+  galleries = [],
+  showHeader = true,
+}: PhotoFeatureSectionProps) {
   const isEnglish = lang === "en";
   const langQ = isEnglish ? "?lang=en" : "";
 
   if (galleries.length === 0) return null;
 
   return (
-    <section className="py-2">
-      <SectionHeader
-        title={isEnglish ? "Photo Feature" : "फोटो फिचर"}
-        href={`/galleries${langQ}`}
-        linkLabel={isEnglish ? "More photos" : "थप फोटो"}
-      />
+    <section className={showHeader ? "py-2" : undefined}>
+      {showHeader ? (
+        <SectionHeader
+          title={isEnglish ? "Photo Feature" : "फोटो फिचर"}
+          href={`/galleries${langQ}`}
+          linkLabel={isEnglish ? "More photos" : "थप फोटो"}
+        />
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {galleries.map((gallery) => {
@@ -46,7 +52,7 @@ export function PhotoFeatureSection({ lang = "ne", galleries = [] }: PhotoFeatur
               : gallery.titleNp || gallery.title;
           const cover =
             optimizeCloudinaryUrl(gallery.coverUrl, "card") || gallery.coverUrl;
-          const when = formatTimeAgoNp(new Date(gallery.createdAt));
+          const when = formatTimeAgo(new Date(gallery.createdAt), isEnglish ? "en" : "ne");
 
           return (
             <Link
@@ -70,14 +76,6 @@ export function PhotoFeatureSection({ lang = "ne", galleries = [] }: PhotoFeatur
                     "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.25) 45%, rgba(0,0,0,0.05) 100%)",
                 }}
               />
-
-              <span
-                className="absolute left-0 top-0 z-10 inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white"
-                style={{ backgroundColor: PORTAL.accent }}
-              >
-                <Camera className="h-3 w-3" />
-                {isEnglish ? "Gallery" : "ग्यालेरी"}
-              </span>
 
               <div className="absolute inset-x-0 bottom-0 z-10 p-3 sm:p-4">
                 {(gallery.itemCount ?? 0) > 0 ? (

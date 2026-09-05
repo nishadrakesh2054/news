@@ -14,11 +14,13 @@ model Ad {
   targetUrl   String?
   scriptCode  String?  @db.Text
   isActive    Boolean  @default(true)
+  /** Lower numbers show first within the same slot (rotating leaderboard order). */
+  sortOrder   Int      @default(0)
   clicks      Int      @default(0)
   impressions Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   analyticsEvents AnalyticsEvent[]
 
-  @@index([slot, isActive])
+  @@index([slot, isActive, sortOrder])
 }

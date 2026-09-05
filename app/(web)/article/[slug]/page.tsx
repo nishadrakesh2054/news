@@ -4,7 +4,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus, AdSlot, LanguageEdition } from "@prisma/client";
-import { formatTimeAgoNp, getFormattedNepaliDate } from "@/lib/nepaliDate";
+import { formatTimeAgo, getFormattedNepaliDate } from "@/lib/nepaliDate";
 import { ArticleBodyClient } from "@/components/web/ArticleBodyClient";
 import { CommentsSection } from "@/components/web/CommentsSection";
 import { ArticleViewTracker } from "@/components/portal/ArticleViewTracker";
@@ -20,6 +20,7 @@ import {
   resolveArticleContent,
   resolveArticleExcerpt,
   resolveArticleTitle,
+  resolveAuthorName,
   resolveCategoryName,
   resolveKeywords,
   resolveLanguageEdition,
@@ -181,13 +182,15 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
       a.slot === AdSlot.SIDEBAR_BOTTOM
   );
 
-  const inArticleAds = articleAds.filter((a) => a.slot === AdSlot.IN_ARTICLE);
-  const inArticleAdTop = inArticleAds[0] ?? null;
-  const inArticleAdMid = inArticleAds[1] ?? null;
-  const sidebarAdTop =
-    articleAds.find((a) => a.slot === AdSlot.SIDEBAR_TOP) ?? null;
-  const sidebarAdBottom =
-    articleAds.find((a) => a.slot === AdSlot.SIDEBAR_BOTTOM) ?? null;
+  const inArticleAds = articleAds
+    .filter((a) => a.slot === AdSlot.IN_ARTICLE)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const sidebarAdsTop = articleAds
+    .filter((a) => a.slot === AdSlot.SIDEBAR_TOP)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const sidebarAdsBottom = articleAds
+    .filter((a) => a.slot === AdSlot.SIDEBAR_BOTTOM)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   const articlePath = `/article/${article.slug}`;
 
   const articleTitle = resolveArticleTitle(article, lang);
@@ -198,7 +201,7 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
   const homeHref = isEnglish ? "/?lang=en" : "/";
   const coverSrc =
     optimizeCloudinaryUrl(article.coverImage || undefined, "hero") || article.coverImage;
-  const authorName = article.author.name || (isEnglish ? "Editorial desk" : "सम्पादकीय टोली");
+  const authorName = resolveAuthorName(article.author.name, lang);
   const publishedAt = article.publishedAt || article.createdAt;
   const authorUrl = absoluteUrl(`/author/${article.author.id}`, lang);
 
@@ -305,7 +308,14 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
                   ·
                 </span>
                 <time dateTime={publishedAt.toISOString()}>
-                  {getFormattedNepaliDate(publishedAt)}
+                  {isEnglish
+                    ? publishedAt.toLocaleDateString("en-GB", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    : getFormattedNepaliDate(publishedAt)}
                 </time>
                 <span className="text-gray-300" aria-hidden>
                   ·
@@ -339,7 +349,7 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
             ) : null}
 
             <ArticleAdSlot
-              ad={inArticleAdTop}
+              ads={inArticleAds}
               path={articlePath}
               isEnglish={isEnglish}
               className="mb-8"
@@ -350,13 +360,6 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
               content={articleBody}
               shareUrl={shareUrl}
               isEnglish={isEnglish}
-            />
-
-            <ArticleAdSlot
-              ad={inArticleAdMid}
-              path={articlePath}
-              isEnglish={isEnglish}
-              className="mt-8"
             />
 
             {relatedArticles.length > 0 ? (
@@ -407,7 +410,7 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
                               {relTitle}
                             </h3>
                             <span className="mt-1.5 block text-[12px] text-gray-400">
-                              {formatTimeAgoNp(rel.createdAt)}
+                              {formatTimeAgo(rel.createdAt, lang)}
                             </span>
                           </div>
                         </Link>
@@ -428,8 +431,8 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
                 lang={lang}
                 langQuery={langQuery}
                 path={articlePath}
-                adTop={sidebarAdTop}
-                adBottom={sidebarAdBottom}
+                adsTop={sidebarAdsTop}
+                adsBottom={sidebarAdsBottom}
               />
             </div>
           </div>

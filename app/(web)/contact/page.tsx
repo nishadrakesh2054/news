@@ -70,8 +70,8 @@ export default async function ContactPage({ searchParams }: PageProps) {
         </ul>
 
         <p className="mt-8 text-sm">
-          <Link href={`/editorial-team${langQ}`} className="font-medium hover:underline" style={{ color: PORTAL.brand }}>
-            {isEnglish ? "View editorial team →" : "सम्पादकीय टोली हेर्नुहोस् →"}
+          <Link href={`/about${langQ}`} className="font-medium hover:underline" style={{ color: PORTAL.brand }}>
+            {isEnglish ? "About us →" : "हाम्रो बारे →"}
           </Link>
         </p>
       </PortalContainer>

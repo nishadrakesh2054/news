@@ -149,6 +149,19 @@
   animation: portal-marquee var(--marquee-duration, 24s) linear infinite;
 }
 
+@keyframes portal-leaderboard-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.portal-leaderboard-slide {
+  animation: portal-leaderboard-fade 0.45s ease-out both;
+}
+
 /* Editorial article body — quiet, readable, brand-linked */
 .article-prose > *:first-child {
   margin-top: 0;

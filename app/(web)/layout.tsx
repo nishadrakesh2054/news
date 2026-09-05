@@ -4,6 +4,7 @@ import { PublicHeader } from "@/components/portal/PublicHeader";
 import { RatesBreakingBar } from "@/components/portal/RatesBreakingBar";
 import { CategoryNavbar } from "@/components/portal/CategoryNavbar";
 import { PublicFooter } from "@/components/portal/PublicFooter";
+import { StickyFooterAd } from "@/components/portal/StickyFooterAd";
 import { TrackingScripts } from "@/components/portal/TrackingScripts";
 import { SkipToContent } from "@/components/a11y/SkipToContent";
 import { PORTAL } from "@/constants/portal";
@@ -33,18 +34,23 @@ export default async function WebLayout({ children }: { children: React.ReactNod
     displayName: resolveCategoryName(category, lang),
   }));
 
-  const leaderboardAd =
-    ads.find((a) => a.slot === "HEADER_LEADERBOARD" && a.isActive !== false) || null;
+  const leaderboardAds = ads
+    .filter((a) => a.slot === "HEADER_LEADERBOARD" && a.isActive !== false)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+  const stickyFooterAds = ads
+    .filter((a) => a.slot === "STICKY_FOOTER" && a.isActive !== false)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   return (
     <div className="flex min-h-screen flex-col bg-white font-sans text-gray-900">
       <SkipToContent />
       <TrackingScripts />
       <Suspense fallback={<div className="h-28" style={{ backgroundColor: PORTAL.brand }} />}>
-        <PublicHeader leaderboardAd={leaderboardAd} />
+        <PublicHeader leaderboardAds={leaderboardAds} />
       </Suspense>
       <Suspense fallback={null}>
-        <RatesBreakingBar items={breaking} />
+        <RatesBreakingBar items={breaking} lang={lang} />
       </Suspense>
       <Suspense fallback={<div className="h-10" style={{ backgroundColor: PORTAL.brand }} />}>
         <CategoryNavbar categories={categories} />
@@ -55,6 +61,7 @@ export default async function WebLayout({ children }: { children: React.ReactNod
       <Suspense fallback={<div className="h-48" style={{ backgroundColor: PORTAL.brand }} />}>
         <PublicFooter categories={categories} />
       </Suspense>
+      <StickyFooterAd ads={stickyFooterAds} />
     </div>
   );
 }

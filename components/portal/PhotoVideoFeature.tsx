@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Camera, Image as ImageIcon } from "lucide-react";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { formatTimeAgo } from "@/lib/nepaliDate";
 
 interface FeatureArticle {
   id: string;
@@ -79,7 +79,7 @@ export function PhotoVideoFeature({ articles, lang }: PhotoVideoFeatureProps) {
 
             <div className="relative z-10 p-4 space-y-1.5">
               <span className="text-[10px] text-white/70 font-mono block">
-                {formatTimeAgoNp(art.createdAt)}
+                {formatTimeAgo(art.createdAt, isEnglish ? "en" : "ne")}
               </span>
               <h4 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors leading-snug line-clamp-2 font-serif">
                 {art.titleNp || art.title}

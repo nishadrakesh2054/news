@@ -15,7 +15,7 @@ import { PortalContainer } from "@/components/portal/SectionHeader";
 import { NewsCard } from "@/components/portal/NewsCard";
 import { ArticleAdSlot } from "@/components/portal/ArticleAdSlot";
 import { PORTAL } from "@/constants/portal";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { formatTimeAgo } from "@/lib/nepaliDate";
 
 interface TagPageProps {
   params: Promise<{ slug: string }>;
@@ -82,8 +82,10 @@ export default async function TagArchivePage({ params, searchParams }: TagPagePr
         targetUrl: true,
         scriptCode: true,
         slot: true,
+        isActive: true,
+        sortOrder: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     }),
     prisma.tag.findMany({
       where: { slug: { not: slug } },
@@ -163,8 +165,8 @@ export default async function TagArchivePage({ params, searchParams }: TagPagePr
   const popular = [...articles]
     .sort((a, b) => (b.views || 0) - (a.views || 0))
     .slice(0, 6);
-  const adTop = sidebarAds.find((a) => a.slot === AdSlot.SIDEBAR_TOP) ?? null;
-  const adBottom = sidebarAds.find((a) => a.slot === AdSlot.SIDEBAR_BOTTOM) ?? null;
+  const adsTop = sidebarAds.filter((a) => a.slot === AdSlot.SIDEBAR_TOP);
+  const adsBottom = sidebarAds.filter((a) => a.slot === AdSlot.SIDEBAR_BOTTOM);
   const pagePath = `/tag/${slug}`;
 
   return (
@@ -258,7 +260,7 @@ export default async function TagArchivePage({ params, searchParams }: TagPagePr
             style={{ borderColor: PORTAL.rule }}
           >
             <ArticleAdSlot
-              ad={adTop}
+              ads={adsTop}
               path={pagePath}
               isEnglish={isEnglish}
               variant="sidebar"
@@ -301,7 +303,7 @@ export default async function TagArchivePage({ params, searchParams }: TagPagePr
                             {resolveArticleTitle(art, lang)}
                           </h3>
                           <span className="mt-1 block text-[11px] text-gray-400">
-                            {formatTimeAgoNp(art.createdAt)}
+                            {formatTimeAgo(art.createdAt, lang)}
                           </span>
                         </div>
                       </Link>
@@ -344,7 +346,7 @@ export default async function TagArchivePage({ params, searchParams }: TagPagePr
             ) : null}
 
             <ArticleAdSlot
-              ad={adBottom}
+              ads={adsBottom}
               path={pagePath}
               isEnglish={isEnglish}
               variant="sidebar"

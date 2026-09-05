@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatTimeAgoNp } from "@/lib/nepaliDate";
+import { formatTimeAgo } from "@/lib/nepaliDate";
 import {
   resolveArticleExcerpt,
   resolveArticleTitle,
@@ -52,21 +52,22 @@ export function CategoryGridSection({
     optimizeCloudinaryUrl(mainArticle.coverImage, "hero") || mainArticle.coverImage;
   const mainTitle = resolveArticleTitle(mainArticle, edition);
   const mainExcerpt = resolveArticleExcerpt(mainArticle, edition);
-  const mainWhen = formatTimeAgoNp(
+  const mainWhen = formatTimeAgo(
     typeof mainArticle.createdAt === "string"
       ? new Date(mainArticle.createdAt)
-      : mainArticle.createdAt
+      : mainArticle.createdAt,
+    edition
   );
 
   return (
-    <section className="py-2">
+    <section>
       <SectionHeader
         title={sectionTitle}
         href={`/category/${categorySlug}${langQ}`}
         linkLabel={isEnglish ? "More news" : "थप समाचार"}
       />
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-6">
+      <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-12 lg:gap-4">
         {/* Lead feature — ~70% */}
         <Link
           href={`/article/${mainArticle.slug}${langQ}`}
@@ -117,34 +118,35 @@ export function CategoryGridSection({
         </Link>
 
         {/* Side stack — ~30% */}
-        <div className="flex flex-col divide-y divide-gray-100 border border-gray-200 bg-white lg:col-span-4">
+        <div className="flex w-full flex-col divide-y divide-gray-100 border border-gray-200 bg-white lg:col-span-4">
           {secondaryArticles.length > 0 ? (
             secondaryArticles.map((art) => {
               const image =
                 optimizeCloudinaryUrl(art.coverImage, "thumbnail") || art.coverImage;
               const itemTitle = resolveArticleTitle(art, edition);
-              const when = formatTimeAgoNp(
-                typeof art.createdAt === "string" ? new Date(art.createdAt) : art.createdAt
+              const when = formatTimeAgo(
+                typeof art.createdAt === "string" ? new Date(art.createdAt) : art.createdAt,
+                edition
               );
 
               return (
                 <Link
                   key={art.id}
                   href={`/article/${art.slug}${langQ}`}
-                  className="group flex flex-1 gap-3 p-3 transition-colors hover:bg-gray-50 sm:p-4"
+                  className="group flex gap-3 p-3 transition-colors hover:bg-gray-50"
                 >
-                  <div className="relative h-[4.5rem] w-24 shrink-0 overflow-hidden bg-gray-200">
+                  <div className="relative h-16 w-[4.5rem] shrink-0 overflow-hidden bg-gray-200">
                     {image ? (
                       <PortalImage
                         src={image}
                         alt={itemTitle}
                         fill
-                        sizes="96px"
+                        sizes="72px"
                         className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                       />
                     ) : null}
                   </div>
-                  <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="min-w-0 flex-1 space-y-1">
                     <h4 className="line-clamp-3 text-sm font-bold leading-snug text-gray-900 group-hover:underline">
                       {itemTitle}
                     </h4>
@@ -154,7 +156,7 @@ export function CategoryGridSection({
               );
             })
           ) : (
-            <div className="flex flex-1 items-center justify-center p-6 text-center text-xs text-gray-400">
+            <div className="flex items-center justify-center p-6 text-center text-xs text-gray-400">
               {isEnglish ? "More stories coming soon." : "थप समाचार चाँडै आउँदैछ।"}
             </div>
           )}
