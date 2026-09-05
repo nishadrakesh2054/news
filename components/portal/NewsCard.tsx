@@ -89,7 +89,7 @@ export function NewsCard({
             alt={title}
             fill
             priority={priority}
-            quality={isLead ? 90 : 75}
+            quality={isLead ? 80 : 75}
             sizes={
               isLead
                 ? "(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 960px"

@@ -28,7 +28,7 @@ export function TrendingHashtags({ tags = [] }: TrendingHashtagsProps) {
   if (shown.length === 0) return null;
 
   return (
-    <div className="w-full border-b border-gray-200 bg-white py-2.5">
+    <div className="hidden w-full border-b border-gray-200 bg-white py-2.5 md:block">
       <div className={`${PORTAL.container} flex items-center gap-3 overflow-x-auto scrollbar-none text-xs`}>
         <span className="shrink-0 font-extrabold" style={{ color: PORTAL.brand }}>
           {isEnglish ? "Trending Topics:" : "ट्रेन्डिङ विषय:"}

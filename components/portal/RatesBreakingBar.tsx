@@ -88,27 +88,28 @@ export function RatesBreakingBar({ items = [], lang }: RatesBreakingBarProps) {
 
   return (
     <div className="w-full border-b border-gray-200 bg-white text-xs">
-      <div className={`${PORTAL.container} flex items-center gap-2 py-1.5`}>
+      <div className={`${PORTAL.container} flex items-center gap-1.5 py-1 sm:gap-2 sm:py-1.5`}>
         <span
-          className="inline-flex h-7 shrink-0 items-center gap-1 text-[11px] font-bold leading-none"
+          className="inline-flex h-6 shrink-0 items-center gap-0.5 text-[10px] font-bold leading-none sm:h-7 sm:gap-1 sm:text-[11px]"
           style={{ color: PORTAL.accent }}
         >
           <Zap className="h-3 w-3 shrink-0" style={{ color: PORTAL.accent }} fill="currentColor" />
-          {isEnglish ? "Breaking" : "ब्रेकिङ"}
+          <span className="sm:hidden">{isEnglish ? "Live" : "ब्रेकिङ"}</span>
+          <span className="hidden sm:inline">{isEnglish ? "Breaking" : "ब्रेकिङ"}</span>
         </span>
 
         <div
-          className="relative min-h-7 min-w-0 flex-1 overflow-x-hidden overflow-y-visible py-0.5"
+          className="relative min-h-6 min-w-0 flex-1 overflow-x-hidden overflow-y-visible py-0.5 sm:min-h-7"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
           {breaking.length === 1 ? (
             <Link
               href={`/article/${breaking[0].slug}${langQ}`}
-              className="inline-flex max-w-full items-center gap-1.5 truncate py-0.5 text-xs font-medium leading-normal text-gray-900 hover:underline"
+              className="inline-flex max-w-full items-center gap-1 truncate py-0.5 text-[11px] font-medium leading-normal text-gray-900 hover:underline sm:gap-1.5 sm:text-xs"
               title={breaking[0].title}
             >
-              <ChevronRight className="h-3 w-3 shrink-0 text-gray-400" aria-hidden />
+              <ChevronRight className="hidden h-3 w-3 shrink-0 text-gray-400 sm:inline" aria-hidden />
               <span className="truncate">{breaking[0].title}</span>
             </Link>
           ) : (
@@ -126,7 +127,7 @@ export function RatesBreakingBar({ items = [], lang }: RatesBreakingBarProps) {
         </div>
 
         {breaking.length > 1 ? (
-          <div className="flex shrink-0 items-center gap-0.5">
+          <div className="hidden shrink-0 items-center gap-0.5 sm:flex">
             <button
               type="button"
               onClick={goPrev}

@@ -16,6 +16,7 @@ import { NewsCard } from "@/components/portal/NewsCard";
 import { ArticleAdSlot } from "@/components/portal/ArticleAdSlot";
 import { PORTAL } from "@/constants/portal";
 import { formatTimeAgo } from "@/lib/nepaliDate";
+import { getCachedActiveAds } from "@/lib/public-cache";
 
 interface TagPageProps {
   params: Promise<{ slug: string }>;
@@ -65,28 +66,12 @@ export default async function TagArchivePage({ params, searchParams }: TagPagePr
   const langQuery = isEnglish ? "?lang=en" : "";
   const homeHref = isEnglish ? "/?lang=en" : "/";
 
-  const [tag, sidebarAds, otherTags] = await Promise.all([
+  const [tag, allAds, otherTags] = await Promise.all([
     prisma.tag.findUnique({
       where: { slug },
       select: { id: true, name: true, nameNp: true, slug: true },
     }),
-    prisma.ad.findMany({
-      where: {
-        isActive: true,
-        slot: { in: [AdSlot.SIDEBAR_TOP, AdSlot.SIDEBAR_BOTTOM] },
-      },
-      select: {
-        id: true,
-        title: true,
-        imageUrl: true,
-        targetUrl: true,
-        scriptCode: true,
-        slot: true,
-        isActive: true,
-        sortOrder: true,
-      },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    }),
+    getCachedActiveAds(),
     prisma.tag.findMany({
       where: { slug: { not: slug } },
       select: {
@@ -100,6 +85,10 @@ export default async function TagArchivePage({ params, searchParams }: TagPagePr
       take: 12,
     }),
   ]);
+
+  const sidebarAds = allAds.filter(
+    (a) => a.slot === AdSlot.SIDEBAR_TOP || a.slot === AdSlot.SIDEBAR_BOTTOM
+  );
 
   const tagLabel = tag
     ? isEnglish

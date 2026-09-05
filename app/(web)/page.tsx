@@ -37,6 +37,7 @@ import {
   getCachedTags,
 } from "@/lib/public-cache";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
+import { PortalImage } from "@/components/portal/PortalImage";
 import { PORTAL } from "@/constants/portal";
 
 interface WebHomeProps {
@@ -196,10 +197,15 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
                     href={`/category/${cat.slug}${langQ}`}
                     className="group block space-y-2"
                   >
-                    <div className="aspect-[16/10] overflow-hidden bg-gray-200">
+                    <div className="relative aspect-[16/10] overflow-hidden bg-gray-200">
                       {cover ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={cover} alt={name} className="h-full w-full object-cover" />
+                        <PortalImage
+                          src={cover}
+                          alt={name}
+                          fill
+                          sizes="(max-width: 640px) 50vw, 200px"
+                          className="object-cover"
+                        />
                       ) : null}
                     </div>
                     <h3 className="text-sm font-bold group-hover:underline" style={{ color: PORTAL.brand }}>

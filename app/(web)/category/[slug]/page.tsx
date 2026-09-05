@@ -16,6 +16,7 @@ import {
 import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { NewsCard } from "@/components/portal/NewsCard";
+import { getCachedActiveAds } from "@/lib/public-cache";
 import { ArticleAdSlot } from "@/components/portal/ArticleAdSlot";
 import { PORTAL } from "@/constants/portal";
 import { formatTimeAgo } from "@/lib/nepaliDate";
@@ -36,6 +37,13 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
   const lang = await resolvePageLang(query.lang);
   const category = await prisma.category.findUnique({
     where: { slug },
+    select: {
+      name: true,
+      nameNp: true,
+      description: true,
+      descriptionNp: true,
+      slug: true,
+    },
   });
 
   if (!category) {
@@ -80,7 +88,7 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
   const langQuery = isEnglish ? "?lang=en" : "";
   const homeHref = isEnglish ? "/?lang=en" : "/";
 
-  const [category, sidebarAds] = await Promise.all([
+  const [category, allAds] = await Promise.all([
     prisma.category.findUnique({
       where: { slug },
       select: {
@@ -113,23 +121,7 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
         },
       },
     }),
-    prisma.ad.findMany({
-      where: {
-        isActive: true,
-        slot: { in: [AdSlot.SIDEBAR_TOP, AdSlot.SIDEBAR_BOTTOM] },
-      },
-      select: {
-        id: true,
-        title: true,
-        imageUrl: true,
-        targetUrl: true,
-        scriptCode: true,
-        slot: true,
-        isActive: true,
-        sortOrder: true,
-      },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    }),
+    getCachedActiveAds(),
   ]);
 
   if (!category) {
@@ -145,6 +137,9 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
   const popular = [...articles]
     .sort((a, b) => (b.views || 0) - (a.views || 0))
     .slice(0, 6);
+  const sidebarAds = allAds.filter(
+    (a) => a.slot === AdSlot.SIDEBAR_TOP || a.slot === AdSlot.SIDEBAR_BOTTOM
+  );
   const adsTop = sidebarAds.filter((a) => a.slot === AdSlot.SIDEBAR_TOP);
   const adsBottom = sidebarAds.filter((a) => a.slot === AdSlot.SIDEBAR_BOTTOM);
   const pagePath = `/category/${category.slug}`;

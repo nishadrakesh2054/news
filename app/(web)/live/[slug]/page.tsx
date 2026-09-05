@@ -59,6 +59,26 @@ export default function LiveCoveragePage() {
     }
   }, [slug]);
 
+  const pollLiveUpdates = useCallback(async () => {
+    try {
+      setIsRefreshing(true);
+      const res = await fetch(`/api/articles/${slug}/live-updates`);
+      const json = await res.json();
+      if (json.success && json.data?.liveUpdates) {
+        setArticle((prev) =>
+          prev
+            ? { ...prev, liveUpdates: json.data.liveUpdates }
+            : prev
+        );
+        setLastUpdated(new Date());
+      }
+    } catch (e) {
+      console.error("Failed to poll live updates", e);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [slug]);
+
   useEffect(() => {
     if (!slug) return;
     let ignore = false;
@@ -82,12 +102,14 @@ export default function LiveCoveragePage() {
     }
 
     loadLiveBlog();
-    const interval = setInterval(loadLiveBlog, 30000);
+    const interval = setInterval(() => {
+      void pollLiveUpdates();
+    }, 30000);
     return () => {
       ignore = true;
       clearInterval(interval);
     };
-  }, [slug]);
+  }, [slug, pollLiveUpdates]);
 
   if (loading) {
     return (

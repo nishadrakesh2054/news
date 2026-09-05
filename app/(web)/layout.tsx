@@ -45,9 +45,11 @@ export default async function WebLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen flex-col bg-white font-sans text-gray-900">
       <SkipToContent />
-      <TrackingScripts />
+      <Suspense fallback={null}>
+        <TrackingScripts />
+      </Suspense>
       <Suspense fallback={<div className="h-28" style={{ backgroundColor: PORTAL.brand }} />}>
-        <PublicHeader leaderboardAds={leaderboardAds} />
+        <PublicHeader leaderboardAds={leaderboardAds} categories={categories} />
       </Suspense>
       <Suspense fallback={null}>
         <RatesBreakingBar items={breaking} lang={lang} />

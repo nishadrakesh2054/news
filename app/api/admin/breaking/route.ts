@@ -4,7 +4,7 @@ import { ArticleType } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireEditor } from "@/lib/admin-auth";
 import {
-  clearExpiredBreakingArticles,
+  clearExpiredBreakingArticlesIfDue,
   getBreakingExpiries,
   setBreakingExpiry,
 } from "@/lib/breaking-expiry";
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const auth = await requireEditor();
     if (auth.error) return auth.error;
 
-    await clearExpiredBreakingArticles();
+    await clearExpiredBreakingArticlesIfDue();
     const expiries = await getBreakingExpiries();
 
     const { searchParams } = new URL(request.url);

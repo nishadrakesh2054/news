@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { Check, Copy, Pause, Play, Printer, RotateCcw } from "lucide-react";
 import {
   FacebookIcon,
@@ -8,11 +8,11 @@ import {
   TwitterIcon,
   WhatsAppIcon,
 } from "@/components/portal/SocialIcons";
-import { sanitizeArticleHtml } from "@/lib/sanitize-html";
 import { PORTAL } from "@/constants/portal";
 
 interface ArticleBodyClientProps {
   title: string;
+  /** Pre-sanitized HTML from the server. */
   content: string;
   shareUrl: string;
   isEnglish?: boolean;
@@ -34,7 +34,7 @@ export function ArticleBodyClient({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
-  const safeContent = useMemo(() => sanitizeArticleHtml(content), [content]);
+  const safeContent = content;
   const cleanText = safeContent.replace(/<[^>]*>?/gm, "");
   const wordCount = cleanText.trim().split(/\s+/).filter(Boolean).length;
   const minutes = Math.max(1, Math.ceil(wordCount / 180));

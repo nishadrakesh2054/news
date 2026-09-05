@@ -27,7 +27,7 @@ function leaderboardImageUrl(url: string | null | undefined): string | null | un
   }
   return url.replace(
     /\/upload\/(?:[^/]+\/)?/,
-    "/upload/c_fit,w_1456,h_180,q_auto:best,f_auto,dpr_2.0/"
+    "/upload/c_fit,w_728,h_90,q_auto:good,f_auto,dpr_2.0/"
   );
 }
 

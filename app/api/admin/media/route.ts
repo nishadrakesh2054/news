@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const folder = searchParams.get("folder") || "ALL";
     const type = searchParams.get("type") || "ALL"; // ALL, image, video
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "12");
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "12", 10) || 12));
 
     const where: Prisma.MediaWhereInput = {};
 
@@ -178,13 +178,15 @@ export async function POST(request: NextRequest) {
           height = uploadResult.height || null;
         }
       } catch (err) {
-        console.error("Cloudinary upload fallback to data URL:", err);
+        console.error("Cloudinary upload failed:", err);
+        return apiError(
+          "Image upload failed. Check Cloudinary configuration and try again.",
+          502
+        );
       }
 
-      // Local fallback data URL if CDN not configured
       if (!secureUrl) {
-        const base64 = buffer.toString("base64");
-        secureUrl = `data:${file.type};base64,${base64}`;
+        return apiError("Image upload failed: empty CDN response", 502);
       }
 
       // Store in PostgreSQL Media Model

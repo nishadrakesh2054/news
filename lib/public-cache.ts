@@ -192,16 +192,19 @@ export const getCachedTags = unstable_cache(
         },
       },
       orderBy: { name: "asc" },
+      take: 40,
     });
-    return tags.map((tag) => ({
-      id: tag.id,
-      name: tag.name,
-      nameNp: tag.nameNp,
-      slug: tag.slug,
-      articlesCount: tag._count.articles,
-    }));
+    return tags
+      .map((tag) => ({
+        id: tag.id,
+        name: tag.name,
+        nameNp: tag.nameNp,
+        slug: tag.slug,
+        articlesCount: tag._count.articles,
+      }))
+      .sort((a, b) => b.articlesCount - a.articlesCount);
   },
-  ["public-tags-v2"],
+  ["public-tags-v3"],
   { revalidate: 300, tags: [CACHE_TAGS.tags] }
 );
 

@@ -50,39 +50,57 @@ export async function dispatchNotification(notificationId: string) {
 
   if (notification.sendPush) {
     const breakingOnly = notification.type === NotificationType.BREAKING;
-    const subscriptions = await prisma.pushSubscription.findMany({
-      where: {
-        isActive: true,
-        ...(breakingOnly ? { breakingOnly: true } : {}),
-      },
-    });
+    let pushCursor: string | undefined;
+    for (;;) {
+      const subscriptions = await prisma.pushSubscription.findMany({
+        where: {
+          isActive: true,
+          ...(breakingOnly ? { breakingOnly: true } : {}),
+        },
+        take: 100,
+        ...(pushCursor ? { skip: 1, cursor: { id: pushCursor } } : {}),
+        orderBy: { id: "asc" },
+        select: { id: true, endpoint: true, p256dh: true, auth: true },
+      });
+      if (subscriptions.length === 0) break;
+      pushCursor = subscriptions[subscriptions.length - 1]?.id;
 
-    for (const sub of subscriptions) {
-      const ok = await sendWebPush(
-        { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
-        payload
-      );
-      if (ok) pushDelivered += 1;
+      for (const sub of subscriptions) {
+        const ok = await sendWebPush(
+          { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
+          payload
+        );
+        if (ok) pushDelivered += 1;
+      }
+      if (subscriptions.length < 100) break;
     }
   }
 
   if (notification.sendEmail) {
-    const subscribers = await prisma.newsletterSubscriber.findMany({
-      where: { status: SubscriberStatus.ACTIVE },
-      select: { email: true, unsubscribeToken: true },
-    });
-
     const siteUrl = getSiteUrl();
-
-    for (const subscriber of subscribers) {
-      const unsubscribeUrl = `${siteUrl}/newsletter/unsubscribe?token=${subscriber.unsubscribeToken}`;
-      const result = await sendEmail({
-        to: subscriber.email,
-        subject: displayTitle(notification),
-        html: buildEmailHtml(notification, unsubscribeUrl),
-        text: `${displayTitle(notification)}\n\n${notification.body}`,
+    let emailCursor: string | undefined;
+    for (;;) {
+      const subscribers = await prisma.newsletterSubscriber.findMany({
+        where: { status: SubscriberStatus.ACTIVE },
+        take: 100,
+        ...(emailCursor ? { skip: 1, cursor: { id: emailCursor } } : {}),
+        orderBy: { id: "asc" },
+        select: { id: true, email: true, unsubscribeToken: true },
       });
-      if (result.sent) emailDelivered += 1;
+      if (subscribers.length === 0) break;
+      emailCursor = subscribers[subscribers.length - 1]?.id;
+
+      for (const subscriber of subscribers) {
+        const unsubscribeUrl = `${siteUrl}/newsletter/unsubscribe?token=${subscriber.unsubscribeToken}`;
+        const result = await sendEmail({
+          to: subscriber.email,
+          subject: displayTitle(notification),
+          html: buildEmailHtml(notification, unsubscribeUrl),
+          text: `${displayTitle(notification)}\n\n${notification.body}`,
+        });
+        if (result.sent) emailDelivered += 1;
+      }
+      if (subscribers.length < 100) break;
     }
   }
 
@@ -131,6 +149,8 @@ export async function processScheduledNotifications() {
       scheduledAt: { lte: now },
     },
     select: { id: true },
+    take: 50,
+    orderBy: { scheduledAt: "asc" },
   });
 
   const results = [];

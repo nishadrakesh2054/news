@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
     const district = searchParams.get("district") || "";
     const scheduled = searchParams.get("scheduled") === "true";
     const languageEdition = searchParams.get("languageEdition") || "";
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "10", 10) || 10));
 
     const where: Prisma.ArticleWhereInput = {};
 
@@ -97,7 +97,6 @@ export async function GET(request: NextRequest) {
       title: true,
       titleNp: true,
       slug: true,
-      excerpt: true,
       coverImage: true,
       status: true,
       type: true,
@@ -124,9 +123,6 @@ export async function GET(request: NextRequest) {
           nameNp: true,
           slug: true,
         },
-      },
-      tags: {
-        select: { id: true, name: true, slug: true },
       },
     } satisfies Prisma.ArticleSelect;
 

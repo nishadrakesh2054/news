@@ -74,6 +74,18 @@ export const authOptions: NextAuthOptions = {
 
       if (!token.id) return token;
 
+      // Refresh role/sessionVersion at most every 60s to cut auth DB load.
+      const lastRefresh = typeof token.roleCheckedAt === "number" ? token.roleCheckedAt : 0;
+      const now = Date.now();
+      if (
+        now - lastRefresh < 60_000 &&
+        token.role &&
+        typeof token.sessionVersion === "number" &&
+        token.sessionVersion >= 0
+      ) {
+        return token;
+      }
+
       // Refresh role + sessionVersion from DB (invalidates demoted / password-reset sessions)
       const dbUser = await prisma.user.findUnique({
         where: { id: token.id as string },
@@ -93,6 +105,7 @@ export const authOptions: NextAuthOptions = {
 
       token.role = dbUser.role;
       token.sessionVersion = dbUser.sessionVersion;
+      token.roleCheckedAt = now;
       return token;
     },
     async session({ session, token }) {

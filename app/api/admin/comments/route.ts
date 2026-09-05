@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         ? (statusParam as CommentStatus)
         : null;
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "15");
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "15", 10) || 15));
 
     const where: Prisma.CommentWhereInput = {};
     if (status) {

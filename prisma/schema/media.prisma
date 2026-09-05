@@ -18,6 +18,7 @@ model Media {
 
   @@index([folder])
   @@index([mimeType])
+  @@index([uploaderId])
   @@index([createdAt(sort: Desc)])
   @@index([folder, createdAt(sort: Desc)])
   @@index([mimeType, createdAt(sort: Desc)])
