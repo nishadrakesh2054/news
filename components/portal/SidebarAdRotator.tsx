@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AdUnit, type AdUnitData } from "@/components/portal/AdUnit";
+import { optimizeAdImageUrl, type AdImageSlot } from "@/lib/cloudinary-url";
 
 export type RotatingAd = AdUnitData & {
   slot?: string;
@@ -20,9 +21,11 @@ type SidebarAdRotatorProps = {
   showPlaceholder?: boolean;
   className?: string;
   imageClassName?: string;
+  /** Cloudinary quality preset for image ads */
+  imageSlot?: AdImageSlot;
 };
 
-function uniqueAds(ads: RotatingAd[]): RotatingAd[] {
+function uniqueAds(ads: RotatingAd[], imageSlot: AdImageSlot): RotatingAd[] {
   const seen = new Set<string>();
   return ads
     .filter((a) => a.isActive !== false && (a.imageUrl || a.scriptCode))
@@ -32,7 +35,11 @@ function uniqueAds(ads: RotatingAd[]): RotatingAd[] {
       if (seen.has(a.id)) return false;
       seen.add(a.id);
       return true;
-    });
+    })
+    .map((a) => ({
+      ...a,
+      imageUrl: a.imageUrl ? optimizeAdImageUrl(a.imageUrl, imageSlot) : a.imageUrl,
+    }));
 }
 
 /** Soft crossfade rotator — animation only when 2+ ads; single ad is static. */
@@ -45,9 +52,10 @@ export function SidebarAdRotator({
   fadeMs = 700,
   showPlaceholder = true,
   className = "overflow-hidden bg-gray-50",
-  imageClassName = "h-auto w-full object-cover",
+  imageClassName = "h-auto w-full object-contain",
+  imageSlot = "sidebar",
 }: SidebarAdRotatorProps) {
-  const items = useMemo(() => uniqueAds(ads), [ads]);
+  const items = useMemo(() => uniqueAds(ads, imageSlot), [ads, imageSlot]);
   const canRotate = items.length > 1;
 
   const [active, setActive] = useState(0);
@@ -106,8 +114,11 @@ export function SidebarAdRotator({
             className="col-start-1 row-start-1"
             style={{
               opacity: isOn ? 1 : 0,
+              // Slide only when rotating between 2+ ads
               transform: isOn ? "translate3d(0,0,0)" : "translate3d(8px,0,0)",
-              transition: `opacity ${fadeMs}ms cubic-bezier(0.22, 1, 0.36, 1), transform ${fadeMs}ms cubic-bezier(0.22, 1, 0.36, 1)`,
+              transition: canRotate
+                ? `opacity ${fadeMs}ms cubic-bezier(0.22, 1, 0.36, 1), transform ${fadeMs}ms cubic-bezier(0.22, 1, 0.36, 1)`
+                : undefined,
               pointerEvents: isOn ? "auto" : "none",
               zIndex: isOn ? 2 : 1,
             }}

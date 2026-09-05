@@ -1,18 +1,18 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { formatTimeAgo } from "@/lib/nepaliDate";
-import { Search as SearchIcon, Newspaper, ArrowLeft } from "lucide-react";
+import { Search as SearchIcon } from "lucide-react";
 import { getCachedCategories } from "@/lib/public-cache";
-import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { searchPublishedArticles } from "@/lib/article-search";
 import {
-  resolveArticleExcerpt,
-  resolveArticleTitle,
+  resolveAuthorName,
   resolveCategoryName,
   resolveLanguageEdition,
 } from "@/lib/language";
 import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
+import { PortalContainer } from "@/components/portal/SectionHeader";
+import { NewsCard } from "@/components/portal/NewsCard";
+import { PORTAL } from "@/constants/portal";
 
 interface SearchPageProps {
   searchParams: Promise<{
@@ -42,21 +42,19 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const headerList = await headers();
   const lang = resolveLanguageEdition(params.lang, requestHost(headerList));
   const isEnglish = lang === "en";
-  const langQuery = isEnglish ? "lang=en" : "";
+  const homeHref = isEnglish ? "/?lang=en" : "/";
 
-  const query = params.q || "";
+  const query = (params.q || "").trim();
   const categorySlug = params.category || "";
   const currentPage = Math.max(1, parseInt(params.page || "1", 10) || 1);
-  const sort = params.sort || "recent";
+  const sort = params.sort === "views" ? "views" : "recent";
   const limit = 12;
-
-  const sortParam = params.sort === "views" ? "views" : "recent";
 
   const [searchResult, categories] = await Promise.all([
     searchPublishedArticles({
       query,
       categorySlug,
-      sort: sortParam,
+      sort,
       page: currentPage,
       limit,
       lang,
@@ -65,181 +63,244 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   ]);
 
   const { articles, total } = searchResult;
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const hasQuery = Boolean(query);
+
+  const buildPageHref = (page: number) => {
+    const qs = new URLSearchParams();
+    if (query) qs.set("q", query);
+    if (categorySlug) qs.set("category", categorySlug);
+    if (sort !== "recent") qs.set("sort", sort);
+    if (isEnglish) qs.set("lang", "en");
+    if (page > 1) qs.set("page", String(page));
+    const s = qs.toString();
+    return s ? `/search?${s}` : "/search";
+  };
 
   return (
-    <main id="main-content" className="w-full bg-background min-h-screen pb-20 pt-6">
-      <div className="max-w-7xl mx-auto px-4 space-y-8">
-        <div className="bg-card rounded-2xl border border-border p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border pb-5">
-            <div>
-              <Link
-                href={isEnglish ? "/?lang=en" : "/"}
-                className="inline-flex items-center text-xs font-semibold text-[#027081] hover:underline mb-2 gap-1"
+    <main className="w-full bg-white pb-16 text-gray-900">
+      <PortalContainer className="py-8 sm:py-10">
+        <nav className="mb-8 flex flex-wrap items-center gap-1.5 text-[12px] text-gray-400">
+          <Link
+            href={homeHref}
+            className="transition-colors hover:underline"
+            style={{ color: PORTAL.brand }}
+          >
+            {isEnglish ? "Home" : "गृह"}
+          </Link>
+          <span aria-hidden className="text-gray-300">
+            /
+          </span>
+          <span className="font-medium" style={{ color: PORTAL.ink }}>
+            {isEnglish ? "Search" : "खोज"}
+          </span>
+          {hasQuery ? (
+            <>
+              <span aria-hidden className="text-gray-300">
+                /
+              </span>
+              <span className="line-clamp-1 font-medium text-gray-500">
+                {query}
+              </span>
+            </>
+          ) : null}
+        </nav>
+
+        <header className="mb-8 max-w-3xl">
+          <h1
+            className="text-3xl font-extrabold tracking-tight sm:text-4xl"
+            style={{ color: PORTAL.brand }}
+          >
+            {isEnglish ? "Search news" : "समाचार खोज"}
+          </h1>
+          <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">
+            {hasQuery
+              ? isEnglish
+                ? `${total} result${total === 1 ? "" : "s"} for “${query}”`
+                : `“${query}” का लागि ${total} नतिजा`
+              : isEnglish
+                ? "Search headlines, topics, or keywords."
+                : "शीर्षक, विषय वा शब्दबाट समाचार खोज्नुहोस्।"}
+          </p>
+        </header>
+
+        <form
+          action="/search"
+          method="GET"
+          className="mb-10 border-y py-4"
+          style={{ borderColor: PORTAL.rule }}
+        >
+          {isEnglish ? <input type="hidden" name="lang" value="en" /> : null}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
+            <label className="relative min-w-0 flex-1">
+              <span className="sr-only">{isEnglish ? "Search query" : "खोज शब्द"}</span>
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="search"
+                name="q"
+                defaultValue={query}
+                placeholder={
+                  isEnglish
+                    ? "Search headlines, topics, or keywords…"
+                    : "समाचार शीर्षक, विषय वा शब्द…"
+                }
+                className="h-11 w-full border border-gray-200 bg-white pl-10 pr-3 text-sm outline-none focus:border-gray-400"
+              />
+            </label>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <select
+                name="category"
+                defaultValue={categorySlug}
+                className="h-11 border border-gray-200 bg-white px-3 text-sm outline-none focus:border-gray-400"
+                aria-label={isEnglish ? "Category" : "विधा"}
               >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                <span>{isEnglish ? "Back to home" : "गृहपृष्ठमा फर्कनुहोस्"}</span>
-              </Link>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground font-serif tracking-tight flex items-center gap-2.5">
-                <SearchIcon className="h-7 w-7 text-[#027081]" />
-                <span>{isEnglish ? "Search news" : "समाचार खोज"}</span>
-              </h1>
+                <option value="">{isEnglish ? "All categories" : "सबै विधा"}</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.slug}>
+                    {resolveCategoryName(cat, lang)}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                name="sort"
+                defaultValue={sort}
+                className="h-11 border border-gray-200 bg-white px-3 text-sm outline-none focus:border-gray-400"
+                aria-label={isEnglish ? "Sort" : "क्रम"}
+              >
+                <option value="recent">{isEnglish ? "Newest" : "नयाँ समाचार"}</option>
+                <option value="views">{isEnglish ? "Most read" : "लोकप्रिय"}</option>
+              </select>
+
+              <button
+                type="submit"
+                className="h-11 shrink-0 px-6 text-sm font-bold text-white"
+                style={{ backgroundColor: PORTAL.brand }}
+              >
+                {isEnglish ? "Search" : "खोज्नुहोस्"}
+              </button>
             </div>
-            <span className="text-xs text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-full">
-              {isEnglish ? `Total: ${total}` : `कुल नतिजा: ${total} समाचार`}
-            </span>
           </div>
+        </form>
 
-          <form action="/search" method="GET" className="space-y-4">
-            {isEnglish && <input type="hidden" name="lang" value="en" />}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  name="q"
-                  defaultValue={query}
-                  placeholder={
-                    isEnglish
-                      ? "Search headlines, topics, or keywords..."
-                      : "समाचार शीर्षक, विषयवस्तु वा शब्द खोज्नुहोस्..."
-                  }
-                  className="w-full h-12 pl-11 pr-4 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-hidden focus:ring-2 focus:ring-[#027081]"
-                />
-                <SearchIcon className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
-              </div>
-
-              <div className="flex gap-2">
-                <select
-                  name="category"
-                  defaultValue={categorySlug}
-                  className="h-12 px-4 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-hidden focus:ring-2 focus:ring-[#027081]"
-                >
-                  <option value="">{isEnglish ? "All categories" : "सबै विधा"}</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.slug}>
-                      {resolveCategoryName(cat, lang)}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  name="sort"
-                  defaultValue={sort}
-                  className="h-12 px-4 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-hidden focus:ring-2 focus:ring-[#027081]"
-                >
-                  <option value="recent">{isEnglish ? "Newest" : "नयाँ समाचार"}</option>
-                  <option value="views">{isEnglish ? "Most read" : "लोकप्रिय"}</option>
-                </select>
-
-                <button
-                  type="submit"
-                  className="h-12 px-6 bg-[#027081] text-white font-bold rounded-xl hover:bg-[#025a68] transition-colors shrink-0"
-                >
-                  {isEnglish ? "Search" : "खोज्नुहोस्"}
-                </button>
-              </div>
-            </div>
-          </form>
+        <div className="mb-4 flex items-center gap-3">
+          <h2
+            className="shrink-0 text-sm font-extrabold sm:text-base"
+            style={{ color: PORTAL.brand }}
+          >
+            {isEnglish ? "Results" : "नतिजा"}
+          </h2>
+          <div
+            className="h-px min-w-4 flex-1"
+            style={{ backgroundColor: PORTAL.accent, opacity: 0.35 }}
+          />
+          <span className="shrink-0 text-xs font-semibold text-gray-500">
+            {isEnglish ? `${total} articles` : `${total} समाचार`}
+          </span>
         </div>
 
         {articles.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {articles.map((art) => {
-              const title = resolveArticleTitle(art, lang);
-              const categoryLabel = resolveCategoryName(art.category, lang);
-              return (
-                <article
-                  key={art.id}
-                  className="group rounded-2xl border border-border bg-card overflow-hidden hover:shadow-md transition-all flex flex-col justify-between"
-                >
-                  {art.coverImage && (
-                    <div className="h-48 w-full overflow-hidden bg-muted relative">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={optimizeCloudinaryUrl(art.coverImage, "card") ?? art.coverImage}
-                        alt={title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <span className="absolute top-3 left-3 bg-[#027081] text-white text-[11px] font-bold px-2.5 py-1 rounded-md">
-                        {categoryLabel}
-                      </span>
-                    </div>
-                  )}
-                  <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
-                    <div className="space-y-2">
-                      <span className="text-[11px] text-muted-foreground font-mono block">
-                        {formatTimeAgo(art.publishedAt ?? art.createdAt, lang)}
-                      </span>
-                      <h2 className="text-base font-bold text-foreground group-hover:text-[#027081] transition-colors leading-snug font-serif line-clamp-2">
-                        <Link href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}>
-                          {title}
-                        </Link>
-                      </h2>
-                      {(art.excerpt || art.excerptNp) && (
-                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-                          {resolveArticleExcerpt(art, lang)}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="pt-3 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>
-                        {isEnglish ? "By" : "लेखक:"} {art.author?.name || (isEnglish ? "Editorial" : "सम्पादकीय")}
-                      </span>
-                      <Link
-                        href={`/article/${art.slug}${isEnglish ? "?lang=en" : ""}`}
-                        className="font-bold text-[#027081] hover:underline"
-                      >
-                        {isEnglish ? "Read more →" : "थप पढ्नुहोस् →"}
-                      </Link>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+          <div>
+            {articles.map((art) => (
+              <NewsCard
+                key={art.id}
+                article={{
+                  ...art,
+                  author: art.author
+                    ? { name: resolveAuthorName(art.author.name, lang) }
+                    : art.author,
+                }}
+                lang={lang}
+                variant="list"
+                showAuthor
+                showExcerpt
+              />
+            ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-border p-12 text-center space-y-3 bg-card">
-            <Newspaper className="h-12 w-12 text-muted-foreground mx-auto" />
-            <h3 className="text-lg font-bold text-foreground">
+          <div
+            className="border border-dashed px-4 py-14 text-center"
+            style={{ borderColor: PORTAL.rule }}
+          >
+            <SearchIcon className="mx-auto mb-3 h-8 w-8 text-gray-300" />
+            <p className="text-base font-bold" style={{ color: PORTAL.ink }}>
               {isEnglish ? "No results found" : "कुनै नतिजा भेटिएन"}
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              {isEnglish
-                ? `No articles matched “${query}”. Try another keyword or category.`
-                : `तपाईंले खोज्नुभएको शब्द "${query}" सँग मिल्दो समाचार भेटिएन। कृपया अर्को शब्द वा विधा प्रयोग गरी पुनः प्रयास गर्नुहोस्।`}
+            </p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">
+              {hasQuery
+                ? isEnglish
+                  ? `No articles matched “${query}”. Try another keyword or category.`
+                  : `“${query}” सँग मिल्दो समाचार भेटिएन। अर्को शब्द वा विधा प्रयास गर्नुहोस्।`
+                : isEnglish
+                  ? "Enter a keyword above to search the archive."
+                  : "माथिको बाकसमा शब्द लेखेर खोज्नुहोस्।"}
             </p>
           </div>
         )}
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center space-x-2 pt-6">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
-              const queryParams = new URLSearchParams();
-              if (query) queryParams.set("q", query);
-              if (categorySlug) queryParams.set("category", categorySlug);
-              if (sort) queryParams.set("sort", sort);
-              if (langQuery) queryParams.set("lang", "en");
-              queryParams.set("page", p.toString());
+        {totalPages > 1 ? (
+          <nav
+            className="mt-10 flex flex-wrap items-center justify-center gap-2 border-t pt-6"
+            style={{ borderColor: PORTAL.rule }}
+            aria-label={isEnglish ? "Pagination" : "पृष्ठहरू"}
+          >
+            {currentPage > 1 ? (
+              <Link
+                href={buildPageHref(currentPage - 1)}
+                className="inline-flex h-10 items-center px-3 text-sm font-bold hover:underline"
+                style={{ color: PORTAL.brand }}
+              >
+                {isEnglish ? "Previous" : "अघिल्लो"}
+              </Link>
+            ) : null}
 
-              const isCurrent = p === currentPage;
-              return (
-                <Link
-                  key={p}
-                  href={`/search?${queryParams.toString()}`}
-                  className={`h-10 w-10 flex items-center justify-center rounded-xl font-mono text-sm font-bold transition-colors ${
-                    isCurrent
-                      ? "bg-[#027081] text-white"
-                      : "border border-border bg-card text-foreground hover:bg-muted"
-                  }`}
-                >
-                  {p}
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => {
+                if (totalPages <= 7) return true;
+                return (
+                  p === 1 ||
+                  p === totalPages ||
+                  Math.abs(p - currentPage) <= 1
+                );
+              })
+              .map((p, idx, arr) => {
+                const prev = arr[idx - 1];
+                const showEllipsis = prev != null && p - prev > 1;
+                const isCurrent = p === currentPage;
+                return (
+                  <span key={p} className="inline-flex items-center gap-2">
+                    {showEllipsis ? (
+                      <span className="px-1 text-gray-400" aria-hidden>
+                        …
+                      </span>
+                    ) : null}
+                    <Link
+                      href={buildPageHref(p)}
+                      aria-current={isCurrent ? "page" : undefined}
+                      className={`inline-flex h-10 min-w-10 items-center justify-center px-3 text-sm font-bold ${
+                        isCurrent ? "text-white" : "border border-gray-200 text-gray-700 hover:bg-gray-50"
+                      }`}
+                      style={isCurrent ? { backgroundColor: PORTAL.brand } : undefined}
+                    >
+                      {p}
+                    </Link>
+                  </span>
+                );
+              })}
+
+            {currentPage < totalPages ? (
+              <Link
+                href={buildPageHref(currentPage + 1)}
+                className="inline-flex h-10 items-center px-3 text-sm font-bold hover:underline"
+                style={{ color: PORTAL.brand }}
+              >
+                {isEnglish ? "Next" : "अर्को"}
+              </Link>
+            ) : null}
+          </nav>
+        ) : null}
+      </PortalContainer>
     </main>
   );
 }

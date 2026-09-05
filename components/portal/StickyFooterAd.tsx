@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { AdUnit, type AdUnitData } from "@/components/portal/AdUnit";
+import { optimizeAdImageUrl } from "@/lib/cloudinary-url";
 
 export type StickyFooterAdItem = AdUnitData & {
   slot?: string;
@@ -16,17 +17,6 @@ type StickyFooterAdProps = {
   intervalMs?: number;
   fadeMs?: number;
 };
-
-/** Prefer crisp full-size Cloudinary delivery for 728×90 banners. */
-function leaderboardImageUrl(url: string | null | undefined): string | null | undefined {
-  if (!url || !url.includes("res.cloudinary.com") || !url.includes("/upload/")) {
-    return url;
-  }
-  return url.replace(
-    /\/upload\/(?:[^/]+\/)?/,
-    "/upload/c_fit,w_728,h_90,q_auto:good,f_auto,dpr_2.0/"
-  );
-}
 
 /** Fixed bottom banner — full 728×90; rotates STICKY_FOOTER ads; hidden when none active. */
 export function StickyFooterAd({
@@ -45,7 +35,7 @@ export function StickyFooterAd({
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
     .map((a) => ({
       ...a,
-      imageUrl: a.imageUrl ? leaderboardImageUrl(a.imageUrl) : a.imageUrl,
+      imageUrl: a.imageUrl ? optimizeAdImageUrl(a.imageUrl, "sticky") : a.imageUrl,
     }));
 
   useEffect(() => {

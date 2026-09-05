@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AdUnit, type AdUnitData } from "@/components/portal/AdUnit";
 import { PORTAL } from "@/constants/portal";
 import { SITE_CONFIG } from "@/constants/site";
+import { optimizeAdImageUrl } from "@/lib/cloudinary-url";
 
 export type LeaderboardAd = AdUnitData & {
   slot?: string;
@@ -20,17 +21,6 @@ type HeaderLeaderboardRotatorProps = {
   fadeMs?: number;
 };
 
-/** Prefer crisp full-size Cloudinary delivery for 728×90 banners. */
-function leaderboardImageUrl(url: string | null | undefined): string | null | undefined {
-  if (!url || !url.includes("res.cloudinary.com") || !url.includes("/upload/")) {
-    return url;
-  }
-  return url.replace(
-    /\/upload\/(?:[^/]+\/)?/,
-    "/upload/c_fit,w_728,h_90,q_auto:good,f_auto,dpr_2.0/"
-  );
-}
-
 /** Soft crossfade rotator for HEADER_LEADERBOARD ads (728×90). */
 export function HeaderLeaderboardRotator({
   ads,
@@ -42,7 +32,7 @@ export function HeaderLeaderboardRotator({
     .filter((a) => a.isActive !== false && (a.imageUrl || a.scriptCode))
     .map((a) => ({
       ...a,
-      imageUrl: a.imageUrl ? leaderboardImageUrl(a.imageUrl) : a.imageUrl,
+      imageUrl: a.imageUrl ? optimizeAdImageUrl(a.imageUrl, "leaderboard") : a.imageUrl,
     }));
 
   const [active, setActive] = useState(0);

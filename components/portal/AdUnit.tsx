@@ -23,7 +23,7 @@ type AdUnitProps = {
 export function AdUnit({
   ad,
   className = "",
-  imageClassName = "w-full h-full object-cover rounded-none",
+  imageClassName = "w-full h-auto object-contain",
   path,
 }: AdUnitProps) {
   const containerRef = useRef<HTMLDivElement>(null);
