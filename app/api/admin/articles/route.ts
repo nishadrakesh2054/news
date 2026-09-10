@@ -95,6 +95,8 @@ export async function GET(request: NextRequest) {
       languageEdition: true,
       isFeatured: true,
       isBreaking: true,
+      showOnHome: true,
+      homeDisplay: true,
       views: true,
       publishedAt: true,
       province: true,
@@ -230,6 +232,15 @@ export async function POST(request: NextRequest) {
     const articleStatus = data.status ?? ArticleStatus.DRAFT;
     const publishedAt = articleStatus === ArticleStatus.PUBLISHED ? new Date() : null;
 
+    let homeOrder: number | null = null;
+    if (data.showOnHome) {
+      const maxOrder = await prisma.article.aggregate({
+        where: { showOnHome: true },
+        _max: { homeOrder: true },
+      });
+      homeOrder = (maxOrder._max.homeOrder ?? 0) + 1;
+    }
+
     const article = await prisma.article.create({
       data: {
         title: data.title!,
@@ -246,6 +257,9 @@ export async function POST(request: NextRequest) {
         languageEdition: data.languageEdition!,
         isFeatured: Boolean(data.isFeatured),
         isBreaking: Boolean(data.isBreaking),
+        showOnHome: Boolean(data.showOnHome),
+        homeDisplay: data.homeDisplay ?? "TITLE_ONLY",
+        homeOrder,
         categoryId: data.categoryId!,
         authorId: auth.session!.user.id,
         metaTitle: data.metaTitle ?? null,

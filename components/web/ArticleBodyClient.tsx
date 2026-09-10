@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Check, Copy, Pause, Play, Printer, RotateCcw } from "lucide-react";
 import {
   FacebookIcon,
@@ -18,6 +18,62 @@ interface ArticleBodyClientProps {
   isEnglish?: boolean;
 }
 
+function stripHtml(html: string) {
+  return html.replace(/<[^>]*>?/gm, " ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Prefer natural cloud voices (Google/Microsoft). Never force eSpeak/robotic locals.
+ * If nothing good is found, return null and let the browser use `utterance.lang` only
+ * (this is what sounded good when the project started).
+ */
+function pickNaturalVoice(isEnglish: boolean): SpeechSynthesisVoice | null {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+
+  const prefer = isEnglish
+    ? [/^en-US/i, /^en-GB/i, /^en/i]
+    : [/^ne/i, /^ne-/i];
+
+  const isRobot = (v: SpeechSynthesisVoice) =>
+    /espeak|compact|robot|dummy|festival/i.test(`${v.name} ${v.voiceURI}`);
+
+  const isPremium = (v: SpeechSynthesisVoice) =>
+    /google|microsoft|natural|neural|premium|enhanced|samantha|aria|jenny|guy/i.test(
+      v.name
+    );
+
+  const scored = voices
+    .filter((v) => !isRobot(v))
+    .map((v) => {
+      let score = 0;
+      const langIdx = prefer.findIndex((re) => re.test(v.lang));
+      if (langIdx === -1) {
+        // Nepali text: allow Hindi Google only as soft fallback (Devanagari)
+        if (!isEnglish && /^hi/i.test(v.lang) && /google/i.test(v.name)) score = 20;
+        else return null;
+      } else {
+        score = 100 - langIdx * 10;
+      }
+      if (isPremium(v)) score += 40;
+      if (v.localService === false) score += 15; // often cloud/natural
+      return { v, score };
+    })
+    .filter((x): x is { v: SpeechSynthesisVoice; score: number } => x !== null)
+    .sort((a, b) => b.score - a.score);
+
+  // Only attach a voice when it's clearly a good match — otherwise leave unset
+  if (!scored.length || scored[0].score < 50) return null;
+  return scored[0].v;
+}
+
+function buildListenText(title: string, body: string, isEnglish: boolean) {
+  const sep = isEnglish ? ". " : "। ";
+  // Keep chunks moderate — Chrome can glitch on very long single utterances
+  return `${title}${sep}${body.slice(0, 2800)}`;
+}
+
 export function ArticleBodyClient({
   title,
   content,
@@ -33,10 +89,33 @@ export function ArticleBodyClient({
   );
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const voicesReadyRef = useRef(false);
+
+  useEffect(() => {
+    if (!isSupported) return;
+    const synth = window.speechSynthesis;
+    const warm = () => {
+      synth.getVoices();
+      voicesReadyRef.current = true;
+    };
+    warm();
+    synth.addEventListener("voiceschanged", warm);
+    return () => {
+      synth.removeEventListener("voiceschanged", warm);
+      synth.cancel();
+    };
+  }, [isSupported]);
+
+  useEffect(() => {
+    if (!isSupported) return;
+    window.speechSynthesis.cancel();
+    setIsPlaying(false);
+    setIsPaused(false);
+  }, [isEnglish, isSupported, content, title]);
 
   const safeContent = content;
-  const cleanText = safeContent.replace(/<[^>]*>?/gm, "");
-  const wordCount = cleanText.trim().split(/\s+/).filter(Boolean).length;
+  const cleanText = stripHtml(safeContent);
+  const wordCount = cleanText.split(/\s+/).filter(Boolean).length;
   const minutes = Math.max(1, Math.ceil(wordCount / 180));
 
   const handleSizeClick = (size: "normal" | "medium" | "large") => {
@@ -53,7 +132,6 @@ export function ArticleBodyClient({
     });
   };
 
-  /** Instagram has no web share URL — copy link for Stories/bio paste. */
   const handleInstagramShare = () => {
     navigator.clipboard.writeText(shareUrl).then(() => {
       setIgHint(true);
@@ -61,21 +139,30 @@ export function ArticleBodyClient({
     });
   };
 
-  const getPlainText = () => `${title}। ${cleanText.slice(0, 1500)}`;
-
-  const handlePlay = () => {
+  const startSpeech = () => {
     if (!isSupported) return;
     const synth = window.speechSynthesis;
-    if (isPaused) {
-      synth.resume();
-      setIsPlaying(true);
-      setIsPaused(false);
-      return;
-    }
     synth.cancel();
-    const utterance = new SpeechSynthesisUtterance(getPlainText());
-    utterance.rate = 1;
-    utterance.lang = "ne-NP";
+
+    // Warm voices (Chrome often returns [] until this runs)
+    synth.getVoices();
+
+    const utterance = new SpeechSynthesisUtterance(
+      buildListenText(title, cleanText, isEnglish)
+    );
+    utterance.lang = isEnglish ? "en-US" : "ne-NP";
+    utterance.rate = isEnglish ? 1 : 0.92;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    const voice = pickNaturalVoice(isEnglish);
+    if (voice) {
+      utterance.voice = voice;
+      // Keep lang in sync with chosen voice for better accent
+      utterance.lang = voice.lang || utterance.lang;
+    }
+    // If no premium voice: only `lang` is set — browser picks best (original behavior)
+
     utterance.onend = () => {
       setIsPlaying(false);
       setIsPaused(false);
@@ -84,9 +171,21 @@ export function ArticleBodyClient({
       setIsPlaying(false);
       setIsPaused(false);
     };
+
     synth.speak(utterance);
     setIsPlaying(true);
     setIsPaused(false);
+  };
+
+  const handlePlay = () => {
+    if (!isSupported) return;
+    if (isPaused) {
+      window.speechSynthesis.resume();
+      setIsPlaying(true);
+      setIsPaused(false);
+      return;
+    }
+    startSpeech();
   };
 
   const handlePause = () => {
@@ -149,7 +248,7 @@ export function ArticleBodyClient({
                   onClick={handlePlay}
                   className="inline-flex items-center gap-1 transition-colors"
                   style={{ color: PORTAL.brand }}
-                  title={isEnglish ? "Listen" : "सुन्नुहोस्"}
+                  title={isEnglish ? "Listen in English" : "नेपालीमा सुन्नुहोस्"}
                 >
                   <Play className="h-3 w-3" />
                   <span className="font-medium">
@@ -177,10 +276,11 @@ export function ArticleBodyClient({
                 <button
                   type="button"
                   onClick={handleStop}
-                  className="text-gray-400 hover:text-gray-700"
+                  className="inline-flex items-center gap-1 text-gray-400 hover:text-gray-700"
                   title={isEnglish ? "Stop" : "बन्द"}
                 >
                   <RotateCcw className="h-3 w-3" />
+                  <span className="font-medium">{isEnglish ? "Stop" : "बन्द"}</span>
                 </button>
               )}
             </>

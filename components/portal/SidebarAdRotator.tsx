@@ -114,11 +114,7 @@ export function SidebarAdRotator({
             className="col-start-1 row-start-1"
             style={{
               opacity: isOn ? 1 : 0,
-              // Slide only when rotating between 2+ ads
-              transform: isOn ? "translate3d(0,0,0)" : "translate3d(8px,0,0)",
-              transition: canRotate
-                ? `opacity ${fadeMs}ms cubic-bezier(0.22, 1, 0.36, 1), transform ${fadeMs}ms cubic-bezier(0.22, 1, 0.36, 1)`
-                : undefined,
+              transition: `opacity ${fadeMs}ms ease`,
               pointerEvents: isOn ? "auto" : "none",
               zIndex: isOn ? 2 : 1,
             }}

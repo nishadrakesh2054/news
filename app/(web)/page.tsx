@@ -24,6 +24,7 @@ import { CategoryGridSection } from "@/components/portal/CategoryGridSection";
 import { OpinionSection } from "@/components/portal/OpinionSection";
 import { ProvinceNewsWidget } from "@/components/portal/ProvinceNewsWidget";
 import { LatestNewsSection } from "@/components/portal/LatestNewsSection";
+import { HomeSpotlightSection } from "@/components/portal/HomeSpotlightSection";
 import { MediaShowcaseAboveFooter } from "@/components/portal/MediaShowcaseAboveFooter";
 import { RashifalSection } from "@/components/portal/RashifalSection";
 import { EpaperSection } from "@/components/portal/EpaperSection";
@@ -93,6 +94,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
 
   const {
     publishedArticles,
+    homeSpotlightArticles,
     categories,
     opinionArticles,
     economyArticles,
@@ -116,7 +118,6 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
   ).slice(0, 2);
   const mainIds = new Set(mainStories.map((a) => a.id));
   const rest = publishedArticles.filter((a) => !mainIds.has(a.id));
-  const recentSidebar = rest.slice(0, 5);
   const popularSidebar = popularArticles.slice(0, 5);
   const latestBelow = rest.slice(0, 6);
 
@@ -143,35 +144,22 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         <TrendingHashtags tags={trendingTags} />
       </Suspense>
 
-      <PortalContainer className="py-4 sm:py-5">
-        {mainStories.length === 0 ? (
-          <div className="border border-dashed border-gray-300 px-6 py-16 text-center text-sm text-gray-500">
-            {emptyLabel}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
-            <div className="flex flex-col gap-4 lg:col-span-9">
-              {mainStories.map((art, index) => (
-                <NewsCard
-                  key={art.id}
-                  article={art}
-                  lang={lang}
-                  variant="lead"
-                  priority={index === 0}
-                  badge={isEnglish ? "Main News" : "मुख्य समाचार"}
-                />
-              ))}
-            </div>
+      {homeSpotlightArticles.length > 0 ? (
+        <PortalContainer className="py-4 sm:py-5">
+          <HomeSpotlightSection articles={homeSpotlightArticles} lang={lang} />
+        </PortalContainer>
+      ) : null}
 
-            <aside className="flex flex-col gap-4 lg:col-span-3">
-              <HomeSidebarTabs recent={recentSidebar} popular={popularSidebar} lang={lang} />
-              <Suspense fallback={null}>
-                <OpinionPollWidget />
-              </Suspense>
-            </aside>
-          </div>
-        )}
-      </PortalContainer>
+      {latestBelow.length > 0 ? (
+        <PortalContainer className="py-4 sm:py-5">
+          <LatestNewsSection
+            articles={latestBelow}
+            lang={lang}
+            adsTop={sidebarAdsTop}
+            adsBottom={sidebarAdsBottom}
+          />
+        </PortalContainer>
+      ) : null}
 
       {categories.length > 0 ? (
         <section className="border-y border-gray-200 bg-white py-5">
@@ -222,16 +210,35 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         </section>
       ) : null}
 
-      {latestBelow.length > 0 ? (
-        <PortalContainer className="py-6">
-          <LatestNewsSection
-            articles={latestBelow}
-            lang={lang}
-            adsTop={sidebarAdsTop}
-            adsBottom={sidebarAdsBottom}
-          />
-        </PortalContainer>
-      ) : null}
+      <PortalContainer className="py-6">
+        {mainStories.length === 0 ? (
+          <div className="border border-dashed border-gray-300 px-6 py-16 text-center text-sm text-gray-500">
+            {emptyLabel}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
+            <div className="flex flex-col gap-4 lg:col-span-9">
+              {mainStories.map((art, index) => (
+                <NewsCard
+                  key={art.id}
+                  article={art}
+                  lang={lang}
+                  variant="lead"
+                  priority={index === 0}
+                  badge={isEnglish ? "Main News" : "मुख्य समाचार"}
+                />
+              ))}
+            </div>
+
+            <aside className="flex flex-col gap-4 lg:col-span-3">
+              <HomeSidebarTabs popular={popularSidebar} lang={lang} />
+              <Suspense fallback={null}>
+                <OpinionPollWidget />
+              </Suspense>
+            </aside>
+          </div>
+        )}
+      </PortalContainer>
 
       <PortalContainer className="py-6">
         <ProvinceNewsWidget articles={provinceArticles} lang={lang} />

@@ -270,23 +270,13 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:gap-12">
             <article className="min-w-0">
             <header className="mb-8">
-              <div className="mb-4 flex items-center gap-3">
-                <Link
-                  href={`/category/${article.category.slug}${langQuery}`}
-                  className="shrink-0 text-[11px] font-bold uppercase tracking-[0.14em] hover:underline"
-                  style={{ color: PORTAL.accent }}
-                >
-                  {categoryName}
-                </Link>
-                <div
-                  className="h-px min-w-4 flex-1 max-w-[3.5rem]"
-                  style={{ backgroundColor: PORTAL.accent, opacity: 0.45 }}
-                />
-              </div>
-
               <h1
-                className="text-[1.75rem] font-extrabold leading-[1.25] tracking-tight sm:text-4xl sm:leading-[1.2]"
-                style={{ color: PORTAL.brand }}
+                className="font-khand-nav text-pretty tracking-tight text-black"
+                style={{
+                  fontSize: "clamp(1.85rem, 3.6vw, 2.75rem)",
+                  fontWeight: 600,
+                  lineHeight: 1.3,
+                }}
               >
                 {articleTitle}
               </h1>
@@ -329,7 +319,7 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
             </header>
 
             {coverSrc ? (
-              <figure className="mb-8">
+              <figure className="mb-4">
                 <div className="relative aspect-[16/10] w-full overflow-hidden bg-gray-100">
                   <PortalImage
                     src={coverSrc}

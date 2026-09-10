@@ -23,6 +23,9 @@ const homeArticleSelect = {
   excerptNp: true,
   coverImage: true,
   isFeatured: true,
+  showOnHome: true,
+  homeDisplay: true,
+  homeOrder: true,
   views: true,
   province: true,
   district: true,
@@ -44,6 +47,7 @@ async function loadHomePayload(lang: LanguageEditionType) {
 
   const [
     publishedArticles,
+    homeSpotlightArticles,
     categories,
     opinionArticles,
     economyArticles,
@@ -56,6 +60,15 @@ async function loadHomePayload(lang: LanguageEditionType) {
       select: homeArticleSelect,
       orderBy: { publishedAt: "desc" },
       take: 24,
+    }),
+    prisma.article.findMany({
+      where: {
+        ...whereClause,
+        showOnHome: true,
+      },
+      select: homeArticleSelect,
+      orderBy: [{ homeOrder: "asc" }, { publishedAt: "desc" }],
+      take: 8,
     }),
     prisma.category.findMany({
       orderBy: { order: "asc" },
@@ -142,6 +155,7 @@ async function loadHomePayload(lang: LanguageEditionType) {
 
   return {
     publishedArticles,
+    homeSpotlightArticles,
     categories,
     opinionArticles,
     economyArticles,

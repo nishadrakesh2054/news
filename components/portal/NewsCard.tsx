@@ -21,7 +21,7 @@ export type PortalArticleCard = {
   coverImage?: string | null;
   createdAt: Date | string;
   views?: number;
-  author?: { name?: string | null } | null;
+  author?: { name?: string | null; image?: string | null } | null;
   category?: {
     name: string;
     nameNp?: string | null;

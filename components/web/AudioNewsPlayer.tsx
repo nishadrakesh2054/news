@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Volume2, Pause, Play, RotateCcw } from "lucide-react";
 import { PORTAL } from "@/constants/portal";
 
@@ -8,6 +8,38 @@ interface AudioNewsPlayerProps {
   title: string;
   content: string;
   isEnglish?: boolean;
+}
+
+function pickNaturalVoice(isEnglish: boolean): SpeechSynthesisVoice | null {
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+
+  const prefer = isEnglish ? [/^en-US/i, /^en-GB/i, /^en/i] : [/^ne/i];
+  const isRobot = (v: SpeechSynthesisVoice) =>
+    /espeak|compact|robot|dummy|festival/i.test(`${v.name} ${v.voiceURI}`);
+  const isPremium = (v: SpeechSynthesisVoice) =>
+    /google|microsoft|natural|neural|premium|enhanced/i.test(v.name);
+
+  const scored = voices
+    .filter((v) => !isRobot(v))
+    .map((v) => {
+      const langIdx = prefer.findIndex((re) => re.test(v.lang));
+      if (langIdx === -1) {
+        if (!isEnglish && /^hi/i.test(v.lang) && /google/i.test(v.name)) {
+          return { v, score: 25 };
+        }
+        return null;
+      }
+      let score = 100 - langIdx * 10;
+      if (isPremium(v)) score += 40;
+      if (v.localService === false) score += 15;
+      return { v, score };
+    })
+    .filter((x): x is { v: SpeechSynthesisVoice; score: number } => x !== null)
+    .sort((a, b) => b.score - a.score);
+
+  if (!scored.length || scored[0].score < 50) return null;
+  return scored[0].v;
 }
 
 export function AudioNewsPlayer({ title, content, isEnglish = false }: AudioNewsPlayerProps) {
@@ -18,11 +50,31 @@ export function AudioNewsPlayer({ title, content, isEnglish = false }: AudioNews
   const [isPaused, setIsPaused] = useState(false);
   const [rate, setRate] = useState(1);
 
+  useEffect(() => {
+    if (!isSupported) return;
+    const synth = window.speechSynthesis;
+    const warm = () => synth.getVoices();
+    warm();
+    synth.addEventListener("voiceschanged", warm);
+    return () => {
+      synth.removeEventListener("voiceschanged", warm);
+      synth.cancel();
+    };
+  }, [isSupported]);
+
+  useEffect(() => {
+    if (!isSupported) return;
+    window.speechSynthesis.cancel();
+    setIsPlaying(false);
+    setIsPaused(false);
+  }, [isEnglish, title, content, isSupported]);
+
   const getPlainText = () => {
     const tmp = document.createElement("DIV");
     tmp.innerHTML = content;
-    const textContent = tmp.textContent || tmp.innerText || "";
-    return `${title}। ${textContent.slice(0, 1500)}`;
+    const textContent = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim();
+    const sep = isEnglish ? ". " : "। ";
+    return `${title}${sep}${textContent.slice(0, 2800)}`;
   };
 
   const handlePlay = () => {
@@ -37,9 +89,20 @@ export function AudioNewsPlayer({ title, content, isEnglish = false }: AudioNews
     }
 
     synth.cancel();
+    synth.getVoices();
+
     const utterance = new SpeechSynthesisUtterance(getPlainText());
     utterance.rate = rate;
-    utterance.lang = "ne-NP";
+    utterance.lang = isEnglish ? "en-US" : "ne-NP";
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    const voice = pickNaturalVoice(isEnglish);
+    if (voice) {
+      utterance.voice = voice;
+      utterance.lang = voice.lang || utterance.lang;
+    }
+
     utterance.onend = () => {
       setIsPlaying(false);
       setIsPaused(false);
@@ -90,8 +153,8 @@ export function AudioNewsPlayer({ title, content, isEnglish = false }: AudioNews
                   ? "Paused"
                   : "रोकिएको"
                 : isEnglish
-                  ? "Text-to-speech"
-                  : "अडियो बाचन"}
+                  ? "English voice"
+                  : "नेपाली आवाज"}
           </p>
         </div>
       </div>

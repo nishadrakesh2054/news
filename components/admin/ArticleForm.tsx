@@ -269,6 +269,10 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
   );
   const [isFeatured, setIsFeatured] = useState<boolean>(initialData?.isFeatured || false);
   const [isBreaking, setIsBreaking] = useState<boolean>(initialData?.isBreaking || false);
+  const [showOnHome, setShowOnHome] = useState<boolean>(initialData?.showOnHome || false);
+  const [homeDisplay, setHomeDisplay] = useState<"TITLE_ONLY" | "TITLE_MEDIA">(
+    initialData?.homeDisplay === "TITLE_MEDIA" ? "TITLE_MEDIA" : "TITLE_ONLY"
+  );
   const [categoryId, setCategoryId] = useState<string>((initialData?.categoryId as string) || "");
   const [metaTitle, setMetaTitle] = useState<string>((initialData?.metaTitle as string) || "");
   const [metaTitleNp, setMetaTitleNp] = useState<string>(
@@ -314,6 +318,8 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
         languageEdition,
         isFeatured,
         isBreaking,
+        showOnHome,
+        homeDisplay,
         categoryId,
         metaTitle,
         metaTitleNp,
@@ -341,6 +347,8 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       languageEdition,
       isFeatured,
       isBreaking,
+      showOnHome,
+      homeDisplay,
       categoryId,
       metaTitle,
       metaTitleNp,
@@ -489,6 +497,8 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       tagIds,
       isFeatured,
       isBreaking,
+      showOnHome,
+      homeDisplay,
       categoryId,
       metaTitle: metaTitle || undefined,
       metaTitleNp: metaTitleNp || undefined,
@@ -801,25 +811,63 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
           </AdminFormRow>
 
           <AdminFormRow serial={2} label="Homepage placement">
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-6">
-              <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={isFeatured}
-                  onChange={(e) => setIsFeatured(e.target.checked)}
-                  className="h-4 w-4 rounded-sm border-border accent-[#0C4EA0]"
-                />
-                Pin as lead story
-              </label>
-              <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-[#C3272E]">
-                <input
-                  type="checkbox"
-                  checked={isBreaking}
-                  onChange={(e) => setIsBreaking(e.target.checked)}
-                  className="h-4 w-4 rounded-sm border-border accent-[#C3272E]"
-                />
-                Add to breaking ticker
-              </label>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-6">
+                <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={isFeatured}
+                    onChange={(e) => setIsFeatured(e.target.checked)}
+                    className="h-4 w-4 rounded-sm border-border accent-[#0C4EA0]"
+                  />
+                  Pin as lead story
+                </label>
+                <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-[#C3272E]">
+                  <input
+                    type="checkbox"
+                    checked={isBreaking}
+                    onChange={(e) => setIsBreaking(e.target.checked)}
+                    className="h-4 w-4 rounded-sm border-border accent-[#C3272E]"
+                  />
+                  Add to breaking ticker
+                </label>
+                <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={showOnHome}
+                    onChange={(e) => setShowOnHome(e.target.checked)}
+                    className="h-4 w-4 rounded-sm border-border accent-[#0C4EA0]"
+                  />
+                  Show on home (spotlight)
+                </label>
+              </div>
+              {showOnHome ? (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                  <span className="text-[11px] font-semibold text-muted-foreground">
+                    Spotlight layout
+                  </span>
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
+                    <input
+                      type="radio"
+                      name="homeDisplay"
+                      checked={homeDisplay === "TITLE_ONLY"}
+                      onChange={() => setHomeDisplay("TITLE_ONLY")}
+                      className="accent-[#0C4EA0]"
+                    />
+                    Title only (big title + author/date)
+                  </label>
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
+                    <input
+                      type="radio"
+                      name="homeDisplay"
+                      checked={homeDisplay === "TITLE_MEDIA"}
+                      onChange={() => setHomeDisplay("TITLE_MEDIA")}
+                      className="accent-[#0C4EA0]"
+                    />
+                    Title + image + excerpt
+                  </label>
+                </div>
+              ) : null}
             </div>
           </AdminFormRow>
         </AdminFormSection>

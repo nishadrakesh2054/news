@@ -19,6 +19,12 @@ enum LanguageEdition {
   ENGLISH_ONLY
 }
 
+/** Homepage spotlight layout controlled from admin. */
+enum HomeDisplayMode {
+  TITLE_ONLY
+  TITLE_MEDIA
+}
+
 model Article {
   id              String          @id @default(cuid())
   title           String
@@ -35,6 +41,11 @@ model Article {
   languageEdition LanguageEdition @default(BOTH)
   isFeatured      Boolean         @default(false)
   featuredOrder   Int?
+  /** Show in homepage spotlight (big title feed). */
+  showOnHome      Boolean         @default(false)
+  /** TITLE_ONLY = title + author/date; TITLE_MEDIA = + image + excerpt. */
+  homeDisplay     HomeDisplayMode @default(TITLE_ONLY)
+  homeOrder       Int?
   isBreaking      Boolean         @default(false)
   views           Int             @default(0)
   metaTitle       String?
@@ -63,6 +74,7 @@ model Article {
   @@index([status, views(sort: Desc)])
   @@index([status, categoryId])
   @@index([status, isFeatured, featuredOrder])
+  @@index([status, showOnHome, homeOrder])
   @@index([status, isBreaking, updatedAt(sort: Desc)])
   @@index([status, isBreaking])
   @@index([status, languageEdition])
@@ -71,6 +83,7 @@ model Article {
   @@index([district])
   @@index([authorId])
   @@index([isFeatured, featuredOrder])
+  @@index([showOnHome, homeOrder])
   @@index([isBreaking, updatedAt(sort: Desc)])
   @@index([type])
 }

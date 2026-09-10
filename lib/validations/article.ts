@@ -1,6 +1,7 @@
 import {
   ArticleStatus,
   ArticleType,
+  HomeDisplayMode,
   LanguageEdition,
 } from "@prisma/client";
 
@@ -19,6 +20,8 @@ export type ArticleInput = {
   languageEdition?: LanguageEdition;
   isFeatured?: boolean;
   isBreaking?: boolean;
+  showOnHome?: boolean;
+  homeDisplay?: HomeDisplayMode;
   categoryId?: string;
   metaTitle?: string | null;
   metaTitleNp?: string | null;
@@ -202,6 +205,12 @@ export function validateArticleCreate(body: unknown): ArticleValidationResult {
       languageEdition,
       isFeatured: Boolean(input.isFeatured),
       isBreaking: Boolean(input.isBreaking),
+      showOnHome: Boolean(input.showOnHome),
+      homeDisplay:
+        typeof input.homeDisplay === "string" &&
+        Object.values(HomeDisplayMode).includes(input.homeDisplay as HomeDisplayMode)
+          ? (input.homeDisplay as HomeDisplayMode)
+          : HomeDisplayMode.TITLE_ONLY,
       categoryId,
       metaTitle: parseOptionalString(input.metaTitle),
       metaTitleNp: parseOptionalString(input.metaTitleNp),
@@ -299,6 +308,16 @@ export function validateArticleUpdate(body: unknown): ArticleValidationResult {
 
   if (input.isFeatured !== undefined) data.isFeatured = Boolean(input.isFeatured);
   if (input.isBreaking !== undefined) data.isBreaking = Boolean(input.isBreaking);
+  if (input.showOnHome !== undefined) data.showOnHome = Boolean(input.showOnHome);
+  if (input.homeDisplay !== undefined) {
+    if (
+      typeof input.homeDisplay !== "string" ||
+      !Object.values(HomeDisplayMode).includes(input.homeDisplay as HomeDisplayMode)
+    ) {
+      return { ok: false, error: "Invalid home display mode" };
+    }
+    data.homeDisplay = input.homeDisplay as HomeDisplayMode;
+  }
 
   if (input.province !== undefined) {
     if (input.province === null || input.province === "") {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import type { LanguageEditionType } from "@/lib/language";
 import { resolveArticleTitle, resolveCategoryName } from "@/lib/language";
@@ -10,43 +9,22 @@ import { PORTAL } from "@/constants/portal";
 import type { PortalArticleCard } from "@/components/portal/NewsCard";
 import { Clock } from "lucide-react";
 
-type TabKey = "recent" | "popular";
-
 type HomeSidebarTabsProps = {
-  recent: PortalArticleCard[];
   popular: PortalArticleCard[];
   lang: LanguageEditionType;
 };
 
-export function HomeSidebarTabs({ recent, popular, lang }: HomeSidebarTabsProps) {
-  const [tab, setTab] = useState<TabKey>("recent");
+export function HomeSidebarTabs({ popular, lang }: HomeSidebarTabsProps) {
   const isEnglish = lang === "en";
-  const items = tab === "recent" ? recent : popular;
-
-  const tabs: { key: TabKey; label: string }[] = [
-    { key: "recent", label: isEnglish ? "Recent" : "भर्खरै" },
-    { key: "popular", label: isEnglish ? "Popular" : "लोकप्रिय" },
-  ];
+  const items = popular;
 
   return (
     <div className="border border-gray-200 bg-white">
-      <div className="flex border-b border-gray-200">
-        {tabs.map((t) => {
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setTab(t.key)}
-              className={`flex-1 px-2 py-2.5 text-xs font-bold sm:text-sm ${
-                active ? "text-white" : "bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-              style={active ? { backgroundColor: PORTAL.accent } : undefined}
-            >
-              {t.label}
-            </button>
-          );
-        })}
+      <div
+        className="px-3 py-2.5 text-center text-xs font-bold text-white sm:text-sm"
+        style={{ backgroundColor: PORTAL.accent }}
+      >
+        {isEnglish ? "Popular" : "लोकप्रिय"}
       </div>
 
       <ul className="divide-y divide-gray-100">

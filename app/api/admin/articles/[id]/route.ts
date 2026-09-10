@@ -120,6 +120,20 @@ export async function PATCH(
         ? existingArticle.publishedAt ?? new Date()
         : null;
 
+    const nextShowOnHome = data.showOnHome ?? existingArticle.showOnHome;
+    let homeOrderUpdate: { homeOrder: number | null } | Record<string, never> = {};
+    if (data.showOnHome !== undefined) {
+      if (!nextShowOnHome) {
+        homeOrderUpdate = { homeOrder: null };
+      } else if (!existingArticle.showOnHome) {
+        const maxOrder = await prisma.article.aggregate({
+          where: { showOnHome: true },
+          _max: { homeOrder: true },
+        });
+        homeOrderUpdate = { homeOrder: (maxOrder._max.homeOrder ?? 0) + 1 };
+      }
+    }
+
     const updatedArticle = await prisma.article.update({
       where: { id },
       data: {
@@ -139,6 +153,9 @@ export async function PATCH(
         ...(data.languageEdition && { languageEdition: data.languageEdition }),
         ...(data.isFeatured !== undefined && { isFeatured: data.isFeatured }),
         ...(data.isBreaking !== undefined && { isBreaking: data.isBreaking }),
+        ...(data.showOnHome !== undefined && { showOnHome: data.showOnHome }),
+        ...(data.homeDisplay !== undefined && { homeDisplay: data.homeDisplay }),
+        ...homeOrderUpdate,
         ...(data.categoryId && { categoryId: data.categoryId }),
         ...(data.metaTitle !== undefined && { metaTitle: data.metaTitle }),
         ...(data.metaTitleNp !== undefined && { metaTitleNp: data.metaTitleNp }),
@@ -166,6 +183,8 @@ export async function PATCH(
         languageEdition: true,
         isFeatured: true,
         isBreaking: true,
+        showOnHome: true,
+        homeDisplay: true,
         publishedAt: true,
         updatedAt: true,
         tags: { select: { id: true, name: true, slug: true } },
