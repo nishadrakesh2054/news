@@ -7,7 +7,6 @@ export type NotificationCreateInput = {
   type: NotificationType;
   status: NotificationStatus;
   linkUrl?: string;
-  scheduledAt?: Date | null;
   sendPush: boolean;
   sendEmail: boolean;
 };
@@ -37,17 +36,6 @@ export function validateNotificationCreate(body: unknown):
       ? (input.status as NotificationStatus)
       : NotificationStatus.DRAFT;
 
-  let scheduledAt: Date | null | undefined;
-  if (input.scheduledAt !== undefined && input.scheduledAt !== null && input.scheduledAt !== "") {
-    const date = new Date(String(input.scheduledAt));
-    if (Number.isNaN(date.getTime())) {
-      return { ok: false, error: "Invalid scheduled date" };
-    }
-    scheduledAt = date;
-  } else if (input.scheduledAt === null || input.scheduledAt === "") {
-    scheduledAt = null;
-  }
-
   return {
     ok: true,
     data: {
@@ -57,7 +45,6 @@ export function validateNotificationCreate(body: unknown):
       type,
       status,
       linkUrl: typeof input.linkUrl === "string" ? input.linkUrl.trim() : undefined,
-      scheduledAt,
       sendPush: input.sendPush !== false,
       sendEmail: input.sendEmail === true,
     },

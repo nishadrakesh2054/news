@@ -3,62 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Type, Copy, Check, ChevronRight } from "lucide-react";
+import { romanToNepali } from "@/lib/roman-to-nepali";
 
 export default function UnicodeConverterPage() {
   const [romanText, setRomanText] = useState("");
-  const [unicodeText, setUnicodeText] = useState("");
   const [copied, setCopied] = useState(false);
 
-  // Romanized to Nepali Transliteration Engine
-  const convertToUnicode = (input: string) => {
-    setRomanText(input);
-
-    // Simple rule-based transliteration mapping
-    const converted = input
-      .replace(/mora/g, "मोर")
-      .replace(/nepal/g, "नेपाल")
-      .replace(/khabar/g, "खबर")
-      .replace(/setopati/g, "सेतोपाटी")
-      .replace(/namaste/g, "नमस्ते")
-      .replace(/dhanyabad/g, "धन्यवाद")
-      .replace(/ka/g, "क")
-      .replace(/kha/g, "ख")
-      .replace(/ga/g, "ग")
-      .replace(/gha/g, "घ")
-      .replace(/cha/g, "च")
-      .replace(/chha/g, "छ")
-      .replace(/ja/g, "ज")
-      .replace(/jha/g, "झ")
-      .replace(/ta/g, "त")
-      .replace(/tha/g, "थ")
-      .replace(/da/g, "द")
-      .replace(/dha/g, "ध")
-      .replace(/na/g, "न")
-      .replace(/pa/g, "प")
-      .replace(/pha/g, "फ")
-      .replace(/ba/g, "ब")
-      .replace(/bha/g, "भ")
-      .replace(/ma/g, "म")
-      .replace(/ya/g, "य")
-      .replace(/ra/g, "र")
-      .replace(/la/g, "ल")
-      .replace(/wa/g, "व")
-      .replace(/sha/g, "श")
-      .replace(/sa/g, "स")
-      .replace(/ha/g, "ह")
-      .replace(/0/g, "०")
-      .replace(/1/g, "१")
-      .replace(/2/g, "२")
-      .replace(/3/g, "३")
-      .replace(/4/g, "४")
-      .replace(/5/g, "५")
-      .replace(/6/g, "६")
-      .replace(/7/g, "७")
-      .replace(/8/g, "८")
-      .replace(/9/g, "९");
-
-    setUnicodeText(converted);
-  };
+  const unicodeText = romanToNepali(romanText);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(unicodeText || romanText).then(() => {
@@ -71,7 +22,9 @@ export default function UnicodeConverterPage() {
     <main className="w-full bg-background pb-16 select-none">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <nav className="flex items-center space-x-2 text-xs font-semibold text-muted-foreground border-b border-border/40 pb-3">
-          <Link href="/" className="hover:text-[#027081]">गृह</Link>
+          <Link href="/" className="hover:text-[#027081]">
+            गृह
+          </Link>
           <ChevronRight className="h-3 w-3" />
           <span className="text-[#027081] font-bold">नेपाली युनिकोड टाइप औजार</span>
         </nav>
@@ -89,30 +42,27 @@ export default function UnicodeConverterPage() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Roman Input */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-foreground flex items-center justify-between">
               <span>रोमन लेखाइ:</span>
               <span className="text-[10px] text-muted-foreground font-mono">
-                उदा: echo manch
+                उदा: nepal samachar hami haru
               </span>
             </label>
             <textarea
               rows={8}
               value={romanText}
-              onChange={(e) => convertToUnicode(e.target.value)}
+              onChange={(e) => setRomanText(e.target.value)}
               placeholder="यहाँ लेख्नुहोस् (उदा: namaste nepal)…"
               className="w-full rounded-2xl border border-input bg-card p-4 text-sm text-foreground focus:border-[#027081] outline-none leading-relaxed"
             />
           </div>
 
-          {/* Unicode Output */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-[#027081] font-serif">
-                नेपाली नतिजा:
-              </label>
+              <label className="text-xs font-bold text-[#027081] font-serif">नेपाली नतिजा:</label>
               <button
+                type="button"
                 onClick={handleCopy}
                 className="flex items-center space-x-1 bg-[#027081] text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-[#025c6a] transition-all cursor-pointer"
               >

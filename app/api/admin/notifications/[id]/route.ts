@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { NotificationStatus } from "@prisma/client";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
 import { requireEditor } from "@/lib/admin-auth";
 import { writeAuditLog } from "@/lib/audit-log";
@@ -12,16 +11,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { id } = await params;
     const body = await request.json();
 
-    let scheduledAt: Date | null | undefined;
-    if (body.scheduledAt !== undefined) {
-      scheduledAt = body.scheduledAt ? new Date(body.scheduledAt) : null;
-    }
-
-    let status = body.status;
-    if (scheduledAt && scheduledAt.getTime() > Date.now()) {
-      status = NotificationStatus.SCHEDULED;
-    }
-
     const notification = await prisma.notification.update({
       where: { id },
       data: {
@@ -29,11 +18,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         ...(body.titleNp !== undefined ? { titleNp: body.titleNp } : {}),
         ...(body.body !== undefined ? { body: body.body } : {}),
         ...(body.type !== undefined ? { type: body.type } : {}),
-        ...(status !== undefined ? { status } : {}),
+        ...(body.status !== undefined ? { status: body.status } : {}),
         ...(body.linkUrl !== undefined ? { linkUrl: body.linkUrl } : {}),
         ...(body.sendPush !== undefined ? { sendPush: Boolean(body.sendPush) } : {}),
         ...(body.sendEmail !== undefined ? { sendEmail: Boolean(body.sendEmail) } : {}),
-        ...(scheduledAt !== undefined ? { scheduledAt } : {}),
       },
     });
 

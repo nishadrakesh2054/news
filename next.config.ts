@@ -1,4 +1,3 @@
-import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 const cspDirectives = [
@@ -12,7 +11,6 @@ const cspDirectives = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   // Next.js + analytics; tighten further once nonce-based CSP is adopted
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://www.googleadservices.com https://connect.facebook.net",
-  // Next.js / Sentry / analytics may use blob: workers
   "worker-src 'self' blob:",
   "child-src 'self' blob:",
   "connect-src 'self' https: wss:",
@@ -56,21 +54,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-const sentryBuildOptions = {
-  org: "echo-manch",
-  project: "echomanch",
-  silent: !process.env.CI,
-  widenClientFileUpload: true,
-  tunnelRoute: "/monitoring",
-  webpack: {
-    automaticVercelMonitors: true,
-    treeshake: {
-      removeDebugLogging: true,
-    },
-  },
-};
-
-// Sentry webpack/turbopack hooks slow local dev — only wrap in production builds.
-export default process.env.NODE_ENV === "production"
-  ? withSentryConfig(nextConfig, sentryBuildOptions)
-  : nextConfig;
+export default nextConfig;

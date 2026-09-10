@@ -140,23 +140,3 @@ export async function sendBreakingArticlePush(input: {
 
   return dispatchNotification(notification.id);
 }
-
-export async function processScheduledNotifications() {
-  const now = new Date();
-  const due = await prisma.notification.findMany({
-    where: {
-      status: "SCHEDULED",
-      scheduledAt: { lte: now },
-    },
-    select: { id: true },
-    take: 50,
-    orderBy: { scheduledAt: "asc" },
-  });
-
-  const results = [];
-  for (const item of due) {
-    results.push({ id: item.id, ...(await dispatchNotification(item.id)) });
-  }
-
-  return results;
-}

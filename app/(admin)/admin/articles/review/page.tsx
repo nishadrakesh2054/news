@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, ExternalLink, Pencil, X, Clock } from "lucide-react";
+import { Check, ExternalLink, Pencil, X } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
 import {
@@ -27,7 +27,6 @@ interface ReviewArticle {
   titleNp: string | null;
   slug: string;
   status: string;
-  scheduledAt: string | null;
   createdAt: string;
   author: { name: string; email: string };
   category: { name: string; nameNp: string | null };
@@ -128,12 +127,6 @@ export default function AdminArticleReviewPage() {
                       <p className={`${adminTextTruncate} font-medium text-foreground`}>
                         {article.titleNp || article.title}
                       </p>
-                      {article.scheduledAt ? (
-                        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          Scheduled {new Date(article.scheduledAt).toLocaleString()}
-                        </p>
-                      ) : null}
                     </td>
                     <td className={adminTableCell}>
                       <p className="text-foreground">{article.author.name}</p>

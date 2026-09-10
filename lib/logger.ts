@@ -19,31 +19,6 @@ function write(level: LogLevel, message: string, meta?: LogMeta) {
   } else {
     console.log(line);
   }
-
-  if (level === "error" && process.env.SENTRY_DSN) {
-    void reportSentryError(message, meta);
-  }
-}
-
-async function reportSentryError(message: string, meta?: LogMeta) {
-  try {
-    const { captureException, captureMessage, init } = await import("@sentry/nextjs");
-    if (!globalThis.__sentryInitialized) {
-      init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.1 });
-      globalThis.__sentryInitialized = true;
-    }
-    if (meta?.error instanceof Error) {
-      captureException(meta.error, { extra: meta });
-    } else {
-      captureMessage(message, { level: "error", extra: meta });
-    }
-  } catch {
-    // Sentry optional — never break the app
-  }
-}
-
-declare global {
-  var __sentryInitialized: boolean | undefined;
 }
 
 export const logger = {

@@ -18,10 +18,7 @@ export function SectionHeader({
 }: SectionHeaderProps) {
   return (
     <div className={`mb-4 flex items-center gap-3 ${className}`}>
-      <h2
-        className="shrink-0 text-xl font-extrabold tracking-tight sm:text-2xl"
-        style={{ color: PORTAL.brand }}
-      >
+      <h2 className="portal-section-title shrink-0" style={{ color: PORTAL.brand }}>
         {title}
       </h2>
       <div
@@ -31,11 +28,11 @@ export function SectionHeader({
       {href ? (
         <Link
           href={href}
-          className="inline-flex shrink-0 items-center gap-0.5 text-xs font-bold whitespace-nowrap hover:underline"
+          className="inline-flex shrink-0 items-center gap-0.5 text-sm font-bold whitespace-nowrap hover:underline sm:text-base"
           style={{ color: PORTAL.brand }}
         >
           {linkLabel}
-          <ChevronRight className="h-3.5 w-3.5" />
+          <ChevronRight className="h-4 w-4" />
         </Link>
       ) : null}
     </div>

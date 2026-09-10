@@ -36,27 +36,39 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Too many login attempts. Please try again later.");
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email },
-        });
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email },
+          });
 
-        if (!user || !user.password) {
-          throw new Error("Invalid credentials");
+          if (!user || !user.password) {
+            throw new Error("Invalid credentials");
+          }
+
+          const isValidPassword = await bcrypt.compare(credentials.password, user.password);
+
+          if (!isValidPassword) {
+            throw new Error("Invalid credentials");
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            sessionVersion: user.sessionVersion,
+          };
+        } catch (err) {
+          if (err instanceof Error && err.message === "Invalid credentials") {
+            throw err;
+          }
+          // Neon WS can throw DOM ErrorEvent — NextAuth needs a normal Error.
+          console.error(
+            "[auth] authorize failed",
+            err instanceof Error ? err.message : String(err)
+          );
+          throw new Error("Database unavailable. Please try again.");
         }
-
-        const isValidPassword = await bcrypt.compare(credentials.password, user.password);
-
-        if (!isValidPassword) {
-          throw new Error("Invalid credentials");
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          sessionVersion: user.sessionVersion,
-        };
       },
     }),
   ],
@@ -69,6 +81,8 @@ export const authOptions: NextAuthOptions = {
           "sessionVersion" in user && typeof user.sessionVersion === "number"
             ? user.sessionVersion
             : 0;
+        // Skip an immediate DB refresh on the next getSession() after sign-in.
+        token.roleCheckedAt = Date.now();
         return token;
       }
 
@@ -87,26 +101,32 @@ export const authOptions: NextAuthOptions = {
       }
 
       // Refresh role + sessionVersion from DB (invalidates demoted / password-reset sessions)
-      const dbUser = await prisma.user.findUnique({
-        where: { id: token.id as string },
-        select: { role: true, sessionVersion: true },
-      });
+      try {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { role: true, sessionVersion: true },
+        });
 
-      if (!dbUser) {
-        return { ...token, id: undefined, role: undefined, sessionVersion: -1 };
+        if (!dbUser) {
+          return { ...token, id: undefined, role: undefined, sessionVersion: -1 };
+        }
+
+        if (
+          typeof token.sessionVersion === "number" &&
+          token.sessionVersion !== dbUser.sessionVersion
+        ) {
+          return { ...token, id: undefined, role: undefined, sessionVersion: -1 };
+        }
+
+        token.role = dbUser.role;
+        token.sessionVersion = dbUser.sessionVersion;
+        token.roleCheckedAt = now;
+        return token;
+      } catch (err) {
+        // Keep the session usable if the DB blips; do not crash admin RSC layouts.
+        console.error("[auth] jwt role refresh failed", err instanceof Error ? err.message : err);
+        return token;
       }
-
-      if (
-        typeof token.sessionVersion === "number" &&
-        token.sessionVersion !== dbUser.sessionVersion
-      ) {
-        return { ...token, id: undefined, role: undefined, sessionVersion: -1 };
-      }
-
-      token.role = dbUser.role;
-      token.sessionVersion = dbUser.sessionVersion;
-      token.roleCheckedAt = now;
-      return token;
     },
     async session({ session, token }) {
       if (!token.id || token.sessionVersion === -1) {

@@ -2,77 +2,25 @@
 
 import { useState } from "react";
 import { Keyboard, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
-import { adminBtnPrimary, adminInput, adminPanel } from "@/constants/admin-layout";
+import { adminBtnPrimary, adminBtnSecondary, adminInput, adminPanel } from "@/constants/admin-layout";
+import { romanToNepali } from "@/lib/roman-to-nepali";
 
-const romanMap: Record<string, string> = {
-  a: "अ",
-  aa: "आ",
-  i: "इ",
-  ee: "ई",
-  u: "उ",
-  oo: "ऊ",
-  e: "ए",
-  ai: "ऐ",
-  o: "ओ",
-  au: "औ",
-  ka: "क",
-  kha: "ख",
-  ga: "ग",
-  gha: "घ",
-  cha: "च",
-  chha: "छ",
-  ja: "ज",
-  jha: "झ",
-  ta: "त",
-  tha: "थ",
-  da: "द",
-  dha: "ध",
-  na: "न",
-  pa: "प",
-  pha: "फ",
-  fa: "फ",
-  ba: "ब",
-  bha: "भ",
-  ma: "म",
-  ya: "य",
-  ra: "र",
-  la: "ल",
-  wa: "व",
-  sha: "श",
-  sa: "स",
-  ha: "ह",
-  nepal: "नेपाल",
-  samachar: "समाचार",
-  namaste: "नमस्ते",
-  kathmandu: "काठमाडौँ",
-  sarkar: "सरकार",
-  desh: "देश",
-  bikas: "विकास",
-  raajneeti: "राजनीति",
+type NepaliTypingHelperProps = {
+  /** When set, "Use in field" writes the converted text into the parent control. */
+  onApply?: (unicode: string) => void;
 };
 
-export function NepaliTypingHelper() {
-  const [open, setOpen] = useState(false);
+export function NepaliTypingHelper({ onApply }: NepaliTypingHelperProps) {
+  const [open, setOpen] = useState(true);
   const [inputText, setInputText] = useState("");
-  const [convertedText, setConvertedText] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const convertText = (text: string) => {
-    let result = text;
-    Object.keys(romanMap).forEach((key) => {
-      const regex = new RegExp(`\\b${key}\\b`, "gi");
-      result = result.replace(regex, romanMap[key]);
-    });
-    setConvertedText(result);
-  };
+  const convertedText = romanToNepali(inputText);
 
-  const handleInput = (val: string) => {
-    setInputText(val);
-    convertText(val);
-  };
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(convertedText || inputText);
+  const handleCopy = async () => {
+    const value = convertedText || inputText;
+    if (!value) return;
+    await navigator.clipboard.writeText(value);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -105,8 +53,8 @@ export function NepaliTypingHelper() {
               <textarea
                 rows={2}
                 value={inputText}
-                onChange={(e) => handleInput(e.target.value)}
-                placeholder="e.g. nepal samachar…"
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="nepal samachar hami haru…"
                 className={`${adminInput} min-h-14 w-full resize-y py-2`}
               />
             </div>
@@ -118,12 +66,22 @@ export function NepaliTypingHelper() {
                 rows={2}
                 readOnly
                 value={convertedText}
-                placeholder="Converted Nepali text…"
+                placeholder="नेपाल समाचार हामीहरू…"
                 className={`${adminInput} min-h-14 w-full resize-none bg-muted/30 py-2 font-semibold`}
               />
             </div>
           </div>
-          <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-2">
+            {onApply ? (
+              <button
+                type="button"
+                disabled={!convertedText}
+                onClick={() => onApply(convertedText)}
+                className={adminBtnSecondary}
+              >
+                Use in headline
+              </button>
+            ) : null}
             <button type="button" onClick={handleCopy} className={adminBtnPrimary}>
               {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
               {copied ? "Copied" : "Copy Unicode"}

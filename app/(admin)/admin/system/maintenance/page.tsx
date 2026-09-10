@@ -17,14 +17,12 @@ type MaintenanceForm = {
   maintenanceMode: boolean;
   maintenanceMessage: string;
   cacheEnabled: boolean;
-  cronEnabled: boolean;
 };
 
 const EMPTY_FORM: MaintenanceForm = {
   maintenanceMode: false,
   maintenanceMessage: "",
   cacheEnabled: true,
-  cronEnabled: true,
 };
 
 const fieldLabel =
@@ -172,12 +170,6 @@ export default function AdminSystemMaintenancePage() {
                 description="Use application cache for faster page loads"
                 checked={form.cacheEnabled}
                 onChange={(checked) => setForm((f) => ({ ...f, cacheEnabled: checked }))}
-              />
-              <ToggleRow
-                label="Cron jobs enabled"
-                description="Run scheduled background tasks"
-                checked={form.cronEnabled}
-                onChange={(checked) => setForm((f) => ({ ...f, cronEnabled: checked }))}
               />
             </>
           )}

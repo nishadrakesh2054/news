@@ -4,13 +4,11 @@ import { ArticleStatus, Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireStaff } from "@/lib/admin-auth";
 import { validateArticleUpdate } from "@/lib/validations/article";
-import { normalizeStatusForSchedule, resolvePublishedAt, isFutureScheduledDate } from "@/lib/article-scheduling";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
 import {
   assertArticleStatusPermission,
   assertBreakingPermission,
   assertFeaturedPermission,
-  assertSchedulePermission,
 } from "@/lib/article-permissions";
 import { writeAuditLog } from "@/lib/audit-log";
 import { invalidatePublicArticles } from "@/lib/cache-invalidation";
@@ -117,29 +115,10 @@ export async function PATCH(
       }
     }
 
-    const scheduledAtInput =
-      data.scheduledAt !== undefined ? data.scheduledAt : existingArticle.scheduledAt;
-
-    // Explicit publish must not bounce back to PENDING because of a future schedule.
-    const scheduledAt =
-      data.status === ArticleStatus.PUBLISHED && isFutureScheduledDate(scheduledAtInput)
-        ? null
-        : scheduledAtInput;
-
-    const scheduleDenied = assertSchedulePermission(
-      session.user.role,
-      scheduledAt,
-      existingArticle.scheduledAt
-    );
-    if (scheduleDenied) return scheduleDenied;
-
-    const normalizedStatus = normalizeStatusForSchedule(newStatus, scheduledAt);
-
-    const publishedAt = resolvePublishedAt(
-      normalizedStatus,
-      scheduledAt,
-      existingArticle.publishedAt
-    );
+    const publishedAt =
+      newStatus === ArticleStatus.PUBLISHED
+        ? existingArticle.publishedAt ?? new Date()
+        : null;
 
     const updatedArticle = await prisma.article.update({
       where: { id },
@@ -155,7 +134,7 @@ export async function PATCH(
         ...(data.excerptNp !== undefined && { excerptNp: data.excerptNp }),
         ...(data.coverImage !== undefined && { coverImage: data.coverImage }),
         ...(data.caption !== undefined && { caption: data.caption }),
-        status: normalizedStatus,
+        status: newStatus,
         ...(data.type && { type: data.type }),
         ...(data.languageEdition && { languageEdition: data.languageEdition }),
         ...(data.isFeatured !== undefined && { isFeatured: data.isFeatured }),
@@ -172,7 +151,6 @@ export async function PATCH(
         ...(data.ogImage !== undefined && { ogImage: data.ogImage }),
         ...(data.province !== undefined && { province: data.province }),
         ...(data.district !== undefined && { district: data.district }),
-        scheduledAt,
         ...(data.tagIds !== undefined && {
           tags: { set: data.tagIds.map((tagId) => ({ id: tagId })) },
         }),
@@ -189,16 +167,15 @@ export async function PATCH(
         isFeatured: true,
         isBreaking: true,
         publishedAt: true,
-        scheduledAt: true,
         updatedAt: true,
         tags: { select: { id: true, name: true, slug: true } },
       },
     });
 
     const auditAction =
-      normalizedStatus === ArticleStatus.PUBLISHED && existingArticle.status !== ArticleStatus.PUBLISHED
+      newStatus === ArticleStatus.PUBLISHED && existingArticle.status !== ArticleStatus.PUBLISHED
         ? "PUBLISH"
-        : normalizedStatus === ArticleStatus.ARCHIVED && existingArticle.status !== ArticleStatus.ARCHIVED
+        : newStatus === ArticleStatus.ARCHIVED && existingArticle.status !== ArticleStatus.ARCHIVED
           ? "ARCHIVE"
           : "UPDATE";
 
@@ -207,7 +184,7 @@ export async function PATCH(
       action: auditAction,
       entity: "Article",
       entityId: id,
-      details: `${normalizedStatus}: ${updatedArticle.title}`,
+      details: `${newStatus}: ${updatedArticle.title}`,
     });
 
     invalidatePublicArticles();

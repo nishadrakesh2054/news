@@ -8,7 +8,6 @@ import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
 import {
   adminBadgeMuted,
-  adminBtnGhost,
   adminBtnPrimary,
   adminBtnSecondary,
   adminInput,
@@ -31,7 +30,7 @@ interface CategoryItem {
   descriptionNp: string | null;
   order: number;
   createdAt: string;
-  _count: {
+  _count?: {
     articles: number;
   };
 }
@@ -191,8 +190,8 @@ export default function AdminCategoriesPage() {
     );
   });
 
-  const totalArticles = categories.reduce((sum, cat) => sum + cat._count.articles, 0);
-  const withArticles = categories.filter((cat) => cat._count.articles > 0).length;
+  const totalArticles = categories.reduce((sum, cat) => sum + (cat._count?.articles ?? 0), 0);
+  const withArticles = categories.filter((cat) => (cat._count?.articles ?? 0) > 0).length;
   const emptyCategories = categories.length - withArticles;
 
   return (
@@ -282,29 +281,29 @@ export default function AdminCategoriesPage() {
                     <td className={`${adminTableCell} font-medium text-foreground`}>{cat.name}</td>
                     <td className={`${adminTableCell} font-mono text-muted-foreground`}>/{cat.slug}</td>
                     <td className={adminTableCell}>
-                      <span className={adminBadgeMuted}>{cat._count.articles}</span>
+                      <span className={adminBadgeMuted}>{cat._count?.articles ?? 0}</span>
                     </td>
                     <td className={`${adminTableCell} text-right`}>
-                      <div className="inline-flex items-center">
+                      <div className="inline-flex items-center gap-1">
                         <button
                           type="button"
                           onClick={() => openEditModal(cat)}
-                          className={adminBtnGhost}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#0C4EA0] hover:bg-[#0C4EA0]/10"
                           title="Edit"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button
                           type="button"
-                          disabled={cat._count.articles > 0 || deleteMutation.isPending}
+                          disabled={(cat._count?.articles ?? 0) > 0 || deleteMutation.isPending}
                           onClick={() => {
                             if (confirm(`Delete category "${cat.name}"?`)) {
                               deleteMutation.mutate(cat.id);
                             }
                           }}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#C3272E] hover:bg-muted disabled:opacity-40"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#C3272E] hover:bg-[#C3272E]/10 disabled:opacity-40"
                           title={
-                            cat._count.articles > 0
+                            (cat._count?.articles ?? 0) > 0
                               ? "Cannot delete — category has articles"
                               : "Delete"
                           }

@@ -3,9 +3,6 @@ import {
   ArticleType,
   LanguageEdition,
 } from "@prisma/client";
-import {
-  normalizeStatusForSchedule,
-} from "@/lib/article-scheduling";
 
 export type ArticleInput = {
   title?: string;
@@ -32,7 +29,6 @@ export type ArticleInput = {
   ogImage?: string | null;
   province?: number | null;
   district?: string | null;
-  scheduledAt?: Date | null;
   tagIds?: string[];
 };
 
@@ -52,15 +48,6 @@ function hasTextContent(html: string | null | undefined): boolean {
   if (!html) return false;
   const text = html.replace(/<[^>]*>/g, "").trim();
   return text.length > 0;
-}
-
-function parseScheduledAt(value: unknown): Date | null | undefined {
-  if (value === undefined) return undefined;
-  if (value === null || value === "") return null;
-  if (typeof value !== "string") return undefined;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return undefined;
-  return date;
 }
 
 function parseTagIds(value: unknown): string[] | undefined {
@@ -196,17 +183,10 @@ export function validateArticleCreate(body: unknown): ArticleValidationResult {
     return { ok: false, error: "Province must be a valid number" };
   }
 
-  const scheduledAt = parseScheduledAt(input.scheduledAt);
-  if (input.scheduledAt !== undefined && input.scheduledAt !== null && input.scheduledAt !== "" && scheduledAt === undefined) {
-    return { ok: false, error: "scheduledAt must be a valid date" };
-  }
-
   const tagIds = parseTagIds(input.tagIds);
   if (input.tagIds !== undefined && tagIds === undefined) {
     return { ok: false, error: "tagIds must be an array of tag IDs" };
   }
-
-  const normalizedStatus = normalizeStatusForSchedule(status, scheduledAt ?? null);
 
   return {
     ok: true,
@@ -217,7 +197,7 @@ export function validateArticleCreate(body: unknown): ArticleValidationResult {
       excerptNp: parseOptionalString(input.excerptNp),
       coverImage: parseOptionalString(input.coverImage),
       caption: parseOptionalString(input.caption),
-      status: normalizedStatus,
+      status,
       type,
       languageEdition,
       isFeatured: Boolean(input.isFeatured),
@@ -232,7 +212,6 @@ export function validateArticleCreate(body: unknown): ArticleValidationResult {
       ogImage: parseOptionalString(input.ogImage),
       province,
       district: parseOptionalString(input.district),
-      scheduledAt,
       tagIds,
     },
   };
@@ -333,24 +312,12 @@ export function validateArticleUpdate(body: unknown): ArticleValidationResult {
     }
   }
 
-  const scheduledAt = parseScheduledAt(input.scheduledAt);
-  if (input.scheduledAt !== undefined && input.scheduledAt !== null && input.scheduledAt !== "" && scheduledAt === undefined) {
-    return { ok: false, error: "scheduledAt must be a valid date" };
-  }
-  if (input.scheduledAt !== undefined) {
-    data.scheduledAt = scheduledAt ?? null;
-  }
-
   const tagIds = parseTagIds(input.tagIds);
   if (input.tagIds !== undefined) {
     if (tagIds === undefined) {
       return { ok: false, error: "tagIds must be an array of tag IDs" };
     }
     data.tagIds = tagIds;
-  }
-
-  if (data.status && data.scheduledAt) {
-    data.status = normalizeStatusForSchedule(data.status, data.scheduledAt);
   }
 
   return { ok: true, data };

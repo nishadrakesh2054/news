@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import LinkExtension from "@tiptap/extension-link";
@@ -66,6 +67,9 @@ function getTextStats(html: string) {
   return { words, chars, readingMinutes, pages };
 }
 
+const LONGFORM_EDITOR_CLASS =
+  "prose dark:prose-invert prose-sm sm:prose-base max-w-none px-4 py-5 sm:px-8 font-sans outline-none focus:outline-none leading-relaxed text-foreground";
+
 export function TipTapEditor({
   value,
   onChange,
@@ -85,11 +89,23 @@ export function TipTapEditor({
     if (!isExpanded) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      if (isModalOpen) {
+        setIsModalOpen(false);
+        return;
+      }
+      setIsExpanded(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+
     return () => {
       document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKeyDown);
     };
-  }, [isExpanded]);
-
+  }, [isExpanded, isModalOpen]);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -126,6 +142,19 @@ export function TipTapEditor({
       },
     },
   });
+
+  useEffect(() => {
+    if (!editor || !isLongform) return;
+    editor.setOptions({
+      editorProps: {
+        attributes: {
+          class: isExpanded
+            ? `${LONGFORM_EDITOR_CLASS} min-h-[calc(100vh-7rem)]`
+            : `${LONGFORM_EDITOR_CLASS} min-h-[28rem] sm:min-h-[32rem]`,
+        },
+      },
+    });
+  }, [editor, isExpanded, isLongform]);
 
   if (!editor) {
     return (
@@ -274,17 +303,19 @@ export function TipTapEditor({
 
   const stats = getTextStats(value);
 
-  return (
+  const editorShell = (
     <div
       className={
         isExpanded
-          ? "fixed inset-0 z-50 flex flex-col bg-[#F8FAFC] p-3 sm:p-4"
+          ? "fixed inset-0 z-[200] flex flex-col bg-background"
           : "relative w-full"
       }
     >
       <div
-        className={`flex w-full flex-col overflow-hidden rounded-sm border border-border/70 bg-card shadow-xs transition-colors duration-150 focus-within:border-[#0C4EA0]/60 ${
-          isExpanded ? "mx-auto h-full max-w-5xl flex-1" : ""
+        className={`flex w-full flex-col overflow-hidden border border-border/70 bg-card shadow-xs transition-colors duration-150 focus-within:border-[#0C4EA0]/60 ${
+          isExpanded
+            ? "h-full min-h-0 rounded-none border-0 shadow-none"
+            : "rounded-sm"
         }`}
       >
       {/* Editor Toolbar */}
@@ -500,23 +531,30 @@ export function TipTapEditor({
         {isLongform ? (
           <>
             <div className="mx-1 h-4 w-px bg-border/70" />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsExpanded((v) => !v)}
-              className="h-7 gap-1 rounded px-2 text-muted-foreground hover:text-[#0C4EA0]"
-              title={isExpanded ? "Exit fullscreen" : "Fullscreen editor"}
-            >
+            <div className="ml-auto flex items-center gap-1.5">
               {isExpanded ? (
-                <Minimize2 className="h-3.5 w-3.5" />
-              ) : (
-                <Maximize2 className="h-3.5 w-3.5" />
-              )}
-              <span className="hidden text-[11px] font-medium sm:inline">
-                {isExpanded ? "Exit" : "Expand"}
-              </span>
-            </Button>
+                <span className="hidden text-[10px] text-muted-foreground sm:inline">
+                  Esc
+                </span>
+              ) : null}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded((v) => !v)}
+                className="h-7 gap-1 rounded px-2 text-muted-foreground hover:text-[#0C4EA0]"
+                title={isExpanded ? "Exit fullscreen (Esc)" : "Fullscreen writing mode"}
+              >
+                {isExpanded ? (
+                  <Minimize2 className="h-3.5 w-3.5" />
+                ) : (
+                  <Maximize2 className="h-3.5 w-3.5" />
+                )}
+                <span className="text-[11px] font-medium">
+                  {isExpanded ? "Exit" : "Expand"}
+                </span>
+              </Button>
+            </div>
           </>
         ) : null}
       </div>
@@ -560,7 +598,7 @@ export function TipTapEditor({
 
       {/* Interactive Local Multi-Image Upload & Drag Re-order Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[220] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-card w-full max-w-xl rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in-50 zoom-in-95 duration-150">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
@@ -713,4 +751,18 @@ export function TipTapEditor({
       )}
     </div>
   );
+
+  if (isExpanded && typeof document !== "undefined") {
+    return (
+      <>
+        <div
+          className="min-h-[28rem] rounded-sm border border-dashed border-border/70 bg-muted/15 sm:min-h-[32rem]"
+          aria-hidden
+        />
+        {createPortal(editorShell, document.body)}
+      </>
+    );
+  }
+
+  return editorShell;
 }

@@ -46,11 +46,18 @@ function createPrismaClient() {
     return new PrismaClient({ log });
   }
 
-  if (isNeonUrl(connectionString)) {
+  // Local `next dev`: use Prisma's TCP engine. Neon WebSockets throw ErrorEvent
+  // here and break login (/admin → credentials 401 → bounce to home).
+  // Vercel keeps the Neon WS adapter (works in serverless).
+  const useNeonWs =
+    Boolean(process.env.VERCEL) ||
+    process.env.DATABASE_URL_USE_NEON_ADAPTER === "1" ||
+    process.env.DATABASE_DRIVER === "neon-ws";
+
+  if (isNeonUrl(connectionString) && useNeonWs) {
     if (typeof WebSocket === "undefined") {
       neonConfig.webSocketConstructor = ws;
     }
-    // PrismaNeon is a factory — pass PoolConfig, not a Pool instance
     const adapter = new PrismaNeon({ connectionString });
     return new PrismaClient({ adapter, log });
   }
@@ -65,12 +72,10 @@ function createPrismaClient() {
 function isStalePrismaClient(client: PrismaClient) {
   const c = client as PrismaClient & {
     gallery?: unknown;
-    menu?: unknown;
   };
   const tagDelegate = (client as unknown as { tag?: { findMany?: unknown } }).tag;
   return (
     typeof c.gallery === "undefined" ||
-    typeof c.menu === "undefined" ||
     typeof tagDelegate?.findMany !== "function"
   );
 }

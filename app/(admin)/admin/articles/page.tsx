@@ -62,7 +62,6 @@ interface ArticleItem {
   isBreaking: boolean;
   views: number;
   publishedAt: string | null;
-  scheduledAt: string | null;
   province: number | null;
   district: string | null;
   createdAt: string;
@@ -103,7 +102,6 @@ export default function AdminArticlesPage() {
   const [provinceFilter, setProvinceFilter] = useState<string>("ALL");
   const [languageFilter, setLanguageFilter] = useState<string>("ALL");
   const [districtFilter, setDistrictFilter] = useState<string>("");
-  const [scheduledOnly, setScheduledOnly] = useState(false);
   const [limit, setLimit] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
   const [sortField, setSortField] = useState<SortField>("createdAt");
@@ -142,7 +140,6 @@ export default function AdminArticlesPage() {
       provinceFilter,
       languageFilter,
       districtFilter,
-      scheduledOnly,
       page,
       limit,
     ],
@@ -160,7 +157,6 @@ export default function AdminArticlesPage() {
       if (provinceFilter !== "ALL") params.append("province", provinceFilter);
       if (languageFilter !== "ALL") params.append("languageEdition", languageFilter);
       if (districtFilter.trim()) params.append("district", districtFilter.trim());
-      if (scheduledOnly) params.append("scheduled", "true");
 
       const res = await fetch(`/api/admin/articles?${params.toString()}`);
       const json = await res.json();
@@ -177,7 +173,6 @@ export default function AdminArticlesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status,
-          ...(status === ArticleStatus.PUBLISHED ? { scheduledAt: null } : {}),
         }),
       });
       const json = await res.json();
@@ -247,7 +242,6 @@ export default function AdminArticlesPage() {
     setProvinceFilter("ALL");
     setLanguageFilter("ALL");
     setDistrictFilter("");
-    setScheduledOnly(false);
     setPage(1);
     toast.success("Filters reset");
   };
@@ -260,8 +254,7 @@ export default function AdminArticlesPage() {
     tagFilter !== "ALL" ||
     provinceFilter !== "ALL" ||
     languageFilter !== "ALL" ||
-    districtFilter.trim() !== "" ||
-    scheduledOnly;
+    districtFilter.trim() !== "";
 
   const pagination = data?.pagination;
   const summary = data?.summary;
@@ -291,30 +284,6 @@ export default function AdminArticlesPage() {
       default:
         return "Standard";
     }
-  };
-
-  const formatScheduledAt = (value: string | null) => {
-    if (!value) return null;
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return null;
-    return date.toLocaleString("en-NP", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const [now] = useState(() => Date.now());
-
-  const isScheduledPending = (art: ArticleItem) => {
-    if (!art.scheduledAt) return false;
-    const scheduled = new Date(art.scheduledAt);
-    return (
-      scheduled.getTime() > now &&
-      (art.status === ArticleStatus.DRAFT || art.status === ArticleStatus.PENDING)
-    );
   };
 
   const statusOptions = [
@@ -360,11 +329,9 @@ export default function AdminArticlesPage() {
             label: "Drafts",
             value: summary?.draft ?? 0,
             hint:
-              summary?.scheduled && summary.scheduled > 0
-                ? `${summary.scheduled} scheduled`
-                : summary?.archived && summary.archived > 0
-                  ? `${summary.archived} archived`
-                  : "Not published",
+              summary?.archived && summary.archived > 0
+                ? `${summary.archived} archived`
+                : "Not published",
             icon: Clock,
           },
           {
@@ -526,19 +493,6 @@ export default function AdminArticlesPage() {
             className={`${adminInput} h-8 w-full min-w-[7rem] sm:w-28`}
           />
 
-          <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-sm border border-border/70 px-2 text-xs text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={scheduledOnly}
-              onChange={(e) => {
-                setScheduledOnly(e.target.checked);
-                setPage(1);
-              }}
-              className="h-3.5 w-3.5 rounded-sm accent-[#0C4EA0]"
-            />
-            Scheduled
-          </label>
-
           {isFiltered ? (
             <button
               type="button"
@@ -641,11 +595,6 @@ export default function AdminArticlesPage() {
                               </span>
                             ) : null}
                             <span className={adminBadgeMuted}>{formatLanguageLabel(art.languageEdition)}</span>
-                            {isScheduledPending(art) ? (
-                              <span className="inline-flex items-center rounded-sm border border-[#0C4EA0]/30 bg-[#0C4EA0]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#0C4EA0]">
-                                Scheduled
-                              </span>
-                            ) : null}
                           </div>
                           <p className={`${adminTextTruncate} font-medium text-foreground`}>
                             {art.titleNp || art.title}
@@ -653,11 +602,6 @@ export default function AdminArticlesPage() {
                           {art.titleNp ? (
                             <p className={`${adminTextTruncate} text-[11px] text-muted-foreground`}>
                               {art.title}
-                            </p>
-                          ) : null}
-                          {isScheduledPending(art) ? (
-                            <p className="truncate text-[10px] text-[#0C4EA0]">
-                              Publishes {formatScheduledAt(art.scheduledAt)}
                             </p>
                           ) : null}
                           {art.province || art.district ? (
@@ -700,17 +644,21 @@ export default function AdminArticlesPage() {
                       {art.author.name}
                     </td>
                     <td className={`${adminTableCell} whitespace-nowrap text-right`}>
-                      <div className="inline-flex items-center">
+                      <div className="inline-flex items-center gap-1">
                         <a
                           href={`/article/${art.slug}`}
                           target="_blank"
                           rel="noreferrer"
-                          className={adminBtnGhost}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#027081] hover:bg-[#027081]/10"
                           title="View public page"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
                         </a>
-                        <Link href={`/admin/articles/${art.id}/edit`} className={adminBtnGhost} title="Edit">
+                        <Link
+                          href={`/admin/articles/${art.id}/edit`}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#0C4EA0] hover:bg-[#0C4EA0]/10"
+                          title="Edit"
+                        >
                           <Pencil className="h-3.5 w-3.5" />
                         </Link>
                         <button
@@ -721,7 +669,7 @@ export default function AdminArticlesPage() {
                               deleteMutation.mutate(art.id);
                             }
                           }}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-destructive hover:bg-muted"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#C3272E] hover:bg-[#C3272E]/10 disabled:opacity-40"
                           title="Delete"
                         >
                           <Trash2 className="h-3.5 w-3.5" />

@@ -52,7 +52,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className={`${inter.variable} ${geistMono.variable}`}>
-      <AdminProviders>
+      <AdminProviders session={session}>
         <SkipToContent />
         <AdminDashboardShell>{children}</AdminDashboardShell>
       </AdminProviders>

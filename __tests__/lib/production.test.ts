@@ -5,7 +5,6 @@ import {
   hashResetToken,
 } from "@/lib/password-reset";
 import { absoluteUrl, getSiteUrl } from "@/lib/site-url";
-import { getSentryDsn } from "@/lib/sentry-options";
 
 describe("password policy", () => {
   it("rejects short passwords", () => {
@@ -40,14 +39,5 @@ describe("site url helpers", () => {
 
   it("returns a site url without trailing slash", () => {
     expect(getSiteUrl().endsWith("/")).toBe(false);
-  });
-});
-
-describe("sentry config", () => {
-  it("reads dsn from env when set", () => {
-    const original = process.env.SENTRY_DSN;
-    process.env.SENTRY_DSN = "https://example@o0.ingest.sentry.io/0";
-    expect(getSentryDsn()).toBe("https://example@o0.ingest.sentry.io/0");
-    process.env.SENTRY_DSN = original;
   });
 });

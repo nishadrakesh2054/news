@@ -28,7 +28,6 @@ export async function GET(request: NextRequest) {
           body: true,
           type: true,
           status: true,
-          scheduledAt: true,
           sendPush: true,
           sendEmail: true,
           pushDelivered: true,
@@ -59,10 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = validation.data;
-    const status =
-      data.scheduledAt && data.scheduledAt.getTime() > Date.now()
-        ? NotificationStatus.SCHEDULED
-        : data.status;
+    const status = data.status;
 
     const notification = await prisma.notification.create({
       data: {
@@ -72,7 +68,6 @@ export async function POST(request: NextRequest) {
         type: data.type,
         status,
         linkUrl: data.linkUrl || null,
-        scheduledAt: data.scheduledAt ?? null,
         sendPush: data.sendPush,
         sendEmail: data.sendEmail,
         sentAt: status === NotificationStatus.SENT ? new Date() : null,

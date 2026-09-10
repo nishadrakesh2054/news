@@ -13,7 +13,7 @@ See [BACKUP.md](./BACKUP.md) for Neon backup and restore.
 
 ## Environment
 
-Copy `.env.example` to `.env.local` and fill all secrets. **Never commit `.env` files.**
+Put secrets in `.env` for local development. **Never commit `.env` files.** Set the same variables in the Vercel project environment for production.
 
 Required for production:
 
@@ -25,10 +25,8 @@ Required for production:
 | `NEXT_PUBLIC_SITE_URL` | `https://echomanchnews.vercel.app` (Nepali public) |
 | `NEXT_PUBLIC_ENGLISH_SITE_URL` | `https://echomanchnews.vercel.app` (English uses `?lang=en`) |
 | `CLOUDINARY_*` | Media uploads |
-| `CRON_SECRET` | Protects `/api/cron/*` |
 | `RESEND_API_KEY` | Password reset + newsletter emails |
 | `MAIL_FROM_EMAIL` | `info@echomanchs.com` |
-| `SENTRY_DSN` | Error monitoring (optional) |
 
 ## Bilingual editions (one CMS / one API)
 
@@ -53,28 +51,8 @@ On Vercel: add both domains to the project. Set `NEXT_PUBLIC_SITE_URL` and `NEXT
 - [ ] `pnpm db:search-indexes` on production DB
 - [ ] All env vars set on Vercel (not in git), especially `DATABASE_URL` and `NEXTAUTH_URL=https://echomanchnews.vercel.app`
 - [ ] Current Vercel host is `echomanchnews.vercel.app` (English via `?lang=en`)
-- [ ] `CRON_SECRET` set — Vercel cron sends `Authorization: Bearer $CRON_SECRET`
 - [ ] Security headers active (`next.config.ts`)
 - [ ] Rotate secrets if `.env` was ever pushed to GitHub
-
-## Cron jobs
-
-`vercel.json` schedules (Hobby plan = once per day each):
-
-| Schedule (UTC) | Endpoint |
-|----------|----------|
-| `0 1 * * *` (01:00) | `GET /api/cron/publish-scheduled` |
-| `0 2 * * *` (02:00) | `GET /api/cron/send-notifications` |
-
-> Vercel Hobby cannot use `*/5 * * * *`. Pro unlocks frequent crons.
-
-On Vercel, set `CRON_SECRET` in project env. Vercel automatically adds the Bearer header when invoking crons.
-
-Manual test:
-
-```bash
-curl -H "Authorization: Bearer $CRON_SECRET" https://echomanchnews.vercel.app/api/cron/publish-scheduled
-```
 
 ## Password reset
 
@@ -83,6 +61,4 @@ curl -H "Authorization: Bearer $CRON_SECRET" https://echomanchnews.vercel.app/ap
 
 ## Monitoring
 
-Set `SENTRY_DSN` (and optionally `NEXT_PUBLIC_SENTRY_DSN` for client). Sentry is disabled when DSN is unset.
-
-`GET /api/health` now pings the database. `503` + `DATABASE_URL is missing` or `Database is unreachable` means Vercel cannot talk to Neon. Same-origin `/api/admin/*` 500s are not CORS.
+`GET /api/health` pings the database. `503` + `DATABASE_URL is missing` or `Database is unreachable` means Vercel cannot talk to Neon. Same-origin `/api/admin/*` 500s are not CORS.

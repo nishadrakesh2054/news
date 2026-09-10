@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Devanagari } from "next/font/google";
+import { Khand, Noto_Sans_Devanagari } from "next/font/google";
 import { headers } from "next/headers";
 import { SITE_CONFIG } from "@/constants/site";
 import { htmlLang, resolveLanguageEdition } from "@/lib/language";
@@ -10,6 +10,12 @@ import "./globals.css";
 const notoSansDevanagari = Noto_Sans_Devanagari({
   variable: "--font-noto-devanagari",
   subsets: ["devanagari", "latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const khand = Khand({
+  variable: "--font-khand",
+  subsets: ["latin", "devanagari"],
   weight: ["400", "500", "600", "700"],
 });
 
@@ -114,7 +120,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html
       lang={htmlLang(lang)}
-      className={`${notoSansDevanagari.variable} h-full antialiased`}
+      className={`${notoSansDevanagari.variable} ${khand.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>

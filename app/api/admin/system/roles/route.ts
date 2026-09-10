@@ -7,7 +7,7 @@ const PERMISSIONS = {
   [Role.EDITOR]: [
     "articles", "categories", "tags", "comments", "breaking", "live", "featured",
     "media", "galleries", "videos", "epaper", "ads", "polls", "utilities",
-    "notifications", "analytics", "website.seo", "website.menus", "website.redirects",
+    "notifications", "analytics", "website.seo", "website.redirects",
   ],
   [Role.AUTHOR]: ["articles.own", "live", "media.own", "comments.read"],
   [Role.READER]: [],

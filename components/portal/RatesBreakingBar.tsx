@@ -90,10 +90,11 @@ export function RatesBreakingBar({ items = [], lang }: RatesBreakingBarProps) {
     <div className="w-full border-b border-gray-200 bg-white text-xs">
       <div className={`${PORTAL.container} flex items-center gap-1.5 py-1 sm:gap-2 sm:py-1.5`}>
         <span
-          className="inline-flex h-6 shrink-0 items-center gap-0.5 text-[10px] font-bold leading-none sm:h-7 sm:gap-1 sm:text-[11px]"
+          className="inline-flex shrink-0 items-center gap-0.5 bg-transparent p-0 text-[10px] font-bold leading-none sm:gap-1 sm:text-[11px]"
           style={{ color: PORTAL.accent }}
+          aria-label={isEnglish ? "Breaking" : "ब्रेकिङ"}
         >
-          <Zap className="h-3 w-3 shrink-0" style={{ color: PORTAL.accent }} fill="currentColor" />
+          <Zap className="h-3.5 w-3.5 shrink-0" style={{ color: PORTAL.accent }} fill="currentColor" />
           <span className="sm:hidden">{isEnglish ? "Live" : "ब्रेकिङ"}</span>
           <span className="hidden sm:inline">{isEnglish ? "Breaking" : "ब्रेकिङ"}</span>
         </span>
@@ -127,22 +128,24 @@ export function RatesBreakingBar({ items = [], lang }: RatesBreakingBarProps) {
         </div>
 
         {breaking.length > 1 ? (
-          <div className="hidden shrink-0 items-center gap-0.5 sm:flex">
+          <div className="hidden shrink-0 items-center gap-0.5 bg-transparent sm:flex">
             <button
               type="button"
               onClick={goPrev}
-              className="inline-flex h-7 w-7 items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              className="inline-flex items-center justify-center bg-transparent p-0 hover:opacity-80"
+              style={{ color: PORTAL.accent }}
               aria-label={isEnglish ? "Previous" : "अघिल्लो"}
             >
-              <ChevronLeft className="h-3.5 w-3.5" />
+              <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2.5} />
             </button>
             <button
               type="button"
               onClick={goNext}
-              className="inline-flex h-7 w-7 items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              className="inline-flex items-center justify-center bg-transparent p-0 hover:opacity-80"
+              style={{ color: PORTAL.accent }}
               aria-label={isEnglish ? "Next" : "अर्को"}
             >
-              <ChevronRight className="h-3.5 w-3.5" />
+              <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.5} />
             </button>
           </div>
         ) : null}

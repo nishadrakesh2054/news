@@ -173,12 +173,14 @@ export function PublicHeader({
           <Link
             href={homeHref}
             onClick={closeMenu}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold ${
+            className={`inline-flex min-h-12 items-center gap-2 px-4 py-3 text-[18px] font-bold leading-[1.45] ${
               pathname === "/" ? "bg-black/15" : "hover:bg-black/10"
             }`}
           >
-            <Home className="h-4 w-4" />
-            {isEnglish ? "Home" : "गृह"}
+            <Home className="h-5 w-5 shrink-0" />
+            <span className="inline-flex items-center leading-[1.45]">
+              {isEnglish ? "Home" : "गृह"}
+            </span>
           </Link>
           {categories.map((cat) => {
             const label = isEnglish
@@ -190,53 +192,61 @@ export function PublicHeader({
                 key={cat.id}
                 href={`/category/${cat.slug}${langQuery}`}
                 onClick={closeMenu}
-                className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold ${
+                className={`inline-flex min-h-12 items-center gap-1.5 px-4 py-3 text-[18px] font-bold leading-[1.45] ${
                   active ? "bg-black/15" : "hover:bg-black/10"
                 }`}
               >
-                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/60" aria-hidden />
-                {label}
+                <ChevronRight className="h-4 w-4 shrink-0 text-white/60" aria-hidden />
+                <span className="inline-flex items-center leading-[1.45]">{label}</span>
               </Link>
             );
           })}
           <Link
             href={`/epaper${langQuery}`}
             onClick={closeMenu}
-            className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold ${
+            className={`inline-flex min-h-12 items-center gap-1.5 px-4 py-3 text-[18px] font-bold leading-[1.45] ${
               pathname === "/epaper" ? "bg-black/15" : "hover:bg-black/10"
             }`}
           >
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/60" aria-hidden />
-            {isEnglish ? "E-Paper" : "इ-पत्रिका"}
+            <ChevronRight className="h-4 w-4 shrink-0 text-white/60" aria-hidden />
+            <span className="inline-flex items-center leading-[1.45]">
+              {isEnglish ? "E-Paper" : "इ-पत्रिका"}
+            </span>
           </Link>
 
           <div className="border-t border-white/15 px-4 py-2">
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-white/50">
+            <p className="mb-1 text-sm font-bold uppercase tracking-wide text-white/50">
               {isEnglish ? "Utilities" : "उपयोगी"}
             </p>
             <Link
               href={`/forex${langQuery}`}
               onClick={closeMenu}
-              className="inline-flex w-full items-center gap-2 py-2 text-sm font-semibold hover:bg-black/10"
+              className="inline-flex min-h-11 w-full items-center gap-2 py-2.5 text-[18px] font-semibold leading-[1.45] hover:bg-black/10"
             >
-              <DollarSign className="h-3.5 w-3.5 opacity-70" />
-              {isEnglish ? "Forex" : "मुद्रा दर"}
+              <DollarSign className="h-4 w-4 shrink-0 opacity-70" />
+              <span className="inline-flex items-center leading-[1.45]">
+                {isEnglish ? "Forex" : "मुद्रा दर"}
+              </span>
             </Link>
             <Link
               href={`/gold-rate${langQuery}`}
               onClick={closeMenu}
-              className="inline-flex w-full items-center gap-2 py-2 text-sm font-semibold hover:bg-black/10"
+              className="inline-flex min-h-11 w-full items-center gap-2 py-2.5 text-[18px] font-semibold leading-[1.45] hover:bg-black/10"
             >
-              <Coins className="h-3.5 w-3.5 opacity-70" />
-              {isEnglish ? "Gold & silver" : "सुन–चाँदी"}
+              <Coins className="h-4 w-4 shrink-0 opacity-70" />
+              <span className="inline-flex items-center leading-[1.45]">
+                {isEnglish ? "Gold & silver" : "सुन–चाँदी"}
+              </span>
             </Link>
             <Link
               href={`/rashifal${langQuery}`}
               onClick={closeMenu}
-              className="inline-flex w-full items-center gap-2 py-2 text-sm font-semibold hover:bg-black/10"
+              className="inline-flex min-h-11 w-full items-center gap-2 py-2.5 text-[18px] font-semibold leading-[1.45] hover:bg-black/10"
             >
-              <Sparkles className="h-3.5 w-3.5 opacity-70" />
-              {isEnglish ? "Horoscope" : "राशिफल"}
+              <Sparkles className="h-4 w-4 shrink-0 opacity-70" />
+              <span className="inline-flex items-center leading-[1.45]">
+                {isEnglish ? "Horoscope" : "राशिफल"}
+              </span>
             </Link>
           </div>
         </div>
@@ -316,24 +326,24 @@ export function PublicHeader({
               aria-label={isEnglish ? "Search" : "खोज"}
               aria-expanded={searchOpen}
             >
-              {searchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
+              {searchOpen ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
             </button>
           </div>
 
           {searchOpen ? (
-            <form onSubmit={handleSearch} className="mt-2 flex items-center border border-gray-200 bg-white">
-              <Search className="ml-2.5 h-3.5 w-3.5 shrink-0 text-gray-400" />
+            <form onSubmit={handleSearch} className="mt-2 flex h-9 items-center border border-gray-200 bg-white">
+              <Search className="ml-2 h-3 w-3 shrink-0 text-gray-400" />
               <input
                 ref={searchInputRef}
                 type="search"
                 placeholder={isEnglish ? "Search…" : "खोज्नुहोस्…"}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none"
+                className="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-sm outline-none"
               />
               <button
                 type="submit"
-                className="shrink-0 px-3 py-2 text-xs font-bold text-white"
+                className="shrink-0 px-3 py-1.5 text-xs font-bold text-white"
                 style={{ backgroundColor: PORTAL.brand }}
               >
                 {isEnglish ? "Go" : "खोज"}

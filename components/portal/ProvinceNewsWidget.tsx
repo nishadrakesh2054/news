@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import type { LanguageEditionType } from "@/lib/language";
 import { resolveArticleTitle } from "@/lib/language";
 import { formatTimeAgo } from "@/lib/nepaliDate";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { PORTAL } from "@/constants/portal";
+import { SectionHeader } from "@/components/portal/SectionHeader";
 
 export const PROVINCES = [
   { id: 1, name: "कोशी", nameEn: "Koshi", slug: "koshi" },
@@ -46,26 +46,11 @@ export function ProvinceNewsWidget({ articles, lang = "ne" }: ProvinceNewsWidget
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center gap-3">
-        <h2
-          className="shrink-0 text-xl font-extrabold tracking-tight whitespace-nowrap sm:text-2xl"
-          style={{ color: PORTAL.brand }}
-        >
-          {isEnglish ? "Province News" : "प्रदेश समाचार"}
-        </h2>
-        <div
-          className="h-px min-w-4 flex-1"
-          style={{ backgroundColor: PORTAL.accent, opacity: 0.35 }}
-        />
-        <Link
-          href={`/province/${currentProv.slug}${langQ}`}
-          className="inline-flex shrink-0 items-center gap-0.5 text-xs font-bold whitespace-nowrap hover:underline"
-          style={{ color: PORTAL.brand }}
-        >
-          {isEnglish ? "More news" : "थप समाचार"}
-          <ChevronRight className="h-3.5 w-3.5" />
-        </Link>
-      </div>
+      <SectionHeader
+        title={isEnglish ? "Province News" : "प्रदेश समाचार"}
+        href={`/province/${currentProv.slug}${langQ}`}
+        linkLabel={isEnglish ? "More news" : "थप समाचार"}
+      />
 
       <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {PROVINCES.map((prov) => {

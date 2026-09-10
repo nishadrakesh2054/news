@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Save, X, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, Save, X, Trash2 } from "lucide-react";
 import { ArticleStatus, ArticleType, LanguageEdition } from "@prisma/client";
 import Link from "next/link";
 import { TipTapEditor } from "@/components/admin/TipTapEditor";
@@ -27,7 +28,12 @@ import {
 interface TagItem {
   id: string;
   name: string;
+  nameNp?: string | null;
   slug: string;
+}
+
+function tagLabel(tag: TagItem) {
+  return tag.nameNp ? `${tag.nameNp} (${tag.name})` : tag.name;
 }
 
 interface CategoryItem {
@@ -84,6 +90,164 @@ const STATUS_BADGE: Record<ArticleStatus, string> = {
   [ArticleStatus.ARCHIVED]: "bg-muted/80 text-muted-foreground",
 };
 
+interface TagsMultiSelectProps {
+  tags: TagItem[];
+  value: string[];
+  onChange: (ids: string[]) => void;
+}
+
+function TagsMultiSelect({ tags, value, onChange }: TagsMultiSelectProps) {
+  const [open, setOpen] = useState(false);
+  const [menuRect, setMenuRect] = useState<{ top: number; left: number; width: number } | null>(
+    null
+  );
+  const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const selected = tags.filter((tag) => value.includes(tag.id));
+
+  const updateMenuPosition = () => {
+    const button = buttonRef.current;
+    if (!button) return;
+    const rect = button.getBoundingClientRect();
+    const width = Math.max(rect.width, 288);
+    const maxLeft = window.innerWidth - width - 8;
+    setMenuRect({
+      top: rect.bottom + 4,
+      left: Math.max(8, Math.min(rect.left, maxLeft)),
+      width,
+    });
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    updateMenuPosition();
+
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    const onReposition = () => updateMenuPosition();
+
+    document.addEventListener("mousedown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("resize", onReposition);
+    window.addEventListener("scroll", onReposition, true);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", onReposition);
+      window.removeEventListener("scroll", onReposition, true);
+    };
+  }, [open]);
+
+  const toggle = (id: string) => {
+    onChange(value.includes(id) ? value.filter((item) => item !== id) : [...value, id]);
+  };
+
+  const summary =
+    selected.length === 0
+      ? "— Select tags —"
+      : selected.length <= 2
+        ? selected.map(tagLabel).join(", ")
+        : `${selected.length} tags selected`;
+
+  const menu =
+    open && menuRect && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            ref={menuRef}
+            role="listbox"
+            aria-multiselectable
+            style={{
+              position: "fixed",
+              top: menuRect.top,
+              left: menuRect.left,
+              width: menuRect.width,
+            }}
+            className="z-[300] max-h-64 overflow-y-auto rounded-sm border border-border/70 bg-card py-1 shadow-lg"
+          >
+            {tags.map((tag) => {
+              const checked = value.includes(tag.id);
+              return (
+                <label
+                  key={tag.id}
+                  role="option"
+                  aria-selected={checked}
+                  className={`flex cursor-pointer items-start gap-2 px-3 py-2 text-xs leading-[1.55] hover:bg-muted/40 ${
+                    checked ? "bg-[#0C4EA0]/8 text-[#0C4EA0]" : "text-foreground"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-[#0C4EA0]"
+                    checked={checked}
+                    onChange={() => toggle(tag.id)}
+                  />
+                  <span className="min-w-0 break-words">{tagLabel(tag)}</span>
+                </label>
+              );
+            })}
+          </div>,
+          document.body
+        )
+      : null;
+
+  return (
+    <div ref={rootRef} className="relative w-full max-w-sm">
+      <button
+        ref={buttonRef}
+        type="button"
+        id="tags"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className={`${adminSelect} flex h-auto min-h-8 w-full items-center justify-between gap-2 py-1.5 text-left leading-[1.55]`}
+      >
+        <span
+          className={`min-w-0 break-words ${
+            selected.length === 0 ? "text-muted-foreground" : ""
+          }`}
+        >
+          {summary}
+        </span>
+        <ChevronDown
+          className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {menu}
+
+      {selected.length > 0 ? (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {selected.map((tag) => (
+            <span
+              key={tag.id}
+              className="inline-flex max-w-full items-center gap-1 rounded-sm border border-[#0C4EA0]/25 bg-[#0C4EA0]/8 px-1.5 py-1 text-[10px] leading-[1.55] text-[#0C4EA0]"
+            >
+              <span className="min-w-0 break-words">{tagLabel(tag)}</span>
+              <button
+                type="button"
+                onClick={() => toggle(tag.id)}
+                className="shrink-0 rounded-sm p-0.5 hover:bg-[#0C4EA0]/15"
+                aria-label={`Remove ${tag.name}`}
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function ArticleForm({ initialData }: ArticleFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -105,11 +269,6 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
   );
   const [isFeatured, setIsFeatured] = useState<boolean>(initialData?.isFeatured || false);
   const [isBreaking, setIsBreaking] = useState<boolean>(initialData?.isBreaking || false);
-  const [scheduledAt, setScheduledAt] = useState<string>(
-    initialData?.scheduledAt
-      ? new Date(initialData.scheduledAt as string).toISOString().slice(0, 16)
-      : ""
-  );
   const [categoryId, setCategoryId] = useState<string>((initialData?.categoryId as string) || "");
   const [metaTitle, setMetaTitle] = useState<string>((initialData?.metaTitle as string) || "");
   const [metaTitleNp, setMetaTitleNp] = useState<string>(
@@ -155,7 +314,6 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
         languageEdition,
         isFeatured,
         isBreaking,
-        scheduledAt,
         categoryId,
         metaTitle,
         metaTitleNp,
@@ -183,7 +341,6 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       languageEdition,
       isFeatured,
       isBreaking,
-      scheduledAt,
       categoryId,
       metaTitle,
       metaTitleNp,
@@ -216,7 +373,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
   }, [isDirty]);
 
   const { data: categories = [] } = useQuery<CategoryItem[]>({
-    queryKey: ["admin-categories"],
+    queryKey: ["admin-categories", "light"],
     queryFn: async () => {
       const res = await fetch("/api/admin/categories?light=1");
       const json = await res.json();
@@ -226,7 +383,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
   });
 
   const { data: tags = [] } = useQuery<TagItem[]>({
-    queryKey: ["admin-tags"],
+    queryKey: ["admin-tags", "light"],
     queryFn: async () => {
       const res = await fetch("/api/admin/tags?light=1");
       const json = await res.json();
@@ -304,7 +461,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
         toast.error("English title and body are required for English-only articles");
         return;
       }
-    } else if (
+    } else     if (
       !title.trim() ||
       !hasEnglishBody ||
       !titleNp.trim() ||
@@ -312,10 +469,6 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
     ) {
       toast.error("Both English and Nepali title and body are required for bilingual articles");
       return;
-    }
-
-    if (scheduledAt && new Date(scheduledAt).getTime() > Date.now() && status === ArticleStatus.PUBLISHED) {
-      toast.info("Future schedule detected — article will be queued for review until publish time");
     }
 
     saveMutation.mutate({
@@ -333,7 +486,6 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       languageEdition,
       province: province ? Number(province) : undefined,
       district: district || undefined,
-      scheduledAt: scheduledAt || undefined,
       tagIds,
       isFeatured,
       isBreaking,
@@ -446,7 +598,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
                 onChange={(e) => setTitleNp(e.target.value)}
                 className={`${adminInput} w-full text-sm font-semibold`}
               />
-              <NepaliTypingHelper />
+              <NepaliTypingHelper onApply={(unicode) => setTitleNp(unicode)} />
             </div>
           </AdminFormRow>
 
@@ -520,43 +672,42 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
           )}
         </AdminFormSection>
 
-        <AdminFormBodySection
-          number={2}
-          title="Article body (English)"
-          required={languageEdition !== LanguageEdition.NEPALI_ONLY}
-          hint={
-            languageEdition === LanguageEdition.NEPALI_ONLY
-              ? "Optional for Nepali-only articles."
-              : "Write the full English story. Required for English-only and Both editions."
-          }
-        >
-          <TipTapEditor
-            value={content}
-            onChange={setContent}
-            variant="longform"
-            placeholder="Start writing the full article…"
-          />
-        </AdminFormBodySection>
+        {languageEdition !== LanguageEdition.NEPALI_ONLY ? (
+          <AdminFormBodySection
+            number={2}
+            title="Article body (English)"
+            required
+            hint="Write the full English story."
+          >
+            <TipTapEditor
+              value={content}
+              onChange={setContent}
+              variant="longform"
+              placeholder="Start writing the full article…"
+            />
+          </AdminFormBodySection>
+        ) : null}
 
-        <AdminFormBodySection
-          number={3}
-          title="Article body (Nepali / नेपाली)"
-          required={languageEdition !== LanguageEdition.ENGLISH_ONLY}
-          hint={
-            languageEdition === LanguageEdition.ENGLISH_ONLY
-              ? "Optional for English-only articles."
-              : "Write the full Nepali story. Required for Nepali-only and Both editions."
-          }
-        >
-          <TipTapEditor
-            value={contentNp}
-            onChange={setContentNp}
-            variant="longform"
-            placeholder="पूरा समाचार यहाँ लेख्नुहोस्…"
-          />
-        </AdminFormBodySection>
+        {languageEdition !== LanguageEdition.ENGLISH_ONLY ? (
+          <AdminFormBodySection
+            number={languageEdition === LanguageEdition.BOTH ? 3 : 2}
+            title="Article body (Nepali / नेपाली)"
+            required
+            hint="Write the full Nepali story."
+          >
+            <TipTapEditor
+              value={contentNp}
+              onChange={setContentNp}
+              variant="longform"
+              placeholder="पूरा समाचार यहाँ लेख्नुहोस्…"
+            />
+          </AdminFormBodySection>
+        ) : null}
 
-        <AdminFormSection number={4} title="Category & classification">
+        <AdminFormSection
+          number={languageEdition === LanguageEdition.BOTH ? 4 : 3}
+          title="Category & classification"
+        >
           <AdminFormRow serial={1} label="Category" required>
             <select
               id="category"
@@ -618,35 +769,11 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
 
           <AdminFormRow serial={5} label="Tags">
             {tags.length > 0 ? (
-              <div className="flex flex-wrap gap-2 max-w-2xl">
-                {tags.map((tag) => {
-                  const checked = tagIds.includes(tag.id);
-                  return (
-                    <label
-                      key={tag.id}
-                      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-sm border px-2 py-1 text-xs ${
-                        checked
-                          ? "border-[#0C4EA0] bg-[#0C4EA0]/10 text-[#0C4EA0]"
-                          : "border-border/70 text-muted-foreground"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        className="sr-only"
-                        checked={checked}
-                        onChange={() => {
-                          setTagIds((current) =>
-                            checked
-                              ? current.filter((id) => id !== tag.id)
-                              : [...current, tag.id]
-                          );
-                        }}
-                      />
-                      {tag.name}
-                    </label>
-                  );
-                })}
-              </div>
+              <TagsMultiSelect
+                tags={tags}
+                value={tagIds}
+                onChange={setTagIds}
+              />
             ) : (
               <p className="text-xs text-muted-foreground">
                 No tags yet. Create tags under Content → Tags.
@@ -655,7 +782,10 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
           </AdminFormRow>
         </AdminFormSection>
 
-        <AdminFormSection number={5} title="Publishing & placement">
+        <AdminFormSection
+          number={languageEdition === LanguageEdition.BOTH ? 5 : 4}
+          title="Publishing & placement"
+        >
           <AdminFormRow serial={1} label="Publication status">
             <select
               value={status}
@@ -670,21 +800,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
             </select>
           </AdminFormRow>
 
-          <AdminFormRow
-            serial={2}
-            label="Scheduled publish date"
-            hint="Future dates queue the article for automatic publishing via cron"
-          >
-            <input
-              id="scheduled-at"
-              type="datetime-local"
-              value={scheduledAt}
-              onChange={(e) => setScheduledAt(e.target.value)}
-              className={`${adminInput} w-full max-w-xs font-mono text-[11px]`}
-            />
-          </AdminFormRow>
-
-          <AdminFormRow serial={3} label="Homepage placement">
+          <AdminFormRow serial={2} label="Homepage placement">
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-6">
               <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
                 <input
@@ -708,7 +824,10 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
           </AdminFormRow>
         </AdminFormSection>
 
-        <AdminFormSection number={6} title="Media & cover image">
+        <AdminFormSection
+          number={languageEdition === LanguageEdition.BOTH ? 6 : 5}
+          title="Media & cover image"
+        >
           <AdminFormRow
             serial={1}
             label="Cover image"
@@ -796,7 +915,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
         </AdminFormSection>
 
         <AdminFormSection
-          number={7}
+          number={languageEdition === LanguageEdition.BOTH ? 7 : 6}
           title="SEO & social metadata"
           hint="Fill SEO for each edition you publish. Leave blank to fall back to the headline / excerpt for that language. OG image is shared."
         >

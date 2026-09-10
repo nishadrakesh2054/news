@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
           titleNp: true,
           slug: true,
           status: true,
-          scheduledAt: true,
           createdAt: true,
           author: { select: { name: true, email: true } },
           category: { select: { name: true, nameNp: true } },
@@ -106,7 +105,6 @@ export async function POST(request: NextRequest) {
         action === "approve"
           ? {
               status: ArticleStatus.PUBLISHED,
-              scheduledAt: null,
               publishedAt: new Date(),
             }
           : {
@@ -119,7 +117,6 @@ export async function POST(request: NextRequest) {
         slug: true,
         status: true,
         publishedAt: true,
-        scheduledAt: true,
       },
     });
 

@@ -308,33 +308,35 @@ export default function AdminCommentsPage() {
                         aria-label="Select comment"
                       />
                     </td>
-                    <td className={`${adminTableCell} whitespace-nowrap`}>
-                      <p className="font-medium text-foreground">
+                    <td className={`${adminTableCell} max-w-[10rem]`}>
+                      <p className="break-words font-medium leading-[1.55] text-foreground">
                         {comment.author?.name || comment.authorName || "Anonymous"}
                       </p>
                       {(comment.author?.email || comment.authorEmail) && (
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="break-all text-[11px] leading-[1.55] text-muted-foreground">
                           {comment.author?.email || comment.authorEmail}
                         </p>
                       )}
                     </td>
-                    <td className={`${adminTableCell} max-w-md`}>
-                      <p className="line-clamp-3 leading-relaxed text-foreground">{comment.content}</p>
+                    <td className={`${adminTableCell} min-w-[14rem] max-w-lg`}>
+                      <p className="break-words text-xs leading-[1.55] text-foreground line-clamp-4">
+                        {comment.content}
+                      </p>
                     </td>
                     <td className={adminTableCell}>
                       <span className={statusBadgeClass(comment.status)}>{comment.status}</span>
                     </td>
-                    <td className={adminTableCell}>
+                    <td className={`${adminTableCell} max-w-[14rem]`}>
                       <a
                         href={`/article/${comment.article.slug}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex max-w-[180px] items-center gap-1 truncate text-xs font-medium text-[#0C4EA0] hover:underline"
+                        className="inline-flex items-start gap-1 text-xs font-medium text-[#0C4EA0] hover:underline"
                       >
-                        <span className="truncate">
+                        <span className="min-w-0 break-words leading-[1.55] line-clamp-2">
                           {comment.article.titleNp || comment.article.title}
                         </span>
-                        <ExternalLink className="h-3 w-3 shrink-0" />
+                        <ExternalLink className="mt-0.5 h-3 w-3 shrink-0" />
                       </a>
                     </td>
                     <td className={`${adminTableCell} whitespace-nowrap text-muted-foreground`}>
@@ -346,30 +348,30 @@ export default function AdminCommentsPage() {
                           <button
                             type="button"
                             onClick={() => updateMutation.mutate({ id: comment.id, status: "APPROVED" })}
-                            className={adminBtnSecondary}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#027081] hover:bg-[#027081]/10"
                             title="Approve"
                           >
-                            <Check className="h-3 w-3" />
+                            <Check className="h-3.5 w-3.5" />
                           </button>
                         ) : null}
                         {comment.status !== "REJECTED" ? (
                           <button
                             type="button"
                             onClick={() => updateMutation.mutate({ id: comment.id, status: "REJECTED" })}
-                            className={adminBtnGhost}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#0C4EA0] hover:bg-[#0C4EA0]/10"
                             title="Reject"
                           >
-                            <X className="h-3 w-3" />
+                            <X className="h-3.5 w-3.5" />
                           </button>
                         ) : null}
                         {comment.status !== "SPAM" ? (
                           <button
                             type="button"
                             onClick={() => updateMutation.mutate({ id: comment.id, status: "SPAM" })}
-                            className={adminBtnGhost}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#C3272E]/80 hover:bg-[#C3272E]/10"
                             title="Mark spam"
                           >
-                            <ShieldAlert className="h-3 w-3" />
+                            <ShieldAlert className="h-3.5 w-3.5" />
                           </button>
                         ) : null}
                         <button
@@ -377,7 +379,7 @@ export default function AdminCommentsPage() {
                           onClick={() => {
                             if (confirm("Delete this comment?")) deleteMutation.mutate(comment.id);
                           }}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#C3272E] hover:bg-muted"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#C3272E] hover:bg-[#C3272E]/10"
                           title="Delete"
                         >
                           <Trash2 className="h-3.5 w-3.5" />

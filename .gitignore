@@ -33,7 +33,6 @@ yarn-error.log*
 # env files — never commit secrets
 .env
 .env.*
-!.env.example
 
 # vercel
 .vercel
@@ -56,5 +55,4 @@ CLAUDE.md
 # Local media uploads (fallback when Cloudinary unavailable)
 /public/uploads/
 
-# Sentry Config File
-.env.sentry-build-plugin
+.pnpm-store/

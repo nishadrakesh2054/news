@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { signIn, getSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Role } from "@prisma/client";
@@ -11,8 +11,25 @@ import { MESSAGES } from "@/constants/messages";
 
 const STAFF_ROLES: Role[] = [Role.ADMIN, Role.EDITOR, Role.AUTHOR];
 
-export default function LoginPage() {
+function safeCallbackPath(raw: string | null): string | null {
+  if (!raw) return null;
+  // Only allow same-origin relative paths (block open redirects).
+  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+  return raw;
+}
+
+async function waitForSession(retries = 5) {
+  for (let i = 0; i < retries; i++) {
+    const session = await getSession();
+    if (session?.user?.id) return session;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return getSession();
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -24,6 +41,8 @@ export default function LoginPage() {
     setError("");
 
     try {
+      const callbackPath = safeCallbackPath(searchParams.get("callbackUrl"));
+
       const res = await signIn("credentials", {
         email,
         password,
@@ -34,13 +53,28 @@ export default function LoginPage() {
         const err = MESSAGES.AUTH.LOGIN_ERROR;
         setError(err);
         toast.error(err);
-      } else {
-        toast.success(MESSAGES.AUTH.LOGIN_SUCCESS);
-        const session = await getSession();
-        const role = session?.user?.role as Role | undefined;
-        router.push(role && STAFF_ROLES.includes(role) ? "/admin" : "/");
-        router.refresh();
+        return;
       }
+
+      toast.success(MESSAGES.AUTH.LOGIN_SUCCESS);
+      const session = await waitForSession();
+      const role = session?.user?.role as Role | undefined;
+      const isStaff = Boolean(role && STAFF_ROLES.includes(role));
+
+      if (!isStaff) {
+        const err = "This account does not have admin access.";
+        setError(err);
+        toast.error(err);
+        return;
+      }
+
+      const nextPath =
+        callbackPath && (callbackPath === "/admin" || callbackPath.startsWith("/admin/"))
+          ? callbackPath
+          : "/admin";
+
+      router.replace(nextPath);
+      router.refresh();
     } catch {
       const err = MESSAGES.SYSTEM.SERVER_ERROR;
       setError(err);
@@ -119,5 +153,13 @@ export default function LoginPage() {
         </Link>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<main className="w-full max-w-md rounded-2xl border bg-card p-8 text-sm text-muted-foreground">Loading…</main>}>
+      <LoginForm />
+    </Suspense>
   );
 }

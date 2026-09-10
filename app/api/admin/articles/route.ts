@@ -4,13 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireStaff } from "@/lib/admin-auth";
 import { validateArticleCreate } from "@/lib/validations/article";
-import { resolvePublishedAt } from "@/lib/article-scheduling";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
 import {
   assertArticleStatusPermission,
   assertBreakingPermission,
   assertFeaturedPermission,
-  assertSchedulePermission,
 } from "@/lib/article-permissions";
 import { writeAuditLog } from "@/lib/audit-log";
 import { invalidatePublicArticles } from "@/lib/cache-invalidation";
@@ -31,7 +29,6 @@ export async function GET(request: NextRequest) {
     const tagId = searchParams.get("tagId") || "";
     const province = searchParams.get("province") || "";
     const district = searchParams.get("district") || "";
-    const scheduled = searchParams.get("scheduled") === "true";
     const languageEdition = searchParams.get("languageEdition") || "";
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "10", 10) || 10));
@@ -80,11 +77,6 @@ export async function GET(request: NextRequest) {
       where.district = { contains: district.trim(), mode: "insensitive" };
     }
 
-    if (scheduled) {
-      where.scheduledAt = { gt: new Date() };
-      where.status = { in: [ArticleStatus.DRAFT, ArticleStatus.PENDING] };
-    }
-
     if (
       languageEdition &&
       Object.values(LanguageEdition).includes(languageEdition as LanguageEdition)
@@ -105,7 +97,6 @@ export async function GET(request: NextRequest) {
       isBreaking: true,
       views: true,
       publishedAt: true,
-      scheduledAt: true,
       province: true,
       district: true,
       createdAt: true,
@@ -144,7 +135,6 @@ export async function GET(request: NextRequest) {
       pending: 0,
       archived: 0,
       breaking: 0,
-      scheduled: 0,
       views: 0,
     };
 
@@ -154,7 +144,7 @@ export async function GET(request: NextRequest) {
           ? { authorId: auth.session!.user.id }
           : {};
 
-      const [statusGroups, viewsAggregate, breakingCount, scheduledCount] = await Promise.all([
+      const [statusGroups, viewsAggregate, breakingCount] = await Promise.all([
         prisma.article.groupBy({
           by: ["status"],
           where: summaryWhere,
@@ -165,13 +155,6 @@ export async function GET(request: NextRequest) {
           _sum: { views: true },
         }),
         prisma.article.count({ where: { ...summaryWhere, isBreaking: true } }),
-        prisma.article.count({
-          where: {
-            ...summaryWhere,
-            scheduledAt: { gt: new Date() },
-            status: { in: [ArticleStatus.DRAFT, ArticleStatus.PENDING] },
-          },
-        }),
       ]);
 
       const statusCount = (value: ArticleStatus) =>
@@ -184,7 +167,6 @@ export async function GET(request: NextRequest) {
         pending: statusCount(ArticleStatus.PENDING),
         archived: statusCount(ArticleStatus.ARCHIVED),
         breaking: breakingCount,
-        scheduled: scheduledCount,
         views: viewsAggregate._sum.views ?? 0,
       };
     }
@@ -223,8 +205,6 @@ export async function POST(request: NextRequest) {
 
     const statusDenied = assertArticleStatusPermission(role, data.status ?? ArticleStatus.DRAFT);
     if (statusDenied) return statusDenied;
-    const scheduleDenied = assertSchedulePermission(role, data.scheduledAt ?? null);
-    if (scheduleDenied) return scheduleDenied;
     const breakingDenied = assertBreakingPermission(role, Boolean(data.isBreaking));
     if (breakingDenied) return breakingDenied;
     const featuredDenied = assertFeaturedPermission(role, Boolean(data.isFeatured));
@@ -248,7 +228,7 @@ export async function POST(request: NextRequest) {
     }
 
     const articleStatus = data.status ?? ArticleStatus.DRAFT;
-    const publishedAt = resolvePublishedAt(articleStatus, data.scheduledAt ?? null, null);
+    const publishedAt = articleStatus === ArticleStatus.PUBLISHED ? new Date() : null;
 
     const article = await prisma.article.create({
       data: {
@@ -277,7 +257,6 @@ export async function POST(request: NextRequest) {
         ogImage: data.ogImage ?? null,
         province: data.province ?? null,
         district: data.district ?? null,
-        scheduledAt: data.scheduledAt ?? null,
         publishedAt,
         ...(data.tagIds?.length
           ? { tags: { connect: data.tagIds.map((id) => ({ id })) } }

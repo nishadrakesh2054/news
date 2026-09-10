@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, ExternalLink, Pencil, Save } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, Pencil, Save, Trash2 } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { ArticleSearchPicker } from "@/components/admin/ArticleSearchPicker";
 import { AdminStatsStrip } from "@/components/admin/content";
 import {
   adminBadgeMuted,
-  adminBtnGhost,
   adminBtnPrimary,
   adminBtnSecondary,
   adminPanel,
@@ -27,7 +26,6 @@ type FeaturedArticle = {
   slug: string;
   featuredOrder: number | null;
   category: { name: string };
-  author: { name: string };
 };
 
 export default function AdminFeaturedPage() {
@@ -104,6 +102,8 @@ export default function AdminFeaturedPage() {
     reorderMutation.mutate(reordered.map((article) => article.id));
   };
 
+  const leadTitle = data[0] ? data[0].titleNp || data[0].title : null;
+
   return (
     <AdminPageShell
       title="Featured news"
@@ -119,7 +119,11 @@ export default function AdminFeaturedPage() {
       <AdminStatsStrip
         stats={[
           { label: "Featured stories", value: data.length },
-          { label: "Lead slot", value: data[0]?.titleNp || data[0]?.title || "—" },
+          {
+            label: "Lead slot",
+            value: leadTitle ? "Filled" : "Empty",
+            hint: leadTitle || "Add a story to fill the homepage lead",
+          },
           { label: "With order", value: data.filter((a) => a.featuredOrder != null).length },
           { label: "Status", value: data.length > 0 ? "Active" : "Empty" },
         ]}
@@ -167,26 +171,25 @@ export default function AdminFeaturedPage() {
               <table className={adminTable}>
                 <thead className={adminTableHead}>
                   <tr>
-                    <th className={adminTableHeadCell}>Order</th>
+                    <th className={`${adminTableHeadCell} w-28`}>Order</th>
                     <th className={adminTableHeadCell}>Title</th>
-                    <th className={adminTableHeadCell}>Category</th>
-                    <th className={adminTableHeadCell}>Author</th>
-                    <th className={`${adminTableHeadCell} text-right`}>Actions</th>
+                    <th className={`${adminTableHeadCell} w-36`}>Category</th>
+                    <th className={`${adminTableHeadCell} w-32 text-right`}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.map((article, index) => (
                     <tr key={article.id} className={adminTableRow}>
                       <td className={adminTableCell}>
-                        <div className="flex items-center gap-1">
-                          <span className="font-mono text-xs text-muted-foreground">
+                        <div className="flex items-center gap-0.5">
+                          <span className="w-5 font-mono text-xs tabular-nums text-muted-foreground">
                             {article.featuredOrder ?? index + 1}
                           </span>
                           <button
                             type="button"
                             disabled={index === 0 || reorderMutation.isPending}
                             onClick={() => moveItem(index, -1)}
-                            className={adminBtnGhost}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#0C4EA0] hover:bg-[#0C4EA0]/10 disabled:opacity-30"
                             title="Move up"
                           >
                             <ChevronUp className="h-3.5 w-3.5" />
@@ -195,7 +198,7 @@ export default function AdminFeaturedPage() {
                             type="button"
                             disabled={index === data.length - 1 || reorderMutation.isPending}
                             onClick={() => moveItem(index, 1)}
-                            className={adminBtnGhost}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#0C4EA0] hover:bg-[#0C4EA0]/10 disabled:opacity-30"
                             title="Move down"
                           >
                             <ChevronDown className="h-3.5 w-3.5" />
@@ -203,33 +206,34 @@ export default function AdminFeaturedPage() {
                         </div>
                       </td>
                       <td className={adminTableCell}>
-                        <p className="max-w-md truncate font-medium text-foreground">
+                        <p className="max-w-xl break-words text-xs font-medium leading-[1.55] text-foreground line-clamp-2">
                           {article.titleNp || article.title}
                         </p>
                         {index === 0 ? (
-                          <span className="mt-0.5 inline-flex rounded-sm border border-[#0C4EA0]/30 bg-[#0C4EA0]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#0C4EA0]">
+                          <span className="mt-1 inline-flex rounded-sm border border-[#0C4EA0]/30 bg-[#0C4EA0]/10 px-1.5 py-0.5 text-[10px] font-medium leading-[1.55] text-[#0C4EA0]">
                             Lead story
                           </span>
                         ) : null}
                       </td>
                       <td className={adminTableCell}>
-                        <span className={adminBadgeMuted}>{article.category.name}</span>
+                        <span className={`${adminBadgeMuted} max-w-[9rem] break-words leading-[1.55]`}>
+                          {article.category.name}
+                        </span>
                       </td>
-                      <td className={`${adminTableCell} text-muted-foreground`}>{article.author.name}</td>
                       <td className={`${adminTableCell} text-right`}>
-                        <div className="inline-flex items-center">
+                        <div className="inline-flex items-center gap-1">
                           <a
                             href={`/article/${article.slug}`}
                             target="_blank"
                             rel="noreferrer"
-                            className={adminBtnGhost}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#027081] hover:bg-[#027081]/10"
                             title="View"
                           >
                             <ExternalLink className="h-3.5 w-3.5" />
                           </a>
                           <Link
                             href={`/admin/articles/${article.id}/edit`}
-                            className={adminBtnGhost}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#0C4EA0] hover:bg-[#0C4EA0]/10"
                             title="Edit"
                           >
                             <Pencil className="h-3.5 w-3.5" />
@@ -238,9 +242,10 @@ export default function AdminFeaturedPage() {
                             type="button"
                             onClick={() => removeMutation.mutate(article.id)}
                             disabled={removeMutation.isPending}
-                            className="inline-flex h-7 items-center px-2 text-xs font-medium text-[#C3272E] hover:underline"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#C3272E] hover:bg-[#C3272E]/10 disabled:opacity-40"
+                            title="Remove from featured"
                           >
-                            Remove
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </td>

@@ -21,7 +21,6 @@ import {
   Coins,
   BarChart3,
   LineChart,
-  Menu,
   Search,
   ArrowRightLeft,
   Settings,
@@ -249,14 +248,6 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   {
     title: "Website",
     items: [
-      {
-        label: "Menus",
-        href: "/admin/website/menus",
-        icon: Menu,
-        status: "live",
-        api: "/api/admin/website/menus",
-        roles: [Role.ADMIN, Role.EDITOR],
-      },
       {
         label: "SEO",
         href: "/admin/website/seo",

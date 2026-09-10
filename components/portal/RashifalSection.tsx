@@ -11,6 +11,7 @@ import {
   type DetailedRashi,
 } from "@/lib/rashifal";
 import { PORTAL } from "@/constants/portal";
+import { SectionHeader } from "@/components/portal/SectionHeader";
 
 type RashiCard = {
   name: string;
@@ -69,26 +70,11 @@ export function RashifalSection() {
       }}
     >
       <div className={`${PORTAL.container} py-8 sm:py-10`}>
-        <div className="mb-2 flex items-center gap-3">
-          <h2
-            className="shrink-0 text-xl font-extrabold tracking-tight whitespace-nowrap sm:text-2xl"
-            style={{ color: PORTAL.brand }}
-          >
-            {isEnglish ? "Horoscope" : "राशिफल"}
-          </h2>
-          <div
-            className="h-px min-w-4 flex-1"
-            style={{ backgroundColor: PORTAL.accent, opacity: 0.35 }}
-          />
-          <Link
-            href={`/rashifal${langQ}`}
-            className="inline-flex shrink-0 items-center gap-1 text-xs font-bold whitespace-nowrap hover:underline sm:text-sm"
-            style={{ color: PORTAL.brand }}
-          >
-            {isEnglish ? "Details" : "विस्तृत"}
-            <span aria-hidden>↗</span>
-          </Link>
-        </div>
+        <SectionHeader
+          title={isEnglish ? "Horoscope" : "राशिफल"}
+          href={`/rashifal${langQ}`}
+          linkLabel={isEnglish ? "Details" : "विस्तृत"}
+        />
         <p className="mb-5 text-sm font-medium text-gray-600">{dateLabel}</p>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 lg:gap-4">

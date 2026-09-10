@@ -27,7 +27,7 @@ interface TagItem {
   name: string;
   nameNp: string | null;
   slug: string;
-  _count: {
+  _count?: {
     articles: number;
   };
 }
@@ -173,8 +173,8 @@ export default function AdminTagsPage() {
     );
   });
 
-  const totalArticles = tags.reduce((sum, tag) => sum + tag._count.articles, 0);
-  const withArticles = tags.filter((tag) => tag._count.articles > 0).length;
+  const totalArticles = tags.reduce((sum, tag) => sum + (tag._count?.articles ?? 0), 0);
+  const withArticles = tags.filter((tag) => (tag._count?.articles ?? 0) > 0).length;
   const emptyTags = tags.length - withArticles;
 
   return (
@@ -258,7 +258,7 @@ export default function AdminTagsPage() {
                     <td className={`${adminTableCell} text-foreground`}>{tag.nameNp || "—"}</td>
                     <td className={`${adminTableCell} font-mono text-muted-foreground`}>/{tag.slug}</td>
                     <td className={adminTableCell}>
-                      <span className={adminBadgeMuted}>{tag._count.articles}</span>
+                      <span className={adminBadgeMuted}>{tag._count?.articles ?? 0}</span>
                     </td>
                     <td className={`${adminTableCell} text-right`}>
                       <div className="inline-flex items-center">
@@ -272,7 +272,7 @@ export default function AdminTagsPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={tag._count.articles > 0 || deleteMutation.isPending}
+                          disabled={(tag._count?.articles ?? 0) > 0 || deleteMutation.isPending}
                           onClick={() => {
                             if (confirm(`Delete tag "${tag.name}"?`)) {
                               deleteMutation.mutate(tag.id);
@@ -280,7 +280,7 @@ export default function AdminTagsPage() {
                           }}
                           className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#C3272E] hover:bg-muted disabled:opacity-40"
                           title={
-                            tag._count.articles > 0
+                            (tag._count?.articles ?? 0) > 0
                               ? "Cannot delete — tag is in use"
                               : "Delete"
                           }

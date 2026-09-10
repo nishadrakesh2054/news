@@ -34,7 +34,7 @@ function resolveDatabaseUrl(): string {
 function loadEnvFiles() {
   const fs = require("fs") as typeof import("fs");
   const path = require("path") as typeof import("path");
-  for (const name of [".env", ".env.local"]) {
+  for (const name of [".env"]) {
     const file = path.join(process.cwd(), name);
     if (!fs.existsSync(file)) continue;
     for (const line of fs.readFileSync(file, "utf8").split("\n")) {

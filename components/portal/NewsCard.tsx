@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Clock } from "lucide-react";
 import type { LanguageEditionType } from "@/lib/language";
 import {
   resolveArticleExcerpt,
@@ -31,7 +32,7 @@ export type PortalArticleCard = {
 type NewsCardProps = {
   article: PortalArticleCard;
   lang: LanguageEditionType;
-  variant?: "lead" | "stack" | "feature" | "list" | "compact" | "ranked";
+  variant?: "lead" | "stack" | "feature" | "list" | "compact" | "ranked" | "editorial";
   badge?: string;
   rank?: number;
   showExcerpt?: boolean;
@@ -64,12 +65,62 @@ export function NewsCard({
   const image =
     optimizeCloudinaryUrl(
       article.coverImage,
-      variant === "lead" ? "hero" : "card"
+      variant === "lead" || variant === "editorial" ? "hero" : "card"
     ) || article.coverImage;
   const when = formatTimeAgo(
     typeof article.createdAt === "string" ? new Date(article.createdAt) : article.createdAt,
     lang
   );
+
+  /** OnlineKhabar-style: big title → date → image */
+  if (variant === "editorial") {
+    return (
+      <article
+        className={`border-b border-gray-200 py-8 first:pt-2 last:border-b-0 sm:py-10 ${className}`}
+      >
+        <Link href={href} className="group block">
+          <h2
+            className="text-center font-khand-nav font-extrabold tracking-tight text-balance"
+            style={{
+              color: PORTAL.brand,
+              fontSize: "clamp(2rem, 5.2vw, 4.125rem)", // ~32–66px
+              lineHeight: 1.2,
+            }}
+          >
+            {title}
+          </h2>
+
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-gray-500 sm:mt-4 sm:text-[15px]">
+            {showAuthor && article.author?.name ? (
+              <span className="font-medium text-gray-600">{article.author.name}</span>
+            ) : category ? (
+              <span className="font-semibold" style={{ color: PORTAL.accent }}>
+                {category}
+              </span>
+            ) : null}
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+              {when}
+            </span>
+          </div>
+
+          {image ? (
+            <div className="relative mt-5 aspect-[16/9] w-full overflow-hidden bg-gray-200 sm:mt-6">
+              <PortalImage
+                src={image}
+                alt={title}
+                fill
+                priority={priority}
+                quality={80}
+                sizes="(max-width: 1024px) 100vw, 900px"
+                className="object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+              />
+            </div>
+          ) : null}
+        </Link>
+      </article>
+    );
+  }
 
   if (variant === "lead" || variant === "stack") {
     const isLead = variant === "lead";

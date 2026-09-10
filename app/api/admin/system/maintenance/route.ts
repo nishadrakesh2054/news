@@ -7,7 +7,6 @@ const DEFAULT = {
   maintenanceMode: false,
   maintenanceMessage: "Site is under maintenance. Please check back soon.",
   cacheEnabled: true,
-  cronEnabled: true,
 };
 
 export async function GET() {

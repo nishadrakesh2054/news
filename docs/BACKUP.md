@@ -45,5 +45,5 @@ pnpm db:search-indexes
 If `.env` was ever committed to git:
 
 1. Rotate `DATABASE_URL` password in Neon.
-2. Regenerate `NEXTAUTH_SECRET`, `CRON_SECRET`, `RESEND_API_KEY`, Cloudinary keys.
+2. Regenerate `NEXTAUTH_SECRET`, `RESEND_API_KEY`, Cloudinary keys.
 3. Update all values in Vercel/hosting env settings.

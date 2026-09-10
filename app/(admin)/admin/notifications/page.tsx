@@ -10,7 +10,6 @@ import { AdminStatsStrip } from "@/components/admin/content";
 import {
   adminBadgeMuted,
   adminBadgeSuccess,
-  adminBadgeWarning,
   adminBtnGhost,
   adminBtnPrimary,
   adminBtnSecondary,
@@ -36,7 +35,6 @@ interface NotificationItem {
   type: NotificationType;
   status: NotificationStatus;
   linkUrl: string | null;
-  scheduledAt: string | null;
   sendPush: boolean;
   sendEmail: boolean;
   pushDelivered: number;
@@ -54,7 +52,6 @@ const TYPE_LABELS: Record<NotificationType, string> = {
 
 const STATUS_LABELS: Record<NotificationStatus, string> = {
   DRAFT: "Draft",
-  SCHEDULED: "Scheduled",
   SENT: "Sent",
 };
 
@@ -72,7 +69,6 @@ export default function AdminNotificationsPage() {
   const [type, setType] = useState<NotificationType>(NotificationType.SYSTEM);
   const [status, setStatus] = useState<NotificationStatus>(NotificationStatus.DRAFT);
   const [linkUrl, setLinkUrl] = useState("");
-  const [scheduledAt, setScheduledAt] = useState("");
   const [sendPush, setSendPush] = useState(true);
   const [sendEmail, setSendEmail] = useState(false);
 
@@ -110,7 +106,6 @@ export default function AdminNotificationsPage() {
       type: NotificationType;
       status: NotificationStatus;
       linkUrl?: string;
-      scheduledAt?: string;
       sendPush: boolean;
       sendEmail: boolean;
     }) => {
@@ -142,7 +137,6 @@ export default function AdminNotificationsPage() {
         body: string;
         status: NotificationStatus;
         linkUrl?: string;
-        scheduledAt?: string | null;
         sendPush?: boolean;
         sendEmail?: boolean;
       };
@@ -186,7 +180,6 @@ export default function AdminNotificationsPage() {
     setType(NotificationType.SYSTEM);
     setStatus(NotificationStatus.DRAFT);
     setLinkUrl("");
-    setScheduledAt("");
     setSendPush(true);
     setSendEmail(false);
     setIsModalOpen(true);
@@ -200,7 +193,6 @@ export default function AdminNotificationsPage() {
     setType(item.type);
     setStatus(item.status);
     setLinkUrl(item.linkUrl || "");
-    setScheduledAt(item.scheduledAt ? item.scheduledAt.slice(0, 16) : "");
     setSendPush(item.sendPush);
     setSendEmail(item.sendEmail);
     setIsModalOpen(true);
@@ -226,7 +218,6 @@ export default function AdminNotificationsPage() {
           body: body.trim(),
           status,
           linkUrl: linkUrl.trim() || undefined,
-          scheduledAt: scheduledAt || undefined,
           sendPush,
           sendEmail,
         },
@@ -239,7 +230,6 @@ export default function AdminNotificationsPage() {
         type,
         status,
         linkUrl: linkUrl.trim() || undefined,
-        scheduledAt: scheduledAt || undefined,
         sendPush,
         sendEmail,
       });
@@ -262,12 +252,10 @@ export default function AdminNotificationsPage() {
 
   const draftCount = notifications.filter((n) => n.status === NotificationStatus.DRAFT).length;
   const sentCount = notifications.filter((n) => n.status === NotificationStatus.SENT).length;
-  const scheduledCount = notifications.filter((n) => n.status === NotificationStatus.SCHEDULED).length;
   const isFiltered = search.trim() !== "" || typeFilter !== "ALL" || statusFilter !== "ALL";
 
   const statusBadge = (value: NotificationStatus) => {
     if (value === NotificationStatus.SENT) return adminBadgeSuccess;
-    if (value === NotificationStatus.SCHEDULED) return adminBadgeWarning;
     return adminBadgeMuted;
   };
 
@@ -288,7 +276,6 @@ export default function AdminNotificationsPage() {
         stats={[
           { label: "Total", value: notifications.length },
           { label: "Draft", value: draftCount },
-          { label: "Scheduled", value: scheduledCount },
           { label: "Sent", value: sentCount },
         ]}
       />
@@ -313,7 +300,6 @@ export default function AdminNotificationsPage() {
         >
           <option value="ALL">All statuses</option>
           <option value="DRAFT">Draft</option>
-          <option value="SCHEDULED">Scheduled</option>
           <option value="SENT">Sent</option>
         </select>
 
@@ -392,9 +378,7 @@ export default function AdminNotificationsPage() {
                     <td className={`${adminTableCell} font-mono text-[11px] text-muted-foreground`}>
                       {item.status === "SENT"
                         ? `${item.pushDelivered} push / ${item.emailDelivered} email`
-                        : item.scheduledAt
-                          ? new Date(item.scheduledAt).toLocaleString()
-                          : "—"}
+                        : "—"}
                     </td>
                     <td className={`${adminTableCell} text-muted-foreground`}>
                       {new Date(item.createdAt).toLocaleDateString()}
@@ -524,7 +508,6 @@ export default function AdminNotificationsPage() {
                         className={`${adminSelect} w-full`}
                       >
                         <option value="DRAFT">Draft</option>
-                        <option value="SCHEDULED">Scheduled</option>
                         <option value="SENT">Sent</option>
                       </select>
                     </div>
@@ -542,19 +525,6 @@ export default function AdminNotificationsPage() {
                       value={body}
                       onChange={(e) => setBody(e.target.value)}
                       className={`${adminInput} min-h-20 w-full resize-y py-2`}
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label htmlFor="notif-scheduled" className="text-xs font-medium text-foreground">
-                      Schedule send (optional)
-                    </label>
-                    <input
-                      id="notif-scheduled"
-                      type="datetime-local"
-                      value={scheduledAt}
-                      onChange={(e) => setScheduledAt(e.target.value)}
-                      className={adminInput}
                     />
                   </div>
 

@@ -19,15 +19,12 @@ export async function GET(request: NextRequest) {
       ...(status && Object.values(SubscriberStatus).includes(status) ? { status } : {}),
       ...(search
         ? {
-            OR: [
-              { email: { contains: search, mode: "insensitive" as const } },
-              { name: { contains: search, mode: "insensitive" as const } },
-            ],
+            email: { contains: search, mode: "insensitive" as const },
           }
         : {}),
     };
 
-    const [total, subscribers, activeCount, pushCount] = await Promise.all([
+    const [total, subscribers, activeCount, unsubscribedCount] = await Promise.all([
       prisma.newsletterSubscriber.count({ where }),
       prisma.newsletterSubscriber.findMany({
         where,
@@ -37,19 +34,17 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           email: true,
-          name: true,
           status: true,
           createdAt: true,
-          updatedAt: true,
         },
       }),
       prisma.newsletterSubscriber.count({ where: { status: SubscriberStatus.ACTIVE } }),
-      prisma.pushSubscription.count({ where: { isActive: true } }),
+      prisma.newsletterSubscriber.count({ where: { status: SubscriberStatus.UNSUBSCRIBED } }),
     ]);
 
     return apiSuccess({
       subscribers,
-      stats: { total, activeCount, pushCount },
+      stats: { total, activeCount, unsubscribedCount },
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
