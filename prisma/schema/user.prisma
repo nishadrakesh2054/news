@@ -24,7 +24,6 @@ model User {
   comments       Comment[]
   media          Media[]
   auditLogs      AuditLog[]
-  apiKeys        ApiKey[]
   passwordResetTokens PasswordResetToken[]
 }
 

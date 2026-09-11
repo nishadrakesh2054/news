@@ -26,7 +26,7 @@ Required for production:
 | `NEXT_PUBLIC_ENGLISH_SITE_URL` | `https://echomanchnews.vercel.app` (English uses `?lang=en`) |
 | `CLOUDINARY_*` | Media uploads |
 | `RESEND_API_KEY` | Password reset + newsletter emails |
-| `MAIL_FROM_EMAIL` | `info@echomanchs.com` |
+| `MAIL_FROM_EMAIL` | `info@echomanch.com` |
 
 ## Bilingual editions (one CMS / one API)
 
@@ -34,8 +34,8 @@ Point both domains at the same Next.js deployment:
 
 | Host | Edition |
 |------|---------|
-| `echomanchs.com` | Nepali (`NEPALI_ONLY` + `BOTH`) |
-| `en.echomanchs.com` | English (`ENGLISH_ONLY` + `BOTH`) |
+| `echomanch.com` | Nepali (`NEPALI_ONLY` + `BOTH`) |
+| `en.echomanch.com` | English (`ENGLISH_ONLY` + `BOTH`) |
 
 - CMS: set each article’s **Language edition** (Nepali only / English only / Both).
 - Public APIs honor `Host` and optional `?lang=en|ne` (e.g. `GET /api/articles?lang=en`).

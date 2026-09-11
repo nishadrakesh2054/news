@@ -37,10 +37,10 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" },
+      { protocol: "https", hostname: "echomanch.com", pathname: "/**" },
+      { protocol: "https", hostname: "en.echomanch.com", pathname: "/**" },
       { protocol: "https", hostname: "echomanchnews.com", pathname: "/**" },
       { protocol: "https", hostname: "en.echomanchnews.com", pathname: "/**" },
-      { protocol: "https", hostname: "echomanchs.com", pathname: "/**" },
-      { protocol: "https", hostname: "en.echomanchs.com", pathname: "/**" },
       { protocol: "https", hostname: "*.vercel.app", pathname: "/**" },
     ],
   },

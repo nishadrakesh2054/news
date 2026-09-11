@@ -14,10 +14,10 @@ function isOptimizableSrc(src: string): boolean {
     return (
       host === "res.cloudinary.com" ||
       host.endsWith(".cloudinary.com") ||
+      host === "echomanch.com" ||
+      host === "en.echomanch.com" ||
       host === "echomanchnews.com" ||
       host === "en.echomanchnews.com" ||
-      host === "echomanchs.com" ||
-      host === "en.echomanchs.com" ||
       host.endsWith(".vercel.app")
     );
   } catch {

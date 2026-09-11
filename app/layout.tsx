@@ -3,7 +3,11 @@ import { Khand, Noto_Sans_Devanagari } from "next/font/google";
 import { headers } from "next/headers";
 import { SITE_CONFIG } from "@/constants/site";
 import { htmlLang, resolveLanguageEdition } from "@/lib/language";
-import { SITE_LANG_HEADER, getAdminSeoMetadataOverrides } from "@/lib/seo";
+import {
+  SITE_LANG_HEADER,
+  getAdminSeoMetadataOverrides,
+  requestHost,
+} from "@/lib/seo";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -86,13 +90,20 @@ const baseMetadata: Metadata = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const overrides = await getAdminSeoMetadataOverrides();
+  const headerList = await headers();
+  const lang = resolveLanguageEdition(
+    headerList.get(SITE_LANG_HEADER),
+    requestHost(headerList)
+  );
+  const overrides = await getAdminSeoMetadataOverrides(lang);
+
   return {
     ...baseMetadata,
     ...overrides,
     openGraph: {
       ...baseMetadata.openGraph,
       ...overrides.openGraph,
+      url: lang === "en" ? SITE_CONFIG.englishUrl : SITE_CONFIG.url,
     },
     twitter: {
       ...(baseMetadata.twitter as object),
@@ -100,10 +111,11 @@ export async function generateMetadata(): Promise<Metadata> {
     } as Metadata["twitter"],
     alternates: {
       ...baseMetadata.alternates,
-      ...overrides.alternates,
+      canonical: lang === "en" ? SITE_CONFIG.englishUrl : SITE_CONFIG.url,
       languages: {
-        ...(baseMetadata.alternates?.languages || {}),
-        ...(overrides.alternates?.languages || {}),
+        "ne-NP": SITE_CONFIG.url,
+        en: SITE_CONFIG.englishUrl,
+        "x-default": SITE_CONFIG.url,
       },
     },
     robots: overrides.robots ?? baseMetadata.robots,

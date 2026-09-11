@@ -8,8 +8,6 @@ const NAV_ITEMS = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/system/roles", label: "Roles" },
   { href: "/admin/system/audit-logs", label: "Audit logs" },
-  { href: "/admin/system/api", label: "API keys" },
-  { href: "/admin/system/maintenance", label: "Maintenance" },
 ] as const;
 
 export function SystemSectionNav() {

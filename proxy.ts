@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Role } from "@prisma/client";
 import { resolveLanguageFromRequest } from "@/lib/language";
 import { SITE_LANG_HEADER } from "@/lib/seo";
+import { resolvePublicRedirect } from "@/lib/redirects";
 
 const STAFF_ROLES = new Set<Role>([
   Role.SUPER_ADMIN,
@@ -26,12 +27,44 @@ function nextWithLang(request: NextRequest) {
   });
 }
 
+function buildRedirectUrl(request: NextRequest, destination: string): URL {
+  if (/^https?:\/\//i.test(destination)) {
+    return new URL(destination);
+  }
+  const target = new URL(destination, request.url);
+  // Preserve original query params when target has none
+  if (!target.search && request.nextUrl.search) {
+    target.search = request.nextUrl.search;
+  }
+  return target;
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAdminPath =
     pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
 
+  // Public CMS redirects (301) — skip admin/API
   if (!isAdminPath) {
+    try {
+      const destination = await resolvePublicRedirect(pathname);
+      if (destination) {
+        const target = buildRedirectUrl(request, destination);
+        // Avoid redirecting to the exact same URL
+        if (
+          target.pathname !== pathname ||
+          target.origin !== request.nextUrl.origin ||
+          target.search !== request.nextUrl.search
+        ) {
+          return withLangHeader(
+            request,
+            NextResponse.redirect(target, 301)
+          );
+        }
+      }
+    } catch {
+      // Fail open — never block the site if redirect lookup fails
+    }
     return nextWithLang(request);
   }
 

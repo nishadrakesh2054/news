@@ -6,6 +6,20 @@ import { absoluteUrl, getEnglishSiteUrl, getSiteUrl } from "@/lib/site-url";
 /** Set by middleware so root layout can resolve `?lang=` without searchParams. */
 export const SITE_LANG_HEADER = "x-site-lang";
 
+/** Keys editable on Admin → Website → SEO */
+export const ADMIN_SEO_KEYS = [
+  "seo_default_title_ne",
+  "seo_default_title_en",
+  "seo_default_description_ne",
+  "seo_default_description_en",
+  "seo_keywords_ne",
+  "seo_keywords_en",
+  "seo_og_image",
+  "seo_og_image_en",
+  "seo_robots",
+  "seo_twitter_handle",
+] as const;
+
 export function pageTitle(title: string, lang: LanguageEditionType): string {
   const brand = lang === "en" ? SITE_CONFIG.name : SITE_CONFIG.nameNp;
   const trimmed = title.trim();
@@ -18,6 +32,10 @@ export function defaultDescription(lang: LanguageEditionType): string {
   return lang === "en"
     ? SITE_CONFIG.description
     : "इको माञ्च — नेपालका ताजा समाचार, राजनीति, अर्थतन्त्र, खेलकुद र विचार।";
+}
+
+export function defaultSiteTitle(lang: LanguageEditionType): string {
+  return lang === "en" ? SITE_CONFIG.title : `${SITE_CONFIG.nameNp} | नेपाली समाचार`;
 }
 
 export function ogLocale(lang: LanguageEditionType): string {
@@ -227,15 +245,6 @@ export function robotsSitemapList(): string[] {
   return list;
 }
 
-const ADMIN_SEO_KEYS = [
-  "seo_default_title",
-  "seo_default_description",
-  "seo_canonical_url",
-  "seo_og_image",
-  "seo_robots",
-  "seo_twitter_handle",
-] as const;
-
 function parseRobotsDirective(value: string): Metadata["robots"] | undefined {
   const normalized = value.replace(/\s+/g, "").toLowerCase();
   if (!normalized) return undefined;
@@ -255,66 +264,135 @@ function parseRobotsDirective(value: string): Metadata["robots"] | undefined {
   };
 }
 
+export type SiteSeoDefaults = {
+  title: string;
+  description: string;
+  keywords?: string;
+  ogImage?: string;
+  twitterHandle?: string;
+  robots?: Metadata["robots"];
+};
+
 /**
- * Merge non-empty admin Website → SEO settings into root metadata.
- * Empty values leave SITE_CONFIG defaults intact.
+ * Resolve bilingual site SEO defaults from admin settings + hardcoded fallbacks.
  */
-export async function getAdminSeoMetadataOverrides(): Promise<Partial<Metadata>> {
+export async function resolveSiteSeoDefaults(
+  lang: LanguageEditionType
+): Promise<SiteSeoDefaults> {
   try {
     const { getSettings } = await import("@/lib/settings-store");
-    const data = await getSettings([...ADMIN_SEO_KEYS]);
-    const overrides: Partial<Metadata> = {};
+    const data = await getSettings([
+      "seo_default_title_ne",
+      "seo_default_title_en",
+      "seo_default_description_ne",
+      "seo_default_description_en",
+      "seo_keywords_ne",
+      "seo_keywords_en",
+      "seo_og_image",
+      "seo_og_image_en",
+      "seo_robots",
+      "seo_twitter_handle",
+      "seo_default_title",
+      "seo_default_description",
+    ]);
 
-    const title = data.seo_default_title?.trim();
-    const description = data.seo_default_description?.trim();
-    const canonical = data.seo_canonical_url?.trim();
-    const ogImage = data.seo_og_image?.trim();
-    const twitter = data.seo_twitter_handle?.trim();
+    const title =
+      (lang === "en"
+        ? data.seo_default_title_en?.trim() || data.seo_default_title?.trim()
+        : data.seo_default_title_ne?.trim() || data.seo_default_title?.trim()) ||
+      defaultSiteTitle(lang);
+
+    const description =
+      (lang === "en"
+        ? data.seo_default_description_en?.trim() ||
+          data.seo_default_description?.trim()
+        : data.seo_default_description_ne?.trim() ||
+          data.seo_default_description?.trim()) || defaultDescription(lang);
+
+    const keywords =
+      (lang === "en"
+        ? data.seo_keywords_en?.trim()
+        : data.seo_keywords_ne?.trim()) || undefined;
+
+    const ogImage =
+      (lang === "en"
+        ? data.seo_og_image_en?.trim() || data.seo_og_image?.trim()
+        : data.seo_og_image?.trim() || data.seo_og_image_en?.trim()) || undefined;
+
+    const twitterHandle = data.seo_twitter_handle?.trim() || undefined;
     const robotsRaw = data.seo_robots?.trim();
+    const robots =
+      robotsRaw && robotsRaw !== "index,follow"
+        ? parseRobotsDirective(robotsRaw)
+        : undefined;
 
-    if (title) {
-      overrides.title = { default: title, template: "%s" };
-      overrides.openGraph = { ...(overrides.openGraph || {}), title };
-      overrides.twitter = { ...(overrides.twitter as object), title } as Metadata["twitter"];
+    return { title, description, keywords, ogImage, twitterHandle, robots };
+  } catch {
+    return {
+      title: defaultSiteTitle(lang),
+      description: defaultDescription(lang),
+    };
+  }
+}
+
+/**
+ * Merge admin Website → SEO settings into root metadata for the active edition.
+ * Does not override per-page editionAlternates / hreflang (those stay automatic).
+ */
+export async function getAdminSeoMetadataOverrides(
+  lang: LanguageEditionType = "ne"
+): Promise<Partial<Metadata>> {
+  try {
+    const defaults = await resolveSiteSeoDefaults(lang);
+    const overrides: Partial<Metadata> = {};
+    const brand = siteNameForLang(lang);
+
+    overrides.title = { default: defaults.title, template: "%s" };
+    overrides.description = defaults.description;
+    overrides.openGraph = {
+      title: defaults.title,
+      description: defaults.description,
+      siteName: brand,
+      locale: ogLocale(lang),
+      alternateLocale: lang === "en" ? ["ne_NP"] : ["en_US"],
+    };
+    overrides.twitter = {
+      card: "summary_large_image",
+      title: defaults.title,
+      description: defaults.description,
+    };
+
+    if (defaults.keywords) {
+      overrides.keywords = defaults.keywords.split(",").map((k) => k.trim()).filter(Boolean);
     }
-    if (description) {
-      overrides.description = description;
-      overrides.openGraph = { ...(overrides.openGraph || {}), description };
-      overrides.twitter = {
-        ...(overrides.twitter as object),
-        description,
-      } as Metadata["twitter"];
-    }
-    if (canonical) {
-      overrides.alternates = {
-        ...(overrides.alternates || {}),
-        canonical,
-      };
-      overrides.openGraph = { ...(overrides.openGraph || {}), url: canonical };
-    }
-    if (ogImage) {
+
+    if (defaults.ogImage) {
       overrides.openGraph = {
-        ...(overrides.openGraph || {}),
-        images: [{ url: ogImage, width: 1200, height: 630, alt: SITE_CONFIG.name }],
+        ...overrides.openGraph,
+        images: [{ url: defaults.ogImage, width: 1200, height: 630, alt: brand }],
       };
       overrides.twitter = {
         ...(overrides.twitter as object),
-        images: [ogImage],
+        images: [defaults.ogImage],
       } as Metadata["twitter"];
     }
-    if (twitter) {
-      const handle = twitter.startsWith("@") ? twitter : `@${twitter}`;
+
+    if (defaults.twitterHandle) {
+      const handle = defaults.twitterHandle.startsWith("@")
+        ? defaults.twitterHandle
+        : `@${defaults.twitterHandle}`;
       overrides.twitter = {
         ...(overrides.twitter as object),
         site: handle,
         creator: handle,
       } as Metadata["twitter"];
     }
-    if (robotsRaw && robotsRaw !== "index,follow") {
-      const robots = parseRobotsDirective(robotsRaw);
-      if (robots) overrides.robots = robots;
+
+    if (defaults.robots) {
+      overrides.robots = defaults.robots;
     }
 
+    // Keep dual-edition alternates from SITE_CONFIG — do not apply a single canonical override.
     return overrides;
   } catch {
     return {};

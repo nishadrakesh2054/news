@@ -154,7 +154,7 @@ export default function AdminWebsiteRedirectsPage() {
   return (
     <AdminPageShell
       title="Redirects"
-      description="301/302 URL redirects"
+      description="Active rules issue a 301 redirect on the public site"
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
       actions={
@@ -178,6 +178,11 @@ export default function AdminWebsiteRedirectsPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3 p-3">
+            <p className="text-[11px] text-muted-foreground">
+              Visitors hitting the from path are sent to the to path with HTTP 301. Example:{" "}
+              <span className="font-mono">/old-slug</span> →{" "}
+              <span className="font-mono">/article/new-slug</span>
+            </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1">
                 <label htmlFor="redirect-from" className="text-xs font-medium text-foreground">
@@ -195,13 +200,13 @@ export default function AdminWebsiteRedirectsPage() {
               </div>
               <div className="space-y-1">
                 <label htmlFor="redirect-to" className="text-xs font-medium text-foreground">
-                  To path <span className="text-[#C3272E]">*</span>
+                  To path or URL <span className="text-[#C3272E]">*</span>
                 </label>
                 <input
                   id="redirect-to"
                   type="text"
                   required
-                  placeholder="/new-article"
+                  placeholder="/article/new-slug or https://…"
                   value={toPath}
                   onChange={(e) => setToPath(e.target.value)}
                   className={`${adminInput} w-full font-mono`}

@@ -6,11 +6,11 @@ import {
 } from "@/lib/language";
 import { SITE_CONFIG } from "@/constants/site";
 import {
-  defaultDescription,
   editionAlternates,
   organizationJsonLd,
   pageTitle,
   requestHost,
+  resolveSiteSeoDefaults,
   websiteJsonLd,
 } from "@/lib/seo";
 import { TrendingHashtags } from "@/components/portal/TrendingHashtags";
@@ -47,19 +47,32 @@ export async function generateMetadata({ searchParams }: WebHomeProps): Promise<
   const headerList = await headers();
   const lang = resolveLanguageEdition(params.lang, requestHost(headerList));
   const isEnglish = lang === "en";
-  const description = defaultDescription(lang);
+  const seo = await resolveSiteSeoDefaults(lang);
+  const title = pageTitle(isEnglish ? "Home" : "गृहपृष्ठ", lang);
 
   return {
-    title: pageTitle(isEnglish ? "Home" : "गृहपृष्ठ", lang),
-    description,
+    title,
+    description: seo.description,
+    ...(seo.keywords
+      ? { keywords: seo.keywords.split(",").map((k) => k.trim()).filter(Boolean) }
+      : {}),
     alternates: editionAlternates("/", lang),
     openGraph: {
-      title: pageTitle(isEnglish ? "Home" : "गृहपृष्ठ", lang),
-      description,
+      title,
+      description: seo.description,
       url: editionAlternates("/", lang).canonical as string,
       siteName: SITE_CONFIG.name,
       locale: isEnglish ? "en_US" : "ne_NP",
       type: "website",
+      ...(seo.ogImage
+        ? { images: [{ url: seo.ogImage, width: 1200, height: 630 }] }
+        : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: seo.description,
+      ...(seo.ogImage ? { images: [seo.ogImage] } : {}),
     },
   };
 }

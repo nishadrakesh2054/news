@@ -2,32 +2,13 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
+import { resolveDatabaseUrl } from "@/lib/db-url";
+
+export { resolveDatabaseUrl };
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
-
-/** Neon pooler + `channel_binding=require` often fails on serverless TCP. */
-export function resolveDatabaseUrl(): string {
-  let raw = process.env.DATABASE_URL?.trim() || "";
-  if (
-    (raw.startsWith('"') && raw.endsWith('"')) ||
-    (raw.startsWith("'") && raw.endsWith("'"))
-  ) {
-    raw = raw.slice(1, -1).trim();
-  }
-  if (!raw) return "";
-  try {
-    const url = new URL(raw);
-    url.searchParams.delete("channel_binding");
-    if (!url.searchParams.has("sslmode")) {
-      url.searchParams.set("sslmode", "require");
-    }
-    return url.toString();
-  } catch {
-    return raw;
-  }
-}
 
 function isNeonUrl(connectionString: string): boolean {
   return (

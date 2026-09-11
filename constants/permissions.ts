@@ -83,13 +83,9 @@ export const PERMISSION_CATALOG = [
   "redirects.read",
   "redirects.update",
   "redirects.delete",
-  "settings.read",
-  "settings.update",
   // System
   "roles.manage",
   "audit.read",
-  "api_keys.manage",
-  "maintenance.manage",
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_CATALOG)[number];
@@ -292,21 +288,11 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     ],
   },
   {
-    id: "settings",
-    label: "Settings",
-    actions: [
-      { key: "settings.read", label: "Read" },
-      { key: "settings.update", label: "Update" },
-    ],
-  },
-  {
     id: "system",
     label: "System",
     actions: [
       { key: "roles.manage", label: "Roles" },
       { key: "audit.read", label: "Audit" },
-      { key: "api_keys.manage", label: "API keys" },
-      { key: "maintenance.manage", label: "Maintenance" },
     ],
   },
 ];
@@ -382,7 +368,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<
     "redirects.read",
     "redirects.update",
     "redirects.delete",
-    "settings.read",
   ],
   [Role.AUTHOR]: [
     "articles.create",
