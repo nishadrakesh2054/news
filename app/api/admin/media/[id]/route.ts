@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireStaff, requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import cloudinary from "@/lib/cloudinary";
 
 export async function PATCH(
@@ -10,7 +10,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("media.update");
     if (auth.error) return auth.error;
     const session = auth.session!;
 
@@ -47,7 +47,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("media.delete");
     if (auth.error) return auth.error;
 
     const { id } = await params;

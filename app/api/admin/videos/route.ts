@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { invalidatePublicMedia } from "@/lib/cache-invalidation";
 import { parseYoutubeVideoId, youtubeEmbedUrl, youtubeThumbnailUrl } from "@/lib/youtube";
 import cloudinary from "@/lib/cloudinary";
@@ -96,7 +96,7 @@ async function uploadVideoFile(
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("videos.read");
     if (auth.error) return auth.error;
 
     const { searchParams } = new URL(request.url);
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("videos.create");
     if (auth.error) return auth.error;
 
     const contentType = request.headers.get("content-type") || "";

@@ -2,11 +2,11 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SubscriberStatus } from "@prisma/client";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("newsletter.read");
     if (auth.error) return auth.error;
 
     const { searchParams } = new URL(request.url);

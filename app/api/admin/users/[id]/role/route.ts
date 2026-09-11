@@ -1,20 +1,21 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
+import { requirePermission } from "@/lib/admin-auth";
+import { isSuperAdmin } from "@/lib/permissions";
+import { ROLE_LABELS } from "@/constants/permissions";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const auth = await requirePermission("users.update");
+    if (auth.error) return auth.error;
 
-    if (!session || session.user.role !== Role.ADMIN) {
-      return apiError("Unauthorized: Only Admins can update user roles", 403);
-    }
+    const actor = auth.session!.user;
+    const actorIsSuper = isSuperAdmin(actor.role);
 
     const { id } = await params;
     const { role } = await request.json();
@@ -23,22 +24,43 @@ export async function PATCH(
       return apiError("Invalid role provided", 400);
     }
 
-    const targetUser = await prisma.user.findUnique({
-      where: { id },
-    });
+    if ((role === Role.SUPER_ADMIN || role === Role.ADMIN) && !actorIsSuper) {
+      return apiError("Only Super Admin can grant Admin or Super Admin", 403);
+    }
 
+    const targetUser = await prisma.user.findUnique({ where: { id } });
     if (!targetUser) {
       return apiError("User not found", 404);
     }
 
-    // Safety check: Prevent demoting self if sole admin in system
-    if (targetUser.id === session.user.id && role !== Role.ADMIN) {
-      const adminCount = await prisma.user.count({
-        where: { role: Role.ADMIN },
-      });
+    if (targetUser.role === Role.SUPER_ADMIN && !actorIsSuper) {
+      return apiError("Only Super Admin can change a Super Admin", 403);
+    }
 
-      if (adminCount <= 1) {
-        return apiError("Cannot demote the only remaining Admin account", 400);
+    if (targetUser.role === Role.ADMIN && role !== Role.ADMIN && !actorIsSuper) {
+      return apiError("Only Super Admin can change an Admin’s role", 403);
+    }
+
+    // Protect last Super Admin
+    if (targetUser.role === Role.SUPER_ADMIN && role !== Role.SUPER_ADMIN) {
+      const superCount = await prisma.user.count({ where: { role: Role.SUPER_ADMIN } });
+      if (superCount <= 1) {
+        return apiError("Cannot demote the only remaining Super Admin", 400);
+      }
+    }
+
+    // Protect last Admin-or-above if demoting self from admin tier (legacy safety)
+    if (
+      targetUser.id === actor.id &&
+      (targetUser.role === Role.ADMIN || targetUser.role === Role.SUPER_ADMIN) &&
+      role !== Role.ADMIN &&
+      role !== Role.SUPER_ADMIN
+    ) {
+      const privileged = await prisma.user.count({
+        where: { role: { in: [Role.SUPER_ADMIN, Role.ADMIN] } },
+      });
+      if (privileged <= 1) {
+        return apiError("Cannot demote the only remaining privileged admin account", 400);
       }
     }
 
@@ -57,7 +79,10 @@ export async function PATCH(
       },
     });
 
-    return apiSuccess(updatedUser, `User role updated to ${role}`);
+    return apiSuccess(
+      updatedUser,
+      `User role updated to ${ROLE_LABELS[role as Role] ?? role}`
+    );
   } catch (error) {
     return handleServerError(error, "Failed to update user role");
   }

@@ -1,15 +1,14 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { signIn, signOut, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Role } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { MESSAGES } from "@/constants/messages";
-
-const STAFF_ROLES: Role[] = [Role.ADMIN, Role.EDITOR, Role.AUTHOR];
+import { STAFF_ROLES } from "@/constants/permissions";
 
 function safeCallbackPath(raw: string | null): string | null {
   if (!raw) return null;
@@ -56,15 +55,24 @@ function LoginForm() {
         return;
       }
 
-      toast.success(MESSAGES.AUTH.LOGIN_SUCCESS);
       const session = await waitForSession();
       const role = session?.user?.role as Role | undefined;
       const isStaff = Boolean(role && STAFF_ROLES.includes(role));
 
       if (!isStaff) {
+        await signOut({ redirect: false });
         const err = "This account does not have admin access.";
         setError(err);
         toast.error(err);
+        return;
+      }
+
+      toast.success(MESSAGES.AUTH.LOGIN_SUCCESS);
+
+      if (session?.user?.mustChangePassword) {
+        toast.message("Please set your own password and update your profile.");
+        router.replace("/admin/account/profile?forcePassword=1");
+        router.refresh();
         return;
       }
 

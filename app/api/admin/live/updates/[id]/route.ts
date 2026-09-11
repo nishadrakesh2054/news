@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireStaff } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { sanitizeLiveUpdateHtml } from "@/lib/sanitize-html";
 import { invalidatePublicArticles } from "@/lib/cache-invalidation";
 
@@ -26,7 +26,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("live.update");
     if (auth.error) return auth.error;
     const session = auth.session!;
 
@@ -66,7 +66,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("live.delete");
     if (auth.error) return auth.error;
     const session = auth.session!;
 

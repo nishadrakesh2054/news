@@ -1,10 +1,8 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
 import cloudinary from "@/lib/cloudinary";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
+import { requirePermission } from "@/lib/admin-auth";
 import { invalidatePublicMedia } from "@/lib/cache-invalidation";
 
 const MAX_PDF_SIZE = 20 * 1024 * 1024;
@@ -27,11 +25,8 @@ async function uploadBuffer(
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !([Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {
-      return apiError("Unauthorized: Only Admin/Editor can upload EPapers", 403);
-    }
+    const auth = await requirePermission("epaper.create");
+    if (auth.error) return auth.error;
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;

@@ -1,14 +1,14 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireStaff, requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { slugify } from "@/lib/slug";
 import { writeAuditLog } from "@/lib/audit-log";
 import { invalidatePublicTags } from "@/lib/cache-invalidation";
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("tags.read");
     if (auth.error) return auth.error;
 
     const { searchParams } = new URL(request.url);
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("tags.create");
     if (auth.error) return auth.error;
 
     const { name, nameNp, slug } = await request.json();

@@ -1,20 +1,16 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Role, CommentStatus } from "@prisma/client";
+import { CommentStatus } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
+import { requirePermission } from "@/lib/admin-auth";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !([Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {
-      return apiError("Unauthorized: Only Admin/Editor can moderate comments", 403);
-    }
+    const auth = await requirePermission("comments.moderate");
+    if (auth.error) return auth.error;
 
     const { id } = await params;
     const body = await request.json();
@@ -40,11 +36,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !([Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {
-      return apiError("Unauthorized: Only Admin/Editor can delete comments", 403);
-    }
+    const auth = await requirePermission("comments.moderate");
+    if (auth.error) return auth.error;
 
     const { id } = await params;
 

@@ -2,11 +2,11 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { CommentStatus } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 
 export async function PATCH(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("comments.moderate");
     if (auth.error) return auth.error;
 
     const { ids, status } = await request.json();
@@ -32,7 +32,7 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("comments.moderate");
     if (auth.error) return auth.error;
 
     const { ids } = await request.json();

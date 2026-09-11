@@ -35,7 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/login");
   }
 
-  const allowedRoles: Role[] = [Role.ADMIN, Role.EDITOR, Role.AUTHOR];
+  const allowedRoles: Role[] = [Role.SUPER_ADMIN, Role.ADMIN, Role.EDITOR, Role.AUTHOR];
   if (!allowedRoles.includes(session.user.role)) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-8 text-center space-y-4 bg-background">

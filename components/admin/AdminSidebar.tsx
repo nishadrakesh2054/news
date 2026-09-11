@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useQuery } from "@tanstack/react-query";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import {
   ADMIN_NAV_SECTIONS,
@@ -51,7 +52,22 @@ function SidebarToggle({
 export function AdminSidebar({ collapsed = false, onToggle }: AdminSidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const navSections = filterNavSectionsForRole(ADMIN_NAV_SECTIONS, session?.user?.role);
+  const { data: permData } = useQuery({
+    queryKey: ["admin-me-permissions"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/me/permissions");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to load permissions");
+      return json.data as { permissions: string[] };
+    },
+    staleTime: 30_000,
+  });
+
+  const navSections = filterNavSectionsForRole(
+    ADMIN_NAV_SECTIONS,
+    session?.user?.role,
+    permData?.permissions
+  );
   const allNavHrefs = navSections.flatMap((section) => section.items.map((item) => item.href));
 
   return (

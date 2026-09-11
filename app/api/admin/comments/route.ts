@@ -1,21 +1,13 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Role, CommentStatus, Prisma } from "@prisma/client";
-import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { CommentStatus, Prisma } from "@prisma/client";
+import { apiSuccess, handleServerError } from "@/lib/api-response";
+import { requirePermission } from "@/lib/admin-auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("comments.read");
     if (auth.error) return auth.error;
-
-    const session = await getServerSession(authOptions);
-
-    if (!session || !([Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {
-      return apiError("Unauthorized: Only Admin/Editor can moderate comments", 403);
-    }
 
     const { searchParams } = new URL(request.url);
     const statusParam = searchParams.get("status");

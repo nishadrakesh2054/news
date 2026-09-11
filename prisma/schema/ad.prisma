@@ -4,6 +4,8 @@ enum AdSlot {
   SIDEBAR_BOTTOM
   IN_ARTICLE
   STICKY_FOOTER
+  /** Full-width banner under homepage spotlight heading (~970×90). */
+  HOME_SPOTLIGHT
 }
 
 model Ad {

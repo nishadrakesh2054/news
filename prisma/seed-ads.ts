@@ -52,6 +52,15 @@ async function main() {
       clicks: 1120,
     },
     {
+      title: "Home spotlight sample",
+      slot: AdSlot.HOME_SPOTLIGHT,
+      imageUrl: "/homead.gif",
+      targetUrl: "#",
+      isActive: true,
+      impressions: 0,
+      clicks: 0,
+    },
+    {
       title: "Google AdSense Responsive Auto Ads Unit",
       slot: AdSlot.IN_ARTICLE,
       scriptCode: `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>\n<!-- Article Inline Ad -->\n<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1234567890123456" data-ad-slot="9876543210" data-ad-format="auto"></ins>\n<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>`,

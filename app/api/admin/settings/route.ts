@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { getSettings, setSettings } from "@/lib/settings-store";
 
 const SITE_KEYS = [
@@ -18,7 +18,7 @@ const SITE_KEYS = [
 
 export async function GET() {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("settings.read");
     if (auth.error) return auth.error;
 
     const data = await getSettings(SITE_KEYS);
@@ -30,7 +30,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("settings.update");
     if (auth.error) return auth.error;
 
     const body = await request.json();

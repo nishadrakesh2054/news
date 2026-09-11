@@ -2,14 +2,14 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { NotificationStatus } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { validateNotificationCreate } from "@/lib/validations/notification";
 import { writeAuditLog } from "@/lib/audit-log";
 import { dispatchNotification } from "@/lib/notification-dispatch";
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("notifications.read");
     if (auth.error) return auth.error;
 
     const { searchParams } = new URL(request.url);
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("notifications.create");
     if (auth.error) return auth.error;
 
     const body = await request.json();

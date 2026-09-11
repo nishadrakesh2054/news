@@ -104,6 +104,9 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
   const sidebarAdsBottom = activeAds
     .filter((a) => a.slot === "SIDEBAR_BOTTOM" && a.isActive !== false)
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const homeSpotlightAds = activeAds
+    .filter((a) => a.slot === "HOME_SPOTLIGHT" && a.isActive !== false)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   const featured = publishedArticles.filter((a) => a.isFeatured);
   const mainStories = (
@@ -141,7 +144,11 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
 
       {homeSpotlightArticles.length > 0 ? (
         <PortalContainer className="py-4 sm:py-5">
-          <HomeSpotlightSection articles={homeSpotlightArticles} lang={lang} />
+          <HomeSpotlightSection
+            articles={homeSpotlightArticles}
+            lang={lang}
+            spotlightAds={homeSpotlightAds}
+          />
         </PortalContainer>
       ) : null}
 

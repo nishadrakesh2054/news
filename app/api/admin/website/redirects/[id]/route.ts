@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("redirects.update");
     if (auth.error) return auth.error;
     const { id } = await params;
     const body = await request.json();
@@ -26,7 +26,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("redirects.delete");
     if (auth.error) return auth.error;
     const { id } = await params;
     await prisma.redirect.delete({ where: { id } });

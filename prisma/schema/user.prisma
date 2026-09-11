@@ -1,4 +1,5 @@
 enum Role {
+  SUPER_ADMIN
   ADMIN
   EDITOR
   AUTHOR
@@ -9,10 +10,14 @@ model User {
   id             String    @id @default(cuid())
   name           String
   email          String    @unique
-  password       String?
-  image          String?
-  role           Role      @default(READER)
-  sessionVersion Int       @default(0)
+  password            String?
+  image               String?
+  role                Role      @default(READER)
+  /** True when admin set a temporary password — user must change it on next login. */
+  mustChangePassword  Boolean   @default(false)
+  /** Soft-disable: blocked from signing in without deleting the account. */
+  isActive            Boolean   @default(true)
+  sessionVersion      Int       @default(0)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   articles       Article[]
@@ -33,4 +38,17 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+/** Role × permission tick matrix (SUPER_ADMIN is always full access in code). */
+model RolePermission {
+  id         String   @id @default(cuid())
+  role       Role
+  permission String
+  allowed    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([role, permission])
+  @@index([role])
 }

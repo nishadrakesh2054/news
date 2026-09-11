@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { getJsonSetting, setSettings } from "@/lib/settings-store";
 import {
   DEFAULT_TRAFFIC_CONFIG,
@@ -13,7 +13,7 @@ import {
 
 export async function GET() {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("analytics.read");
     if (auth.error) return auth.error;
 
     const totalViews = await prisma.article.aggregate({ _sum: { views: true } });
@@ -51,7 +51,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("analytics.read");
     if (auth.error) return auth.error;
 
     const body = await request.json();

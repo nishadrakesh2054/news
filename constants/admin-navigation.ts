@@ -43,8 +43,10 @@ export type AdminNavItem = {
   description?: string;
   /** When true, only highlight on exact path match (for parent routes with children). */
   exactMatch?: boolean;
-  /** Restrict visibility to these staff roles. Omit for all staff (ADMIN, EDITOR, AUTHOR). */
+  /** Restrict visibility to these staff roles. Omit for all staff. SUPER_ADMIN always sees all. */
   roles?: Role[];
+  /** Permission key required to see this item (preferred over roles). */
+  permission?: string;
 };
 
 export type AdminNavSection = {
@@ -76,6 +78,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: FileText,
         status: "live",
         api: "/api/admin/articles",
+        permission: "articles.read",
       },
       {
         label: "Review Queue",
@@ -84,7 +87,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         status: "live",
         api: "/api/admin/articles/review",
         description: "Approve pending articles before publication",
-        roles: [Role.ADMIN, Role.EDITOR],
+        roles: [Role.SUPER_ADMIN, Role.ADMIN, Role.EDITOR],
+        permission: "articles.publish",
       },
       {
         label: "Categories",
@@ -92,6 +96,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: FolderTree,
         status: "live",
         api: "/api/admin/categories",
+        permission: "categories.read",
       },
       {
         label: "Tags",
@@ -100,6 +105,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         status: "live",
         api: "/api/admin/tags",
         description: "Tag model exists; admin API pending",
+        permission: "tags.read",
       },
     ],
   },
@@ -112,6 +118,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: ImageIcon,
         status: "live",
         api: "/api/admin/media",
+        permission: "media.read",
       },
       {
         label: "Galleries",
@@ -119,6 +126,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Images,
         status: "live",
         api: "/api/admin/galleries",
+        permission: "galleries.read",
       },
       {
         label: "Videos",
@@ -126,6 +134,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Video,
         status: "live",
         api: "/api/admin/videos",
+        permission: "videos.read",
       },
       {
         label: "E-Paper",
@@ -133,6 +142,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Newspaper,
         status: "live",
         api: "/api/admin/epaper",
+        permission: "epaper.read",
       },
     ],
   },
@@ -145,6 +155,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Zap,
         status: "live",
         api: "/api/admin/breaking",
+        permission: "breaking.read",
       },
       {
         label: "Live News",
@@ -152,6 +163,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Radio,
         status: "live",
         api: "/api/admin/live",
+        permission: "live.read",
       },
       {
         label: "Featured News",
@@ -160,6 +172,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         status: "live",
         api: "/api/admin/featured",
         description: "Uses Article.isFeatured; dedicated manager pending",
+        permission: "featured.read",
       },
     ],
   },
@@ -172,7 +185,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Megaphone,
         status: "live",
         api: "/api/admin/ads",
-        roles: [Role.ADMIN, Role.EDITOR],
+        roles: [Role.SUPER_ADMIN, Role.ADMIN, Role.EDITOR],
+        permission: "ads.read",
       },
     ],
   },
@@ -185,6 +199,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: MessageSquare,
         status: "live",
         api: "/api/admin/comments",
+        permission: "comments.read",
       },
       {
         label: "Notifications",
@@ -192,6 +207,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Bell,
         status: "live",
         api: "/api/admin/notifications",
+        permission: "notifications.read",
       },
       {
         label: "Newsletter & Push",
@@ -199,7 +215,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Mail,
         status: "live",
         api: "/api/admin/newsletter/subscribers",
-        roles: [Role.ADMIN, Role.EDITOR],
+        roles: [Role.SUPER_ADMIN, Role.ADMIN, Role.EDITOR],
+        permission: "newsletter.read",
       },
       {
         label: "Polls (जनमत)",
@@ -207,6 +224,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Vote,
         status: "live",
         api: "/api/admin/polls",
+        permission: "polls.read",
       },
       {
         label: "Market & Horoscope",
@@ -215,6 +233,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         status: "live",
         api: "/api/admin/utilities",
         description: "Forex, gold rates, and daily rashifal",
+        permission: "utilities.read",
       },
     ],
   },
@@ -228,6 +247,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         status: "live",
         api: "/api/admin/analytics",
         exactMatch: true,
+        permission: "analytics.read",
       },
       {
         label: "Articles",
@@ -235,6 +255,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: FileText,
         status: "live",
         api: "/api/admin/analytics/articles",
+        permission: "analytics.read",
       },
       {
         label: "Traffic",
@@ -242,6 +263,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: LineChart,
         status: "live",
         api: "/api/admin/analytics/traffic",
+        permission: "analytics.read",
       },
     ],
   },
@@ -254,7 +276,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Search,
         status: "live",
         api: "/api/admin/website/seo",
-        roles: [Role.ADMIN, Role.EDITOR],
+        roles: [Role.SUPER_ADMIN, Role.ADMIN, Role.EDITOR],
+        permission: "seo.read",
       },
       {
         label: "Redirects",
@@ -262,7 +285,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: ArrowRightLeft,
         status: "live",
         api: "/api/admin/website/redirects",
-        roles: [Role.ADMIN, Role.EDITOR],
+        roles: [Role.SUPER_ADMIN, Role.ADMIN, Role.EDITOR],
+        permission: "redirects.read",
       },
       {
         label: "Site Settings",
@@ -271,7 +295,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         status: "live",
         api: "/api/admin/settings",
         description: "Site identity, contact, and comment defaults",
-        roles: [Role.ADMIN, Role.EDITOR],
+        roles: [Role.SUPER_ADMIN, Role.ADMIN, Role.EDITOR],
+        permission: "settings.read",
       },
     ],
   },
@@ -284,7 +309,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Users,
         status: "live",
         api: "/api/admin/users",
-        roles: [Role.ADMIN],
+        roles: [Role.SUPER_ADMIN, Role.ADMIN],
+        permission: "users.read",
       },
       {
         label: "Roles & Permissions",
@@ -292,8 +318,9 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Shield,
         status: "live",
         api: "/api/admin/system/roles",
-        description: "Role changes live on users page; permission matrix is read-only",
-        roles: [Role.ADMIN],
+        description: "Tick CRUD access per role (Super Admin)",
+        roles: [Role.SUPER_ADMIN],
+        permission: "roles.manage",
       },
       {
         label: "Audit Logs",
@@ -301,7 +328,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: ScrollText,
         status: "live",
         api: "/api/admin/system/audit-logs",
-        roles: [Role.ADMIN],
+        roles: [Role.SUPER_ADMIN, Role.ADMIN],
+        permission: "audit.read",
       },
       {
         label: "API Management",
@@ -309,7 +337,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Plug,
         status: "live",
         api: "/api/admin/system/api-keys",
-        roles: [Role.ADMIN],
+        roles: [Role.SUPER_ADMIN, Role.ADMIN],
+        permission: "api_keys.manage",
       },
       {
         label: "System / Maintenance",
@@ -317,7 +346,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         icon: Wrench,
         status: "live",
         api: "/api/admin/system/maintenance",
-        roles: [Role.ADMIN],
+        roles: [Role.SUPER_ADMIN, Role.ADMIN],
+        permission: "maintenance.manage",
       },
     ],
   },
@@ -353,7 +383,6 @@ export function isAdminNavItemActive(
     return false;
   }
 
-  // Prefer a more specific nav route (e.g. Review Queue over Articles).
   const hasMoreSpecificNavMatch = allHrefs.some(
     (other) =>
       other !== href &&
@@ -366,14 +395,32 @@ export function isAdminNavItemActive(
 
 export function filterNavSectionsForRole(
   sections: AdminNavSection[],
-  role: Role | undefined
+  role: Role | undefined,
+  permissions?: string[] | Set<string>
 ): AdminNavSection[] {
   if (!role) return [];
+  if (role === Role.SUPER_ADMIN) return sections;
+
+  const permSet =
+    permissions instanceof Set
+      ? permissions
+      : permissions
+        ? new Set(permissions)
+        : null;
 
   return sections
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => !item.roles || item.roles.includes(role)),
+      items: section.items.filter((item) => {
+        if (item.permission && permSet) {
+          return permSet.has(item.permission);
+        }
+        if (item.permission && !permSet) {
+          // Fall back to roles until permissions load
+          return !item.roles || item.roles.includes(role);
+        }
+        return !item.roles || item.roles.includes(role);
+      }),
     }))
     .filter((section) => section.items.length > 0);
 }

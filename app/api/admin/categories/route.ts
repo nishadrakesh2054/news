@@ -1,15 +1,12 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { invalidatePublicCategories } from "@/lib/cache-invalidation";
-import { requireStaff, requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("categories.read");
     if (auth.error) return auth.error;
 
     const { searchParams } = new URL(request.url);
@@ -56,11 +53,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !([Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {
-      return apiError("Unauthorized: Only Admins and Editors can create categories", 403);
-    }
+    const auth = await requirePermission("categories.create");
+    if (auth.error) return auth.error;
 
     const { name, nameNp, slug, description, descriptionNp, order } = await request.json();
 
@@ -79,16 +73,15 @@ export async function POST(request: NextRequest) {
     const category = await prisma.category.create({
       data: {
         name: name.trim(),
-        nameNp: nameNp ? nameNp.trim() : null,
+        nameNp: nameNp?.trim() || null,
         slug: slug.trim().toLowerCase(),
-        description: description ? description.trim() : null,
-        descriptionNp: descriptionNp ? descriptionNp.trim() : null,
+        description: description?.trim() || null,
+        descriptionNp: descriptionNp?.trim() || null,
         order: typeof order === "number" ? order : 0,
       },
     });
 
     invalidatePublicCategories();
-
     return apiSuccess(category, "Category created successfully", 201);
   } catch (error) {
     return handleServerError(error, "Failed to create category");

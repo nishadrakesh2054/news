@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { writeAuditLog } from "@/lib/audit-log";
 
 export async function PUT(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("featured.update");
     if (auth.error) return auth.error;
 
     const { articleIds } = await request.json();

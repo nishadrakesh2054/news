@@ -10,13 +10,12 @@ import {
   getUserGrowthByMonth,
 } from "@/lib/analytics-aggregate";
 import { getCategoryViewStats } from "@/lib/category-stats";
-import { requireEditor } from "@/lib/admin-auth";
-
+import { requirePermission } from "@/lib/admin-auth";
 const CHART_MONTHS = 12;
 
 export async function GET() {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("analytics.read");
     if (auth.error) return auth.error;
 
     const monthBuckets = getRecentMonthBuckets(CHART_MONTHS);

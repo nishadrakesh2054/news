@@ -26,6 +26,10 @@ type LatestNewsSectionProps = {
   adsBottom?: RotatingAd[];
 };
 
+function hasRenderableAds(ads: RotatingAd[]): boolean {
+  return ads.some((a) => a.isActive !== false && (a.imageUrl || a.scriptCode));
+}
+
 export function LatestNewsSection({
   articles,
   lang,
@@ -41,6 +45,7 @@ export function LatestNewsSection({
     adsTop && adsTop.length > 0 ? adsTop : adTop ? [adTop] : [];
   const bottomAds =
     adsBottom && adsBottom.length > 0 ? adsBottom : adBottom ? [adBottom] : [];
+  const showAdsRail = hasRenderableAds(topAds) || hasRenderableAds(bottomAds);
 
   if (articles.length === 0) return null;
 
@@ -52,8 +57,12 @@ export function LatestNewsSection({
         linkLabel={isEnglish ? "More news" : "थप समाचार"}
       />
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-6">
-        <div className="min-w-0 lg:col-span-9">
+      <div
+        className={`grid grid-cols-1 gap-5 ${
+          showAdsRail ? "lg:grid-cols-12 lg:gap-6" : ""
+        }`}
+      >
+        <div className={`min-w-0 ${showAdsRail ? "lg:col-span-9" : ""}`}>
           <div>
             {articles.map((art) => (
               <NewsCard key={art.id} article={art} lang={lang} variant="list" showAuthor />
@@ -71,24 +80,14 @@ export function LatestNewsSection({
           </div>
         </div>
 
-        <aside className="lg:col-span-3">
-          <div className="flex flex-col gap-4 lg:sticky lg:top-20">
-            <SidebarAdRotator
-              ads={topAds}
-              isEnglish={isEnglish}
-              label="1"
-              path="/"
-              showPlaceholder={false}
-            />
-            <SidebarAdRotator
-              ads={bottomAds}
-              isEnglish={isEnglish}
-              label="2"
-              path="/"
-              showPlaceholder={false}
-            />
-          </div>
-        </aside>
+        {showAdsRail ? (
+          <aside className="lg:col-span-3">
+            <div className="flex flex-col gap-4 lg:sticky lg:top-20">
+              <SidebarAdRotator ads={topAds} isEnglish={isEnglish} label="1" path="/" />
+              <SidebarAdRotator ads={bottomAds} isEnglish={isEnglish} label="2" path="/" />
+            </div>
+          </aside>
+        ) : null}
       </div>
     </section>
   );

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { ArticleStatus, ArticleType, AuRegion, LanguageEdition, Prisma, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireStaff } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { validateArticleCreate } from "@/lib/validations/article";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
 import {
@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("articles.read");
     if (auth.error) return auth.error;
 
     const { searchParams } = new URL(request.url);
@@ -199,7 +199,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("articles.create");
     if (auth.error) return auth.error;
 
     const body = await request.json();
@@ -211,11 +211,11 @@ export async function POST(request: NextRequest) {
     const data = validation.data;
     const role = auth.session!.user.role;
 
-    const statusDenied = assertArticleStatusPermission(role, data.status ?? ArticleStatus.DRAFT);
+    const statusDenied = await assertArticleStatusPermission(role, data.status ?? ArticleStatus.DRAFT);
     if (statusDenied) return statusDenied;
-    const breakingDenied = assertBreakingPermission(role, Boolean(data.isBreaking));
+    const breakingDenied = await assertBreakingPermission(role, Boolean(data.isBreaking));
     if (breakingDenied) return breakingDenied;
-    const featuredDenied = assertFeaturedPermission(role, Boolean(data.isFeatured));
+    const featuredDenied = await assertFeaturedPermission(role, Boolean(data.isFeatured));
     if (featuredDenied) return featuredDenied;
 
     const existingSlug = await prisma.article.findUnique({

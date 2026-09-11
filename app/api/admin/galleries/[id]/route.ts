@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { writeAuditLog } from "@/lib/audit-log";
 import { invalidatePublicMedia } from "@/lib/cache-invalidation";
 
@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("galleries.read");
     if (auth.error) return auth.error;
 
     const { id } = await params;
@@ -49,7 +49,7 @@ export async function GET(
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("galleries.update");
     if (auth.error) return auth.error;
     const { id } = await params;
     const body = await request.json();
@@ -76,7 +76,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("galleries.delete");
     if (auth.error) return auth.error;
     const { id } = await params;
 

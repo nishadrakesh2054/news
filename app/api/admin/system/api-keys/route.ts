@@ -2,11 +2,11 @@ import { NextRequest } from "next/server";
 import { randomBytes, createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 
 export async function GET() {
   try {
-    const auth = await requireAdmin();
+    const auth = await requirePermission("api_keys.manage");
     if (auth.error) return auth.error;
 
     const keys = await prisma.apiKey.findMany({
@@ -28,7 +28,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requirePermission("api_keys.manage");
     if (auth.error) return auth.error;
 
     const { name } = await request.json();

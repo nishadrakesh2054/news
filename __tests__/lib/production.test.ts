@@ -9,12 +9,18 @@ import { absoluteUrl, getSiteUrl } from "@/lib/site-url";
 describe("password policy", () => {
   it("rejects short passwords", () => {
     expect(validatePassword("short")).toContain(String(PASSWORD_MIN_LENGTH));
-    expect(validatePassword("longenough1")).toBeNull();
+    expect(validatePassword("Longenough1")).toBeNull();
   });
 
   it("requires a letter and a number", () => {
     expect(validatePassword("longenough")).not.toBeNull();
     expect(validatePassword("1234567890")).not.toBeNull();
+  });
+
+  it("requires uppercase or special character", () => {
+    expect(validatePassword("longenough1")).not.toBeNull();
+    expect(validatePassword("Longenough1")).toBeNull();
+    expect(validatePassword("longenough1!")).toBeNull();
   });
 });
 

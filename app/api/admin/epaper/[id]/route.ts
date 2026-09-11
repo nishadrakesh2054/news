@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import cloudinary from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { invalidatePublicMedia } from "@/lib/cache-invalidation";
 
 const MAX_PDF_SIZE = 20 * 1024 * 1024;
@@ -28,7 +28,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("epaper.update");
     if (auth.error) return auth.error;
 
     const { id } = await params;
@@ -114,7 +114,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("epaper.delete");
     if (auth.error) return auth.error;
 
     const { id } = await params;

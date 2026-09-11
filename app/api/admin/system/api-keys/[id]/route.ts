@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requirePermission("api_keys.manage");
     if (auth.error) return auth.error;
     const { id } = await params;
     const { isActive } = await request.json();
@@ -22,7 +22,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requirePermission("api_keys.manage");
     if (auth.error) return auth.error;
     const { id } = await params;
     await prisma.apiKey.delete({ where: { id } });

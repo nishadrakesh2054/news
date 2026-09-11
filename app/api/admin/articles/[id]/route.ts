@@ -2,13 +2,14 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus, Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireStaff } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { validateArticleUpdate } from "@/lib/validations/article";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
 import {
   assertArticleStatusPermission,
   assertBreakingPermission,
   assertFeaturedPermission,
+  assertArticleOwnershipForDelete,
 } from "@/lib/article-permissions";
 import { writeAuditLog } from "@/lib/audit-log";
 import { invalidatePublicArticles } from "@/lib/cache-invalidation";
@@ -18,7 +19,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("articles.read");
     if (auth.error) return auth.error;
 
     const { id } = await params;
@@ -60,7 +61,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("articles.update");
     if (auth.error) return auth.error;
     const session = auth.session!;
 
@@ -86,15 +87,15 @@ export async function PATCH(
     }
 
     const newStatus = data.status ?? existingArticle.status;
-    const statusDenied = assertArticleStatusPermission(session.user.role, newStatus);
+    const statusDenied = await assertArticleStatusPermission(session.user.role, newStatus);
     if (statusDenied) return statusDenied;
 
     const breakingValue = data.isBreaking ?? existingArticle.isBreaking;
-    const breakingDenied = assertBreakingPermission(session.user.role, breakingValue);
+    const breakingDenied = await assertBreakingPermission(session.user.role, breakingValue);
     if (breakingDenied) return breakingDenied;
 
     const featuredValue = data.isFeatured ?? existingArticle.isFeatured;
-    const featuredDenied = assertFeaturedPermission(session.user.role, featuredValue);
+    const featuredDenied = await assertFeaturedPermission(session.user.role, featuredValue);
     if (featuredDenied) return featuredDenied;
 
     if (data.slug && data.slug !== existingArticle.slug) {
@@ -220,13 +221,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("articles.delete");
     if (auth.error) return auth.error;
     const session = auth.session!;
-
-    if (!([Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {
-      return apiError("Unauthorized: Admins or Editors required to delete articles", 403);
-    }
 
     const { id } = await params;
 
@@ -237,6 +234,13 @@ export async function DELETE(
     if (!existingArticle) {
       return apiError("Article not found", 404);
     }
+
+    const ownershipDenied = assertArticleOwnershipForDelete(
+      session.user.role,
+      session.user.id,
+      existingArticle.authorId
+    );
+    if (ownershipDenied) return ownershipDenied;
 
     await prisma.article.delete({
       where: { id },

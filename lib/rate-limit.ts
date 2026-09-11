@@ -66,8 +66,8 @@ export function getClientIpFromHeaders(headersList: Headers): string {
   const forwarded = headersList.get("x-forwarded-for");
   if (forwarded) {
     const parts = forwarded.split(",").map((p) => p.trim()).filter(Boolean);
-    // Last hop is typically the edge proxy's view of the client on Vercel/Cloudflare
-    return parts[parts.length - 1] || "unknown";
+    // Leftmost is the original client when proxies append (Vercel/Cloudflare).
+    return parts[0] || "unknown";
   }
   return "unknown";
 }

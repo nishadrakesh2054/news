@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { AdSlot } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { invalidatePublicAds } from "@/lib/cache-invalidation";
 import { sanitizeAdScriptCode } from "@/lib/sanitize-html";
 
@@ -21,7 +21,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requirePermission("ads.update");
     if (auth.error) return auth.error;
 
     const { id } = await params;
@@ -71,7 +71,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requirePermission("ads.delete");
     if (auth.error) return auth.error;
 
     const { id } = await params;

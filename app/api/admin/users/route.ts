@@ -1,21 +1,26 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import bcrypt from "bcryptjs";
+import { Prisma, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
+import { isSuperAdmin } from "@/lib/permissions";
+import { BCRYPT_COST, validatePassword } from "@/lib/password-policy";
+import { MESSAGES } from "@/constants/messages";
+import { ROLE_LABELS } from "@/constants/permissions";
+
+const ASSIGNABLE_ROLES: Role[] = [
+  Role.SUPER_ADMIN,
+  Role.ADMIN,
+  Role.EDITOR,
+  Role.AUTHOR,
+  Role.READER,
+];
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requirePermission("users.read");
     if (auth.error) return auth.error;
-
-    const session = await getServerSession(authOptions);
-
-    if (!session || session.user.role !== Role.ADMIN) {
-      return apiError("Unauthorized: Only Admins can manage users", 403);
-    }
 
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
@@ -41,6 +46,7 @@ export async function GET(request: NextRequest) {
           email: true,
           role: true,
           image: true,
+          isActive: true,
           createdAt: true,
           _count: {
             select: {
@@ -66,5 +72,84 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     return handleServerError(error, "Failed to retrieve users");
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const auth = await requirePermission("users.update");
+    if (auth.error) return auth.error;
+
+    const actor = auth.session!.user;
+    const actorIsSuper = isSuperAdmin(actor.role);
+
+    const body = await request.json();
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const password = typeof body.password === "string" ? body.password : "";
+    const role = body.role as Role;
+
+    if (!name || !email || !password) {
+      return apiError(MESSAGES.SYSTEM.VALIDATION_ERROR, 400);
+    }
+
+    if (!role || !ASSIGNABLE_ROLES.includes(role)) {
+      return apiError("Invalid role provided", 400);
+    }
+
+    if ((role === Role.SUPER_ADMIN || role === Role.ADMIN) && !actorIsSuper) {
+      return apiError("Only Super Admin can create Admin or Super Admin users", 403);
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return apiError(passwordError, 400);
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return apiError("Unable to create user with those details", 400);
+    }
+
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_COST);
+
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role,
+        mustChangePassword: true,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        _count: {
+          select: {
+            articles: true,
+            comments: true,
+          },
+        },
+      },
+    });
+
+    return apiSuccess(
+      user,
+      `User created as ${ROLE_LABELS[role] ?? role}`,
+      201
+    );
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return apiError("Unable to create user with those details", 400);
+    }
+    return handleServerError(error, "Failed to create user");
   }
 }

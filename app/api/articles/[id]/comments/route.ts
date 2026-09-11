@@ -93,7 +93,7 @@ export async function POST(
 
     const { content, authorName, authorEmail } = validation.data;
 
-    if (!session?.user || !([Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {
+    if (!session?.user || !([Role.SUPER_ADMIN, Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {
       const ip = getClientIp(request);
       const rate = checkRateLimit(`comment:${ip}:${articleId}`, 5, 15 * 60 * 1000);
       if (!rate.allowed) {
@@ -116,7 +116,7 @@ export async function POST(
     if (session?.user) {
       authorId = session.user.id;
       finalAuthorName = session.user.name || finalAuthorName;
-      if (([Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {
+      if (([Role.SUPER_ADMIN, Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {
         isAutoApproved = true;
         commentStatus = CommentStatus.APPROVED;
       }

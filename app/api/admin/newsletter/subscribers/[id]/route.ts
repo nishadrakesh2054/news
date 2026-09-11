@@ -2,14 +2,14 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SubscriberStatus } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("newsletter.update");
     if (auth.error) return auth.error;
 
     const { id } = await params;
@@ -38,7 +38,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("newsletter.update");
     if (auth.error) return auth.error;
 
     const { id } = await params;

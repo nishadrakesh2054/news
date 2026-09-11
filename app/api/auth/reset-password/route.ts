@@ -4,7 +4,7 @@ import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import {
   findValidResetToken,
 } from "@/lib/password-reset";
-import { validatePassword } from "@/lib/password-policy";
+import { validatePassword, BCRYPT_COST } from "@/lib/password-policy";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
@@ -31,13 +31,14 @@ export async function POST(request: NextRequest) {
       return apiError("Invalid or expired reset link. Please request a new one.", 400);
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_COST);
 
     await prisma.$transaction([
       prisma.user.update({
         where: { id: resetRecord.user.id },
         data: {
           password: hashedPassword,
+          mustChangePassword: false,
           sessionVersion: { increment: 1 },
         },
       }),

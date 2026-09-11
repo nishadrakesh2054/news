@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { getJsonSetting, setSettings } from "@/lib/settings-store";
 
 const DEFAULT = {
@@ -11,7 +11,7 @@ const DEFAULT = {
 
 export async function GET() {
   try {
-    const auth = await requireAdmin();
+    const auth = await requirePermission("maintenance.manage");
     if (auth.error) return auth.error;
 
     const config = await getJsonSetting("system_maintenance", DEFAULT);
@@ -23,7 +23,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requirePermission("maintenance.manage");
     if (auth.error) return auth.error;
 
     const body = await request.json();

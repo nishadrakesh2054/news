@@ -48,6 +48,7 @@ const SLOT_LABELS: Record<AdSlot, string> = {
   SIDEBAR_BOTTOM: "Sidebar bottom (rotating)",
   IN_ARTICLE: "In-article (article page)",
   STICKY_FOOTER: "Sticky footer",
+  HOME_SPOTLIGHT: "Home spotlight (under title)",
 };
 
 /** Recommended banner size per placement (width*height). */
@@ -57,6 +58,7 @@ const SLOT_SIZES: Record<AdSlot, string> = {
   SIDEBAR_BOTTOM: "300*250",
   IN_ARTICLE: "600*200",
   STICKY_FOOTER: "728*90",
+  HOME_SPOTLIGHT: "970*90",
 };
 
 export default function AdminAdsPage() {
@@ -277,6 +279,7 @@ export default function AdminAdsPage() {
           <option value="SIDEBAR_BOTTOM">Sidebar bottom · 300*250</option>
           <option value="IN_ARTICLE">In-article · 600*200</option>
           <option value="STICKY_FOOTER">Sticky footer · 728*90</option>
+          <option value="HOME_SPOTLIGHT">Home spotlight · 970*90</option>
         </select>
 
         <select
@@ -537,6 +540,7 @@ export default function AdminAdsPage() {
                         <option value="SIDEBAR_BOTTOM">Sidebar bottom (ad 2)</option>
                         <option value="IN_ARTICLE">In-article inline</option>
                         <option value="STICKY_FOOTER">Sticky footer</option>
+                        <option value="HOME_SPOTLIGHT">Home spotlight (under title)</option>
                       </select>
                       <p className="text-[10px] text-muted-foreground">
                         Size: {SLOT_SIZES[slot]}

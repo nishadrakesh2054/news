@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { AdUnit, type AdUnitData } from "@/components/portal/AdUnit";
-import { PORTAL } from "@/constants/portal";
-import { SITE_CONFIG } from "@/constants/site";
 import { optimizeAdImageUrl } from "@/lib/cloudinary-url";
 
 export type LeaderboardAd = AdUnitData & {
@@ -21,10 +19,9 @@ type HeaderLeaderboardRotatorProps = {
   fadeMs?: number;
 };
 
-/** Soft crossfade rotator for HEADER_LEADERBOARD ads (728×90). */
+/** Soft crossfade rotator for HEADER_LEADERBOARD ads (728×90). Empty → no space. */
 export function HeaderLeaderboardRotator({
   ads,
-  isEnglish = false,
   intervalMs = 3500,
   fadeMs = 700,
 }: HeaderLeaderboardRotatorProps) {
@@ -46,16 +43,7 @@ export function HeaderLeaderboardRotator({
     return () => window.clearInterval(id);
   }, [items.length, paused, intervalMs]);
 
-  if (items.length === 0) {
-    return (
-      <div
-        className="hidden h-[90px] w-full max-w-[728px] items-center justify-center text-xs font-medium text-gray-500 lg:flex"
-        style={{ backgroundColor: PORTAL.surface }}
-      >
-        {isEnglish ? `${SITE_CONFIG.name} Ad · 728×90` : `विज्ञापन · ७२८×९०`}
-      </div>
-    );
-  }
+  if (items.length === 0) return null;
 
   // Single ad — no crossfade / slide wrapper.
   if (items.length === 1) {

@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
 import { getCategoryViewStats } from "@/lib/category-stats";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 
 export async function GET() {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("analytics.read");
     if (auth.error) return auth.error;
 
     const [topArticles, categoryStats] = await Promise.all([

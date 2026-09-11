@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Role, AdSlot } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireAdmin, requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { invalidatePublicAds } from "@/lib/cache-invalidation";
 import { sanitizeAdScriptCode } from "@/lib/sanitize-html";
 
@@ -18,7 +18,7 @@ function isSafeAdTargetUrl(url: string | null | undefined): boolean {
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("ads.read");
     if (auth.error) return auth.error;
 
     const { searchParams } = new URL(request.url);
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requirePermission("ads.create");
     if (auth.error) return auth.error;
 
     const { title, slot, imageUrl, targetUrl, scriptCode, isActive, sortOrder } = await request.json();

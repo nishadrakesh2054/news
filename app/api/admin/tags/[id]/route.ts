@@ -1,14 +1,14 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { slugify } from "@/lib/slug";
 import { writeAuditLog } from "@/lib/audit-log";
 import { invalidatePublicTags } from "@/lib/cache-invalidation";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("tags.update");
     if (auth.error) return auth.error;
     const { id } = await params;
     const { name, nameNp, slug } = await request.json();
@@ -34,7 +34,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("tags.delete");
     if (auth.error) return auth.error;
     const { id } = await params;
 

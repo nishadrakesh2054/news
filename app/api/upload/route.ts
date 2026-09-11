@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import cloudinary from "@/lib/cloudinary";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { MESSAGES } from "@/constants/messages";
-import { requireStaff } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -14,7 +14,7 @@ const ALLOWED_MIME_TYPES = new Set([
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("media.create");
     if (auth.error) return auth.error;
 
     const formData = await request.formData();

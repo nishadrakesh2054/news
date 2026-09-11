@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { getSettings, setSettings } from "@/lib/settings-store";
 
 const SEO_KEYS = [
@@ -14,7 +14,7 @@ const SEO_KEYS = [
 
 export async function GET() {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("seo.read");
     if (auth.error) return auth.error;
 
     const data = await getSettings(SEO_KEYS);
@@ -26,7 +26,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("seo.update");
     if (auth.error) return auth.error;
 
     const body = await request.json();

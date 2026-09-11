@@ -2,12 +2,12 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { PollStatus } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { validatePollCreate } from "@/lib/validations/poll";
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("polls.read");
     if (auth.error) return auth.error;
 
     const { searchParams } = new URL(request.url);
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("polls.create");
     if (auth.error) return auth.error;
 
     const body = await req.json();

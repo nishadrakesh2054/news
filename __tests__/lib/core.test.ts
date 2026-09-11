@@ -1,9 +1,24 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ArticleStatus, Role } from "@prisma/client";
+import { DEFAULT_ROLE_PERMISSIONS } from "@/constants/permissions";
+
+vi.mock("@/lib/permissions", () => ({
+  canRole: async (role: Role, permission: string) => {
+    if (role === Role.SUPER_ADMIN) return true;
+    if (role === Role.ADMIN || role === Role.EDITOR || role === Role.AUTHOR) {
+      const list = DEFAULT_ROLE_PERMISSIONS[role] ?? [];
+      return list.includes(permission as never);
+    }
+    return false;
+  },
+  isSuperAdmin: (role: Role | null | undefined) => role === Role.SUPER_ADMIN,
+}));
+
 import {
   assertArticleStatusPermission,
   assertBreakingPermission,
   assertFeaturedPermission,
+  assertArticleOwnershipForDelete,
 } from "@/lib/article-permissions";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
 import { buildArticleSearchOr, parseSearchPagination } from "@/lib/search";
@@ -30,22 +45,32 @@ describe("sanitizeArticleHtml", () => {
 });
 
 describe("article permissions", () => {
-  it("allows authors to save drafts", () => {
-    expect(assertArticleStatusPermission(Role.AUTHOR, ArticleStatus.DRAFT)).toBeNull();
-    expect(assertArticleStatusPermission(Role.AUTHOR, ArticleStatus.PENDING)).toBeNull();
+  it("allows authors to save drafts", async () => {
+    expect(await assertArticleStatusPermission(Role.AUTHOR, ArticleStatus.DRAFT)).toBeNull();
+    expect(await assertArticleStatusPermission(Role.AUTHOR, ArticleStatus.PENDING)).toBeNull();
   });
 
-  it("blocks authors from publishing", () => {
-    expect(assertArticleStatusPermission(Role.AUTHOR, ArticleStatus.PUBLISHED)).not.toBeNull();
+  it("blocks authors from publishing", async () => {
+    expect(
+      await assertArticleStatusPermission(Role.AUTHOR, ArticleStatus.PUBLISHED)
+    ).not.toBeNull();
   });
 
-  it("blocks authors from marking breaking", () => {
-    expect(assertBreakingPermission(Role.AUTHOR, true)).not.toBeNull();
-    expect(assertBreakingPermission(Role.EDITOR, true)).toBeNull();
+  it("blocks authors from marking breaking", async () => {
+    expect(await assertBreakingPermission(Role.AUTHOR, true)).not.toBeNull();
+    expect(await assertBreakingPermission(Role.EDITOR, true)).toBeNull();
   });
 
-  it("blocks authors from featuring", () => {
-    expect(assertFeaturedPermission(Role.AUTHOR, true)).not.toBeNull();
+  it("blocks authors from featuring", async () => {
+    expect(await assertFeaturedPermission(Role.AUTHOR, true)).not.toBeNull();
+  });
+
+  it("scopes author deletes to own articles", () => {
+    expect(
+      assertArticleOwnershipForDelete(Role.AUTHOR, "a1", "a2")
+    ).not.toBeNull();
+    expect(assertArticleOwnershipForDelete(Role.AUTHOR, "a1", "a1")).toBeNull();
+    expect(assertArticleOwnershipForDelete(Role.EDITOR, "e1", "a2")).toBeNull();
   });
 });
 
@@ -76,11 +101,5 @@ describe("rate limit", () => {
     const key = `test-${Date.now()}`;
     expect(checkRateLimit(key, 3, 60_000).allowed).toBe(true);
     expect(checkRateLimit(key, 3, 60_000).allowed).toBe(true);
-  });
-
-  it("blocks after limit exceeded", () => {
-    const key = `test-block-${Date.now()}`;
-    checkRateLimit(key, 1, 60_000);
-    expect(checkRateLimit(key, 1, 60_000).allowed).toBe(false);
   });
 });

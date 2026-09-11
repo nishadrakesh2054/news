@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { ArticleStatus, Prisma, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireStaff } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { assertArticleStatusPermission } from "@/lib/article-permissions";
 import { writeAuditLog } from "@/lib/audit-log";
 import { invalidatePublicArticles } from "@/lib/cache-invalidation";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("articles.read");
     if (auth.error) return auth.error;
 
     const { searchParams } = new URL(request.url);
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("articles.publish");
     if (auth.error) return auth.error;
     const session = auth.session!;
 
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     const nextStatus = action === "approve" ? ArticleStatus.PUBLISHED : ArticleStatus.DRAFT;
-    const statusDenied = assertArticleStatusPermission(session.user.role, nextStatus);
+    const statusDenied = await assertArticleStatusPermission(session.user.role, nextStatus);
     if (statusDenied) return statusDenied;
 
     const existing = await prisma.article.findUnique({

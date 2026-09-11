@@ -6,6 +6,9 @@ import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { checkRateLimit, getClientIpFromHeaders } from "@/lib/rate-limit";
 
+/** Re-check role / sessionVersion from DB (was 60s — too long after demotion). */
+const JWT_REFRESH_MS = 5_000;
+
 async function clientIpFromHeaders(): Promise<string> {
   try {
     const h = await headers();
@@ -45,6 +48,10 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Invalid credentials");
           }
 
+          if (user.isActive === false) {
+            throw new Error("Invalid credentials");
+          }
+
           const isValidPassword = await bcrypt.compare(credentials.password, user.password);
 
           if (!isValidPassword) {
@@ -55,14 +62,19 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             email: user.email,
             name: user.name,
+            image: user.image,
             role: user.role,
             sessionVersion: user.sessionVersion,
+            mustChangePassword: user.mustChangePassword,
           };
         } catch (err) {
-          if (err instanceof Error && err.message === "Invalid credentials") {
+          if (
+            err instanceof Error &&
+            (err.message === "Invalid credentials" ||
+              err.message === "Too many login attempts. Please try again later.")
+          ) {
             throw err;
           }
-          // Neon WS can throw DOM ErrorEvent — NextAuth needs a normal Error.
           console.error(
             "[auth] authorize failed",
             err instanceof Error ? err.message : String(err)
@@ -73,64 +85,100 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = user.role as Role;
+        token.picture = user.image ?? undefined;
+        token.name = user.name;
+        token.email = user.email;
         token.sessionVersion =
           "sessionVersion" in user && typeof user.sessionVersion === "number"
             ? user.sessionVersion
             : 0;
-        // Skip an immediate DB refresh on the next getSession() after sign-in.
+        token.mustChangePassword = Boolean(
+          "mustChangePassword" in user && user.mustChangePassword
+        );
         token.roleCheckedAt = Date.now();
         return token;
       }
 
       if (!token.id) return token;
 
-      // Refresh role/sessionVersion at most every 60s to cut auth DB load.
       const lastRefresh = typeof token.roleCheckedAt === "number" ? token.roleCheckedAt : 0;
       const now = Date.now();
-      if (
-        now - lastRefresh < 60_000 &&
-        token.role &&
-        typeof token.sessionVersion === "number" &&
-        token.sessionVersion >= 0
-      ) {
+      const mustRefresh =
+        trigger === "update" ||
+        token.mustChangePassword ||
+        now - lastRefresh >= JWT_REFRESH_MS ||
+        !token.role ||
+        typeof token.sessionVersion !== "number" ||
+        token.sessionVersion < 0;
+
+      if (!mustRefresh) {
         return token;
       }
 
-      // Refresh role + sessionVersion from DB (invalidates demoted / password-reset sessions)
       try {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true, sessionVersion: true },
+          select: {
+            role: true,
+            sessionVersion: true,
+            mustChangePassword: true,
+            name: true,
+            email: true,
+            image: true,
+            isActive: true,
+          },
         });
 
-        if (!dbUser) {
-          return { ...token, id: undefined, role: undefined, sessionVersion: -1 };
+        if (!dbUser || dbUser.isActive === false) {
+          return {
+            ...token,
+            id: undefined,
+            role: undefined,
+            sessionVersion: -1,
+            mustChangePassword: false,
+          };
         }
 
         if (
           typeof token.sessionVersion === "number" &&
           token.sessionVersion !== dbUser.sessionVersion
         ) {
-          return { ...token, id: undefined, role: undefined, sessionVersion: -1 };
+          return {
+            ...token,
+            id: undefined,
+            role: undefined,
+            sessionVersion: -1,
+            mustChangePassword: false,
+          };
         }
 
+        // Always trust DB for profile fields (ignore client session.update payload).
         token.role = dbUser.role;
         token.sessionVersion = dbUser.sessionVersion;
+        token.mustChangePassword = dbUser.mustChangePassword;
+        token.name = dbUser.name;
+        token.email = dbUser.email;
+        token.picture = dbUser.image ?? undefined;
         token.roleCheckedAt = now;
         return token;
       } catch (err) {
-        // Keep the session usable if the DB blips; do not crash admin RSC layouts.
         console.error("[auth] jwt role refresh failed", err instanceof Error ? err.message : err);
-        return token;
+        // Fail closed for privileged sessions if we cannot re-validate.
+        return {
+          ...token,
+          id: undefined,
+          role: undefined,
+          sessionVersion: -1,
+          mustChangePassword: false,
+        };
       }
     },
     async session({ session, token }) {
       if (!token.id || token.sessionVersion === -1) {
-        // Force clients to treat session as unauthenticated
         return {
           ...session,
           expires: new Date(0).toISOString(),
@@ -140,12 +188,19 @@ export const authOptions: NextAuthOptions = {
             name: null,
             email: null,
             image: null,
+            mustChangePassword: false,
           },
         };
       }
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as Role;
+        session.user.mustChangePassword = Boolean(token.mustChangePassword);
+        session.user.name = (token.name as string | null | undefined) ?? session.user.name;
+        session.user.email =
+          (token.email as string | null | undefined) ?? session.user.email;
+        session.user.image =
+          (token.picture as string | null | undefined) ?? session.user.image;
       }
       return session;
     },
@@ -155,7 +210,7 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: 7 * 24 * 60 * 60,
   },
   cookies: {
     sessionToken: {

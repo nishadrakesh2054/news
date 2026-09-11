@@ -17,7 +17,7 @@ type SidebarAdRotatorProps = {
   path?: string;
   intervalMs?: number;
   fadeMs?: number;
-  /** When false, render nothing if there are no ads (no empty placeholder). */
+  /** @deprecated Always collapses when empty; kept for call-site compatibility. */
   showPlaceholder?: boolean;
   className?: string;
   imageClassName?: string;
@@ -42,15 +42,12 @@ function uniqueAds(ads: RotatingAd[], imageSlot: AdImageSlot): RotatingAd[] {
     }));
 }
 
-/** Soft crossfade rotator — animation only when 2+ ads; single ad is static. */
+/** Soft crossfade rotator — animation only when 2+ ads; single ad is static. Empty → null. */
 export function SidebarAdRotator({
   ads,
-  isEnglish = false,
-  label = "1",
   path = "/",
   intervalMs = 3500,
   fadeMs = 700,
-  showPlaceholder = true,
   className = "overflow-hidden bg-gray-50",
   imageClassName = "h-auto w-full object-contain",
   imageSlot = "sidebar",
@@ -74,19 +71,7 @@ export function SidebarAdRotator({
     return () => window.clearInterval(id);
   }, [canRotate, items.length, paused, intervalMs]);
 
-  if (items.length === 0) {
-    if (!showPlaceholder) return null;
-    return (
-      <div className="flex min-h-[200px] flex-col items-center justify-center bg-gray-50 px-4 py-8 text-center">
-        <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
-          {isEnglish ? "Advertisement" : "विज्ञापन"} · {label}
-        </span>
-        <p className="mt-2 text-xs text-gray-400">
-          {isEnglish ? "Sidebar ad slot" : "साइडबार विज्ञापन स्लट"}
-        </p>
-      </div>
-    );
-  }
+  if (items.length === 0) return null;
 
   // One ad — static banner, no fade / slide / interval.
   if (!canRotate) {

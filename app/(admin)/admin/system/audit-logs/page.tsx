@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { SystemSectionNav } from "@/components/admin/SystemSectionNav";
 import { AdminDataTable, AdminPanel, AdminStatsStrip } from "@/components/admin/content";
 import {
   adminBtnGhost,
+  adminBtnSecondary,
+  adminSelect,
   adminToolbarRow,
   adminToolbarSearch,
   adminToolbarSelectStatus,
@@ -23,56 +25,71 @@ type AuditRow = {
   user?: { name: string; email: string };
 };
 
+type AuditPayload = {
+  logs: AuditRow[];
+  entities: string[];
+  retentionDays: number;
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+};
+
+const PAGE_SIZE = 25;
+
 export default function AdminAuditLogsPage() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [entityFilter, setEntityFilter] = useState("ALL");
+  const [page, setPage] = useState(1);
 
-  const { data = [], isLoading, isError, error, refetch, isFetching } = useQuery<AuditRow[]>({
-    queryKey: ["admin-audit-logs"],
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, entityFilter]);
+
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery<AuditPayload>({
+    queryKey: ["admin-audit-logs", page, debouncedSearch, entityFilter],
     queryFn: async () => {
-      const res = await fetch("/api/admin/system/audit-logs");
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(PAGE_SIZE),
+      });
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      if (entityFilter !== "ALL") params.set("entity", entityFilter);
+      const res = await fetch(`/api/admin/system/audit-logs?${params}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      return json.data;
+      return json.data as AuditPayload;
     },
   });
 
-  const entities = useMemo(() => {
-    const unique = [...new Set(data.map((log) => log.entity))].sort();
-    return unique;
-  }, [data]);
-
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return data.filter((log) => {
-      const matchesEntity = entityFilter === "ALL" || log.entity === entityFilter;
-      const matchesSearch =
-        term === "" ||
-        log.action.toLowerCase().includes(term) ||
-        log.entity.toLowerCase().includes(term) ||
-        (log.details ?? "").toLowerCase().includes(term) ||
-        (log.user?.name ?? "").toLowerCase().includes(term) ||
-        (log.user?.email ?? "").toLowerCase().includes(term);
-      return matchesEntity && matchesSearch;
-    });
-  }, [data, search, entityFilter]);
-
+  const logs = data?.logs ?? [];
+  const entities = data?.entities ?? [];
+  const pagination = data?.pagination;
+  const retentionDays = data?.retentionDays ?? 30;
   const hasFilters = search.trim() !== "" || entityFilter !== "ALL";
 
   return (
     <AdminPageShell
       title="Audit logs"
-      description="System activity and administrative actions"
+      description={`Admin activity · kept ${retentionDays} days`}
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
     >
       <AdminStatsStrip
         loading={isLoading}
         stats={[
-          { label: "Total entries", value: data.length },
-          { label: "Filtered", value: isLoading ? "—" : filtered.length },
+          { label: "Matching", value: pagination?.total ?? "—" },
+          { label: "Page", value: pagination ? `${pagination.page} / ${pagination.totalPages}` : "—" },
           { label: "Entity types", value: entities.length || "—" },
-          { label: "Latest", value: data[0] ? new Date(data[0].createdAt).toLocaleDateString() : "—" },
+          { label: "Retention", value: `${retentionDays}d` },
         ]}
       />
 
@@ -86,7 +103,7 @@ export default function AdminAuditLogsPage() {
             placeholder="Search action, user, or details…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8 w-full rounded-sm border border-border bg-card pl-8 pr-7 text-xs outline-none focus:border-[#0C4EA0]/50"
+            className={`${adminSelect} w-full pl-8 pr-7`}
           />
           {search ? (
             <button
@@ -134,9 +151,9 @@ export default function AdminAuditLogsPage() {
         ) : (
           <AdminDataTable
             loading={isLoading}
-            rows={filtered}
+            rows={logs}
             rowKey={(row) => row.id}
-            emptyMessage="No audit logs yet."
+            emptyMessage="No audit logs in this period."
             columns={[
               {
                 key: "createdAt",
@@ -161,6 +178,39 @@ export default function AdminAuditLogsPage() {
           />
         )}
       </AdminPanel>
+
+      {pagination && pagination.totalPages > 1 ? (
+        <div className="flex flex-col items-center justify-between gap-3 text-xs text-muted-foreground sm:flex-row">
+          <div>
+            Showing {(pagination.page - 1) * pagination.limit + 1}–
+            {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
+            {pagination.total}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={page <= 1 || isFetching}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className={adminBtnSecondary}
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Previous
+            </button>
+            <span className="font-medium text-foreground">
+              {pagination.page} / {pagination.totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= pagination.totalPages || isFetching}
+              onClick={() => setPage((p) => p + 1)}
+              className={adminBtnSecondary}
+            >
+              Next
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      ) : null}
     </AdminPageShell>
   );
 }

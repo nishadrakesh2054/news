@@ -1,15 +1,12 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { Role } from "@prisma/client";
 import { normalizeRashifalList } from "@/lib/rashifal";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 
 export async function GET() {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("utilities.read");
     if (auth.error) return auth.error;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,10 +34,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || !([Role.ADMIN, Role.EDITOR] as Role[]).includes(session.user.role)) {
-      return apiError("अनधिकृत पहुँच (Unauthorized)", 403);
-    }
+    const auth = await requirePermission("utilities.update");
+    if (auth.error) return auth.error;
 
     const body = await req.json();
     const { goldFine, goldTejabi, silver, rashifal } = body;

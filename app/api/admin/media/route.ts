@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { requireStaff } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma, Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
@@ -17,7 +17,7 @@ const VALID_IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp",
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("media.read");
     if (auth.error) return auth.error;
 
     const session = auth.session!;
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireStaff();
+    const auth = await requirePermission("media.create");
     if (auth.error) return auth.error;
     const session = auth.session!;
     const formData = await request.formData();

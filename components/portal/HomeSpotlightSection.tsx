@@ -9,6 +9,7 @@ import {
 import { formatTimeAgo } from "@/lib/nepaliDate";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { PortalImage } from "@/components/portal/PortalImage";
+import type { HomeSpotlightAd } from "@/components/portal/HomeFullWidthAd";
 import { HomeFullWidthAd } from "@/components/portal/HomeFullWidthAd";
 import { PORTAL } from "@/constants/portal";
 import type { PortalArticleCard } from "@/components/portal/NewsCard";
@@ -20,6 +21,7 @@ export type HomeSpotlightArticle = PortalArticleCard & {
 type HomeSpotlightSectionProps = {
   articles: HomeSpotlightArticle[];
   lang: LanguageEditionType;
+  spotlightAds?: HomeSpotlightAd[];
 };
 
 function SpotlightMeta({
@@ -67,7 +69,11 @@ function SpotlightMeta({
  * - TITLE_ONLY → big title + date + editor
  * - TITLE_MEDIA → big title + date + editor + full-width image + excerpt
  */
-export function HomeSpotlightSection({ articles, lang }: HomeSpotlightSectionProps) {
+export function HomeSpotlightSection({
+  articles,
+  lang,
+  spotlightAds = [],
+}: HomeSpotlightSectionProps) {
   if (articles.length === 0) return null;
 
   return (
@@ -117,11 +123,7 @@ export function HomeSpotlightSection({ articles, lang }: HomeSpotlightSectionPro
             </Link>
 
             {/* Nepali portal pattern: heading first, then full-width ad */}
-            {index === 0 ? (
-              <div className="mt-6 sm:mt-8">
-                <HomeFullWidthAd lang={lang} />
-              </div>
-            ) : null}
+            {index === 0 ? <HomeFullWidthAd lang={lang} ads={spotlightAds} /> : null}
 
             <Link href={href} className="group block">
               {/* Image = layout/container width, centered */}

@@ -2,12 +2,12 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ArticleType } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { invalidatePublicArticles } from "@/lib/cache-invalidation";
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("live.update");
     if (auth.error) return auth.error;
 
     const { articleId } = await request.json();

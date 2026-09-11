@@ -1,13 +1,13 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { requireEditor } from "@/lib/admin-auth";
+import { requirePermission } from "@/lib/admin-auth";
 import { writeAuditLog } from "@/lib/audit-log";
 import { invalidatePublicArticles } from "@/lib/cache-invalidation";
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("featured.read");
     if (auth.error) return auth.error;
 
     const { searchParams } = new URL(request.url);
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireEditor();
+    const auth = await requirePermission("featured.create");
     if (auth.error) return auth.error;
 
     const { articleId, isFeatured, featuredOrder } = await request.json();
