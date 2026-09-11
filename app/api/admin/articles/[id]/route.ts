@@ -168,6 +168,7 @@ export async function PATCH(
         ...(data.ogImage !== undefined && { ogImage: data.ogImage }),
         ...(data.province !== undefined && { province: data.province }),
         ...(data.district !== undefined && { district: data.district }),
+        ...(data.auRegion !== undefined && { auRegion: data.auRegion }),
         ...(data.tagIds !== undefined && {
           tags: { set: data.tagIds.map((tagId) => ({ id: tagId })) },
         }),

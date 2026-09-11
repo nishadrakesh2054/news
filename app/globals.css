@@ -176,6 +176,59 @@
   animation: portal-leaderboard-fade 0.45s ease-out both;
 }
 
+/* One YouTube icon — clean scale + ripple (no blur) */
+.reels-yt-pulse {
+  position: relative;
+  isolation: isolate;
+  animation: reels-yt-pulse 1.8s ease-in-out infinite;
+}
+
+.reels-yt-pulse::before,
+.reels-yt-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -22%;
+  z-index: -1;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 0, 0, 0.62);
+  background: transparent;
+  animation: reels-yt-ripple 1.8s ease-out infinite;
+  pointer-events: none;
+}
+
+.reels-yt-pulse::after {
+  animation-delay: 0.9s;
+}
+
+@keyframes reels-yt-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes reels-yt-ripple {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.72;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reels-yt-pulse,
+  .reels-yt-pulse::before,
+  .reels-yt-pulse::after {
+    animation: none;
+  }
+}
+
 /* Editorial article body — quiet, readable, brand-linked */
 .article-prose > *:first-child {
   margin-top: 0;

@@ -13,6 +13,7 @@ import { DualImagePicker } from "@/components/admin/DualImagePicker";
 import { NepaliTypingHelper } from "@/components/admin/NepaliTypingHelper";
 import { AdminFormBodySection, AdminFormRow, AdminFormSection } from "@/components/admin/content";
 import { NEPAL_PROVINCES } from "@/constants/provinces";
+import { AU_REGIONS, type AuRegionCode } from "@/constants/australia-regions";
 import {
   ADMIN_BRAND,
   adminBtnDanger,
@@ -294,6 +295,9 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
     initialData?.province ? Number(initialData.province) : undefined
   );
   const [district, setDistrict] = useState<string>((initialData?.district as string) || "");
+  const [auRegion, setAuRegion] = useState<AuRegionCode | "">(
+    (initialData?.auRegion as AuRegionCode) || ""
+  );
   const [tagIds, setTagIds] = useState<string[]>(
     Array.isArray(initialData?.tags)
       ? (initialData.tags as Array<{ id: string }>).map((tag) => tag.id)
@@ -330,6 +334,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
         ogImage,
         province,
         district,
+        auRegion,
         tagIds,
       }),
     [
@@ -359,6 +364,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       ogImage,
       province,
       district,
+      auRegion,
       tagIds,
     ]
   );
@@ -494,6 +500,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
       languageEdition,
       province: province ? Number(province) : undefined,
       district: district || undefined,
+      auRegion: auRegion || null,
       tagIds,
       isFeatured,
       isBreaking,
@@ -766,7 +773,32 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
             </select>
           </AdminFormRow>
 
-          <AdminFormRow serial={4} label="District">
+          <AdminFormRow serial={4} label="Australia region">
+            <select
+              id="auRegion"
+              value={auRegion}
+              onChange={(e) => setAuRegion((e.target.value as AuRegionCode) || "")}
+              className={`${adminSelect} w-full max-w-sm`}
+            >
+              <option value="">Not Australia regional</option>
+              <optgroup label="States">
+                {AU_REGIONS.filter((r) => r.kind === "state").map((r) => (
+                  <option key={r.code} value={r.code}>
+                    {r.short} — {r.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Territories">
+                {AU_REGIONS.filter((r) => r.kind === "territory").map((r) => (
+                  <option key={r.code} value={r.code}>
+                    {r.short} — {r.name}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </AdminFormRow>
+
+          <AdminFormRow serial={5} label="District">
             <input
               id="district"
               type="text"

@@ -47,6 +47,7 @@ import {
 } from "@/constants/admin-layout";
 import { ArticleStatus, ArticleType, LanguageEdition } from "@prisma/client";
 import { NEPAL_PROVINCES, getProvinceLabel } from "@/constants/provinces";
+import { AU_REGIONS, getAuRegion } from "@/constants/australia-regions";
 
 interface ArticleItem {
   id: string;
@@ -64,6 +65,7 @@ interface ArticleItem {
   publishedAt: string | null;
   province: number | null;
   district: string | null;
+  auRegion?: string | null;
   createdAt: string;
   author: {
     name: string;
@@ -100,6 +102,7 @@ export default function AdminArticlesPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [tagFilter, setTagFilter] = useState<string>("ALL");
   const [provinceFilter, setProvinceFilter] = useState<string>("ALL");
+  const [auRegionFilter, setAuRegionFilter] = useState<string>("ALL");
   const [languageFilter, setLanguageFilter] = useState<string>("ALL");
   const [districtFilter, setDistrictFilter] = useState<string>("");
   const [limit, setLimit] = useState<number>(10);
@@ -138,6 +141,7 @@ export default function AdminArticlesPage() {
       categoryFilter,
       tagFilter,
       provinceFilter,
+      auRegionFilter,
       languageFilter,
       districtFilter,
       page,
@@ -155,6 +159,7 @@ export default function AdminArticlesPage() {
       if (categoryFilter !== "ALL") params.append("categoryId", categoryFilter);
       if (tagFilter !== "ALL") params.append("tagId", tagFilter);
       if (provinceFilter !== "ALL") params.append("province", provinceFilter);
+      if (auRegionFilter !== "ALL") params.append("auRegion", auRegionFilter);
       if (languageFilter !== "ALL") params.append("languageEdition", languageFilter);
       if (districtFilter.trim()) params.append("district", districtFilter.trim());
 
@@ -240,6 +245,7 @@ export default function AdminArticlesPage() {
     setCategoryFilter("ALL");
     setTagFilter("ALL");
     setProvinceFilter("ALL");
+    setAuRegionFilter("ALL");
     setLanguageFilter("ALL");
     setDistrictFilter("");
     setPage(1);
@@ -253,6 +259,7 @@ export default function AdminArticlesPage() {
     categoryFilter !== "ALL" ||
     tagFilter !== "ALL" ||
     provinceFilter !== "ALL" ||
+    auRegionFilter !== "ALL" ||
     languageFilter !== "ALL" ||
     districtFilter.trim() !== "";
 
@@ -469,6 +476,22 @@ export default function AdminArticlesPage() {
           </select>
 
           <select
+            value={auRegionFilter}
+            onChange={(e) => {
+              setAuRegionFilter(e.target.value);
+              setPage(1);
+            }}
+            className={adminToolbarSelectMd}
+          >
+            <option value="ALL">All AU regions</option>
+            {AU_REGIONS.map((region) => (
+              <option key={region.code} value={region.code}>
+                {region.short} — {region.name}
+              </option>
+            ))}
+          </select>
+
+          <select
             value={languageFilter}
             onChange={(e) => {
               setLanguageFilter(e.target.value);
@@ -604,9 +627,15 @@ export default function AdminArticlesPage() {
                               {art.title}
                             </p>
                           ) : null}
-                          {art.province || art.district ? (
+                          {art.province || art.district || art.auRegion ? (
                             <p className="truncate text-[10px] text-muted-foreground">
-                              {[getProvinceLabel(art.province), art.district].filter(Boolean).join(" · ")}
+                              {[
+                                getProvinceLabel(art.province),
+                                art.district,
+                                getAuRegion(art.auRegion)?.short,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
                             </p>
                           ) : null}
                         </div>

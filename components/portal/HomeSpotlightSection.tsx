@@ -9,6 +9,7 @@ import {
 import { formatTimeAgo } from "@/lib/nepaliDate";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { PortalImage } from "@/components/portal/PortalImage";
+import { HomeFullWidthAd } from "@/components/portal/HomeFullWidthAd";
 import { PORTAL } from "@/constants/portal";
 import type { PortalArticleCard } from "@/components/portal/NewsCard";
 
@@ -113,7 +114,16 @@ export function HomeSpotlightSection({ articles, lang }: HomeSpotlightSectionPro
                   when={when}
                 />
               </div>
+            </Link>
 
+            {/* Nepali portal pattern: heading first, then full-width ad */}
+            {index === 0 ? (
+              <div className="mt-6 sm:mt-8">
+                <HomeFullWidthAd lang={lang} />
+              </div>
+            ) : null}
+
+            <Link href={href} className="group block">
               {/* Image = layout/container width, centered */}
               {withMedia && image ? (
                 <div className="relative mx-auto mt-6 aspect-[16/9] w-full overflow-hidden bg-gray-200 sm:mt-8">

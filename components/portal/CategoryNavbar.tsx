@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ChevronRight, Home, Search, X } from "lucide-react";
+import { Home, Search, X } from "lucide-react";
+import { CategorySideDrawer } from "@/components/portal/CategorySideDrawer";
 import { isEnglishHostname } from "@/lib/language";
 import { getFormattedNepaliDate } from "@/lib/nepaliDate";
+import { editionPathHref } from "@/lib/site-url";
 import { PORTAL } from "@/constants/portal";
 
 interface CategoryItem {
@@ -62,10 +64,11 @@ export function CategoryNavbar({ categories = [] }: CategoryNavbarProps) {
   });
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchWrapRef = useRef<HTMLDivElement>(null);
-  const menuWrapRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
 
   const langParam = searchParams.get("lang");
+  const hostname =
+    typeof window !== "undefined" ? window.location.hostname : "";
   const isEnglish =
     langParam === "en" ||
     (typeof window !== "undefined" && isEnglishHostname(window.location.hostname));
@@ -97,20 +100,14 @@ export function CategoryNavbar({ categories = [] }: CategoryNavbarProps) {
   }, []);
 
   useEffect(() => {
-    if (!searchOpen && !menuOpen) return;
+    if (!searchOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setSearchOpen(false);
-        setMenuOpen(false);
-      }
+      if (e.key === "Escape") setSearchOpen(false);
     };
     const onPointer = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (searchOpen && searchWrapRef.current && !searchWrapRef.current.contains(target)) {
+      if (searchWrapRef.current && !searchWrapRef.current.contains(target)) {
         setSearchOpen(false);
-      }
-      if (menuOpen && menuWrapRef.current && !menuWrapRef.current.contains(target)) {
-        setMenuOpen(false);
       }
     };
     document.addEventListener("keydown", onKey);
@@ -119,9 +116,7 @@ export function CategoryNavbar({ categories = [] }: CategoryNavbarProps) {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("mousedown", onPointer);
     };
-  }, [searchOpen, menuOpen]);
-
-  const closeMenu = () => setMenuOpen(false);
+  }, [searchOpen]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,6 +128,20 @@ export function CategoryNavbar({ categories = [] }: CategoryNavbarProps) {
     setSearchQuery("");
   };
 
+  const toggleLanguage = () => {
+    const target = isEnglish ? "ne" : "en";
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("lang");
+    const qs = params.toString();
+    const path = qs ? `${pathname}?${qs}` : pathname;
+    const href = editionPathHref(path, target, hostname);
+    if (href.startsWith("http")) {
+      window.location.href = href;
+      return;
+    }
+    router.push(href);
+  };
+
   const itemClass = (active: boolean) =>
     `inline-flex h-12 items-center justify-center gap-1.5 whitespace-nowrap px-3.5 text-[18px] font-bold leading-[1.45] ${
       active ? "text-white" : "text-white/95 hover:bg-black/10"
@@ -142,112 +151,112 @@ export function CategoryNavbar({ categories = [] }: CategoryNavbarProps) {
     active ? { backgroundColor: PORTAL.accent } : undefined;
 
   return (
-    <nav
-      ref={navRef}
-      className="relative sticky top-0 z-40 hidden w-full select-none font-khand-nav text-white md:block"
-      style={{ backgroundColor: PORTAL.brand }}
-    >
-      <div className={`${PORTAL.container} flex min-h-12 items-center justify-between gap-2`}>
-        <div className="flex min-h-12 min-w-0 flex-1 items-center">
-          <div className="relative z-50 shrink-0">
-            <Link
-              href={`/${langQuery}`}
-              className={itemClass(pathname === "/")}
-              style={activeStyle(pathname === "/")}
-            >
-              <Home className="h-5 w-5 shrink-0" />
-              <span className="inline-flex items-center leading-[1.45]">
-                {isEnglish ? "Home" : "गृह"}
-              </span>
-            </Link>
-
-            {isStuck ? (
-              <div className="pointer-events-none absolute left-0 top-full z-50 flex flex-col items-start">
-                <span
-                  className="ml-3 block h-0 w-0 border-x-[6px] border-b-[7px] border-x-transparent border-b-[#1a1a1a]"
-                  aria-hidden
-                />
-                <div className="whitespace-nowrap bg-[#1a1a1a] px-2.5 py-1 text-[10px] font-semibold leading-[1.45] text-white shadow-sm">
-                  {shownDate}
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="flex min-h-12 min-w-0 flex-1 items-center overflow-x-auto scrollbar-none">
-            {categories.map((cat) => {
-              const label = isEnglish
-                ? cat.name || cat.nameNp || cat.displayName
-                : cat.nameNp || cat.name || cat.displayName;
-              const active = pathname === `/category/${cat.slug}`;
-              return (
-                <Link
-                  key={cat.id}
-                  href={`/category/${cat.slug}${langQuery}`}
-                  className={itemClass(active)}
-                  style={activeStyle(active)}
-                >
-                  <span className="inline-flex items-center leading-[1.45]">{label}</span>
-                </Link>
-              );
-            })}
-            <Link
-              href={`/epaper${langQuery}`}
-              className={itemClass(pathname === "/epaper")}
-              style={activeStyle(pathname === "/epaper")}
-            >
-              <span className="inline-flex items-center leading-[1.45]">
-                {isEnglish ? "E-Paper" : "इ-पत्रिका"}
-              </span>
-            </Link>
-          </div>
-        </div>
-
-        <div className="ml-auto flex h-12 shrink-0 items-center gap-0.5">
-          <div ref={searchWrapRef} className="relative flex h-12 items-center">
-            {searchOpen ? (
-              <form
-                onSubmit={handleSearch}
-                className="absolute right-0 top-1/2 z-50 flex h-8 -translate-y-1/2 items-center rounded-sm border border-gray-200 bg-white text-gray-900 shadow-sm"
+    <>
+      <nav
+        ref={navRef}
+        className="relative sticky top-0 z-40 hidden w-full select-none font-khand-nav text-white md:block"
+        style={{ backgroundColor: PORTAL.brand }}
+      >
+        <div className={`${PORTAL.container} flex min-h-12 items-center justify-between gap-2`}>
+          <div className="flex min-h-12 min-w-0 flex-1 items-center">
+            <div className="relative z-50 shrink-0">
+              <Link
+                href={`/${langQuery}`}
+                className={itemClass(pathname === "/")}
+                style={activeStyle(pathname === "/")}
               >
-                <Search className="ml-2 h-3.5 w-3.5 shrink-0 text-gray-400" />
-                <input
-                  ref={searchInputRef}
-                  type="search"
-                  placeholder={isEnglish ? "Search…" : "खोज्नुहोस्…"}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-[10.75rem] bg-transparent py-0 pl-1.5 pr-1 text-sm outline-none sm:w-[11.75rem]"
-                />
+                <Home className="h-5 w-5 shrink-0" />
+                <span className="inline-flex items-center leading-[1.45]">
+                  {isEnglish ? "Home" : "गृह"}
+                </span>
+              </Link>
+
+              {isStuck ? (
+                <div className="pointer-events-none absolute left-0 top-full z-50 flex flex-col items-start">
+                  <span
+                    className="ml-3 block h-0 w-0 border-x-[6px] border-b-[7px] border-x-transparent border-b-[#1a1a1a]"
+                    aria-hidden
+                  />
+                  <div className="whitespace-nowrap bg-[#1a1a1a] px-2.5 py-1 text-[10px] font-semibold leading-[1.45] text-white shadow-sm">
+                    {shownDate}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex min-h-12 min-w-0 flex-1 items-center overflow-x-auto scrollbar-none">
+              {categories.map((cat) => {
+                const label = isEnglish
+                  ? cat.name || cat.nameNp || cat.displayName
+                  : cat.nameNp || cat.name || cat.displayName;
+                const active = pathname === `/category/${cat.slug}`;
+                return (
+                  <Link
+                    key={cat.id}
+                    href={`/category/${cat.slug}${langQuery}`}
+                    className={itemClass(active)}
+                    style={activeStyle(active)}
+                  >
+                    <span className="inline-flex items-center leading-[1.45]">{label}</span>
+                  </Link>
+                );
+              })}
+              <Link
+                href={`/epaper${langQuery}`}
+                className={itemClass(pathname === "/epaper")}
+                style={activeStyle(pathname === "/epaper")}
+              >
+                <span className="inline-flex items-center leading-[1.45]">
+                  {isEnglish ? "E-Paper" : "इ-पत्रिका"}
+                </span>
+              </Link>
+            </div>
+          </div>
+
+          <div className="ml-auto flex h-12 shrink-0 items-center gap-0.5">
+            <div ref={searchWrapRef} className="relative flex h-12 items-center">
+              {searchOpen ? (
+                <form
+                  onSubmit={handleSearch}
+                  className="absolute right-0 top-1/2 z-50 flex h-8 -translate-y-1/2 items-center rounded-sm border border-gray-200 bg-white text-gray-900 shadow-sm"
+                >
+                  <Search className="ml-2 h-3.5 w-3.5 shrink-0 text-gray-400" />
+                  <input
+                    ref={searchInputRef}
+                    type="search"
+                    placeholder={isEnglish ? "Search…" : "खोज्नुहोस्…"}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-[10.75rem] bg-transparent py-0 pl-1.5 pr-1 text-sm outline-none sm:w-[11.75rem]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchOpen(false);
+                      setSearchQuery("");
+                    }}
+                    className="inline-flex h-8 w-8 items-center justify-center text-gray-500 hover:text-gray-800"
+                    aria-label={isEnglish ? "Close search" : "बन्द गर्नुहोस्"}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </form>
+              ) : (
                 <button
                   type="button"
                   onClick={() => {
-                    setSearchOpen(false);
-                    setSearchQuery("");
+                    setMenuOpen(false);
+                    setSearchOpen(true);
                   }}
-                  className="inline-flex h-8 w-8 items-center justify-center text-gray-500 hover:text-gray-800"
-                  aria-label={isEnglish ? "Close search" : "बन्द गर्नुहोस्"}
+                  className="inline-flex h-9 w-9 items-center justify-center text-white hover:bg-black/10"
+                  aria-label={isEnglish ? "Search" : "खोज"}
+                  title={isEnglish ? "Search" : "खोज"}
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <Search className="h-3.5 w-3.5" />
                 </button>
-              </form>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setSearchOpen(true);
-                }}
-                className="inline-flex h-9 w-9 items-center justify-center text-white hover:bg-black/10"
-                aria-label={isEnglish ? "Search" : "खोज"}
-                title={isEnglish ? "Search" : "खोज"}
-              >
-                <Search className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
+              )}
+            </div>
 
-          <div ref={menuWrapRef} className="relative flex items-center">
             <button
               type="button"
               className="inline-flex h-9 w-9 items-center justify-center text-white hover:bg-black/10"
@@ -260,65 +269,18 @@ export function CategoryNavbar({ categories = [] }: CategoryNavbarProps) {
             >
               <HamburgerIcon open={menuOpen} />
             </button>
-
-            {menuOpen ? (
-              <div className="absolute right-0 top-full z-50 w-64 bg-white text-gray-900 shadow-lg">
-                <div className="flex max-h-[70vh] flex-col overflow-y-auto">
-                  {categories.map((cat) => {
-                    const label = isEnglish
-                      ? cat.name || cat.nameNp || cat.displayName
-                      : cat.nameNp || cat.name || cat.displayName;
-                    const active = pathname === `/category/${cat.slug}`;
-                    return (
-                      <Link
-                        key={cat.id}
-                        href={`/category/${cat.slug}${langQuery}`}
-                        onClick={closeMenu}
-                        className={`group inline-flex min-h-12 items-center gap-1.5 border-b border-gray-200 px-4 py-3 text-[18px] font-semibold leading-[1.45] transition-colors ${
-                          active
-                            ? "text-white"
-                            : "text-gray-900 hover:bg-[#C41E3A] hover:text-white"
-                        }`}
-                        style={active ? { backgroundColor: PORTAL.accent } : undefined}
-                      >
-                        <ChevronRight
-                          className={`h-4 w-4 shrink-0 transition-colors ${
-                            active ? "text-white/80" : "text-gray-400 group-hover:text-white/80"
-                          }`}
-                          aria-hidden
-                        />
-                        <span className="inline-flex items-center leading-[1.45]">{label}</span>
-                      </Link>
-                    );
-                  })}
-                  <Link
-                    href={`/epaper${langQuery}`}
-                    onClick={closeMenu}
-                    className={`group inline-flex min-h-12 items-center gap-1.5 px-4 py-3 text-[18px] font-semibold leading-[1.45] transition-colors ${
-                      pathname === "/epaper"
-                        ? "text-white"
-                        : "text-gray-900 hover:bg-[#C41E3A] hover:text-white"
-                    }`}
-                    style={pathname === "/epaper" ? { backgroundColor: PORTAL.accent } : undefined}
-                  >
-                    <ChevronRight
-                      className={`h-4 w-4 shrink-0 transition-colors ${
-                        pathname === "/epaper"
-                          ? "text-white/80"
-                          : "text-gray-400 group-hover:text-white/80"
-                      }`}
-                      aria-hidden
-                    />
-                    <span className="inline-flex items-center leading-[1.45]">
-                      {isEnglish ? "E-Paper" : "इ-पत्रिका"}
-                    </span>
-                  </Link>
-                </div>
-              </div>
-            ) : null}
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      <CategorySideDrawer
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        categories={categories}
+        isEnglish={isEnglish}
+        langQuery={langQuery}
+        onToggleLanguage={toggleLanguage}
+      />
+    </>
   );
 }

@@ -4,13 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
   Calendar,
-  ChevronRight,
-  Coins,
-  DollarSign,
   Globe,
-  Home,
   Search,
-  Sparkles,
   X,
 } from "lucide-react";
 import { FacebookIcon, TwitterIcon, YoutubeIcon } from "./SocialIcons";
@@ -20,6 +15,7 @@ import {
   HeaderLeaderboardRotator,
   type LeaderboardAd,
 } from "@/components/portal/HeaderLeaderboardRotator";
+import { CategorySideDrawer } from "@/components/portal/CategorySideDrawer";
 import { TopbarUtilitiesMenu } from "@/components/portal/TopbarUtilitiesMenu";
 import { SITE_CONFIG } from "@/constants/site";
 import { editionPathHref } from "@/lib/site-url";
@@ -163,96 +159,6 @@ export function PublicHeader({
 
   const dateLabel = isEnglish ? englishDateStr : nepaliDateStr || "नेपाली मिति";
 
-  const renderNavMenu = () =>
-    menuOpen ? (
-      <div
-        className="absolute inset-x-0 top-full z-50 border-b border-white/10 text-white shadow-lg"
-        style={{ backgroundColor: PORTAL.brand }}
-      >
-        <div className="flex max-h-[70vh] flex-col overflow-y-auto">
-          <Link
-            href={homeHref}
-            onClick={closeMenu}
-            className={`inline-flex min-h-12 items-center gap-2 px-4 py-3 text-[18px] font-bold leading-[1.45] ${
-              pathname === "/" ? "bg-black/15" : "hover:bg-black/10"
-            }`}
-          >
-            <Home className="h-5 w-5 shrink-0" />
-            <span className="inline-flex items-center leading-[1.45]">
-              {isEnglish ? "Home" : "गृह"}
-            </span>
-          </Link>
-          {categories.map((cat) => {
-            const label = isEnglish
-              ? cat.name || cat.nameNp || cat.displayName
-              : cat.nameNp || cat.name || cat.displayName;
-            const active = pathname === `/category/${cat.slug}`;
-            return (
-              <Link
-                key={cat.id}
-                href={`/category/${cat.slug}${langQuery}`}
-                onClick={closeMenu}
-                className={`inline-flex min-h-12 items-center gap-1.5 px-4 py-3 text-[18px] font-bold leading-[1.45] ${
-                  active ? "bg-black/15" : "hover:bg-black/10"
-                }`}
-              >
-                <ChevronRight className="h-4 w-4 shrink-0 text-white/60" aria-hidden />
-                <span className="inline-flex items-center leading-[1.45]">{label}</span>
-              </Link>
-            );
-          })}
-          <Link
-            href={`/epaper${langQuery}`}
-            onClick={closeMenu}
-            className={`inline-flex min-h-12 items-center gap-1.5 px-4 py-3 text-[18px] font-bold leading-[1.45] ${
-              pathname === "/epaper" ? "bg-black/15" : "hover:bg-black/10"
-            }`}
-          >
-            <ChevronRight className="h-4 w-4 shrink-0 text-white/60" aria-hidden />
-            <span className="inline-flex items-center leading-[1.45]">
-              {isEnglish ? "E-Paper" : "इ-पत्रिका"}
-            </span>
-          </Link>
-
-          <div className="border-t border-white/15 px-4 py-2">
-            <p className="mb-1 text-sm font-bold uppercase tracking-wide text-white/50">
-              {isEnglish ? "Utilities" : "उपयोगी"}
-            </p>
-            <Link
-              href={`/forex${langQuery}`}
-              onClick={closeMenu}
-              className="inline-flex min-h-11 w-full items-center gap-2 py-2.5 text-[18px] font-semibold leading-[1.45] hover:bg-black/10"
-            >
-              <DollarSign className="h-4 w-4 shrink-0 opacity-70" />
-              <span className="inline-flex items-center leading-[1.45]">
-                {isEnglish ? "Forex" : "मुद्रा दर"}
-              </span>
-            </Link>
-            <Link
-              href={`/gold-rate${langQuery}`}
-              onClick={closeMenu}
-              className="inline-flex min-h-11 w-full items-center gap-2 py-2.5 text-[18px] font-semibold leading-[1.45] hover:bg-black/10"
-            >
-              <Coins className="h-4 w-4 shrink-0 opacity-70" />
-              <span className="inline-flex items-center leading-[1.45]">
-                {isEnglish ? "Gold & silver" : "सुन–चाँदी"}
-              </span>
-            </Link>
-            <Link
-              href={`/rashifal${langQuery}`}
-              onClick={closeMenu}
-              className="inline-flex min-h-11 w-full items-center gap-2 py-2.5 text-[18px] font-semibold leading-[1.45] hover:bg-black/10"
-            >
-              <Sparkles className="h-4 w-4 shrink-0 opacity-70" />
-              <span className="inline-flex items-center leading-[1.45]">
-                {isEnglish ? "Horoscope" : "राशिफल"}
-              </span>
-            </Link>
-          </div>
-        </div>
-      </div>
-    ) : null;
-
   return (
     <>
       {/* Mobile date strip — scrolls away */}
@@ -351,8 +257,6 @@ export function PublicHeader({
             </form>
           ) : null}
         </div>
-
-        {renderNavMenu()}
       </div>
 
       <header className="hidden w-full select-none bg-white sm:block">
@@ -427,6 +331,15 @@ export function PublicHeader({
           <HeaderLeaderboardRotator ads={ads} isEnglish={isEnglish} intervalMs={3000} />
         </div>
       </header>
+
+      <CategorySideDrawer
+        open={menuOpen}
+        onClose={closeMenu}
+        categories={categories}
+        isEnglish={isEnglish}
+        langQuery={langQuery}
+        onToggleLanguage={toggleLanguage}
+      />
     </>
   );
 }

@@ -1,6 +1,7 @@
 import {
   ArticleStatus,
   ArticleType,
+  AuRegion,
   HomeDisplayMode,
   LanguageEdition,
 } from "@prisma/client";
@@ -32,6 +33,7 @@ export type ArticleInput = {
   ogImage?: string | null;
   province?: number | null;
   district?: string | null;
+  auRegion?: AuRegion | null;
   tagIds?: string[];
 };
 
@@ -186,6 +188,20 @@ export function validateArticleCreate(body: unknown): ArticleValidationResult {
     return { ok: false, error: "Province must be a valid number" };
   }
 
+  let auRegion: AuRegion | null | undefined = undefined;
+  if (input.auRegion !== undefined) {
+    if (input.auRegion === null || input.auRegion === "") {
+      auRegion = null;
+    } else if (
+      typeof input.auRegion === "string" &&
+      Object.values(AuRegion).includes(input.auRegion as AuRegion)
+    ) {
+      auRegion = input.auRegion as AuRegion;
+    } else {
+      return { ok: false, error: "Invalid Australia region" };
+    }
+  }
+
   const tagIds = parseTagIds(input.tagIds);
   if (input.tagIds !== undefined && tagIds === undefined) {
     return { ok: false, error: "tagIds must be an array of tag IDs" };
@@ -221,6 +237,7 @@ export function validateArticleCreate(body: unknown): ArticleValidationResult {
       ogImage: parseOptionalString(input.ogImage),
       province,
       district: parseOptionalString(input.district),
+      auRegion: auRegion === undefined ? null : auRegion,
       tagIds,
     },
   };
@@ -328,6 +345,19 @@ export function validateArticleUpdate(body: unknown): ArticleValidationResult {
         return { ok: false, error: "Province must be a valid number" };
       }
       data.province = province;
+    }
+  }
+
+  if (input.auRegion !== undefined) {
+    if (input.auRegion === null || input.auRegion === "") {
+      data.auRegion = null;
+    } else if (
+      typeof input.auRegion === "string" &&
+      Object.values(AuRegion).includes(input.auRegion as AuRegion)
+    ) {
+      data.auRegion = input.auRegion as AuRegion;
+    } else {
+      return { ok: false, error: "Invalid Australia region" };
     }
   }
 

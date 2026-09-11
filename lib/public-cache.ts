@@ -1,8 +1,9 @@
 import { unstable_cache } from "next/cache";
-import { ArticleStatus, ArticleType, Prisma } from "@prisma/client";
+import { ArticleStatus, ArticleType, AuRegion, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { LanguageEditionType } from "@/lib/language";
 import { languageEditionWhere, resolveArticleTitle } from "@/lib/language";
+import { AU_STATE_CODES, AU_TERRITORY_CODES } from "@/constants/australia-regions";
 
 export const CACHE_TAGS = {
   categories: "categories",
@@ -29,6 +30,7 @@ const homeArticleSelect = {
   views: true,
   province: true,
   district: true,
+  auRegion: true,
   createdAt: true,
   categoryId: true,
   category: {
@@ -54,6 +56,8 @@ async function loadHomePayload(lang: LanguageEditionType) {
     sportsArticles,
     provinceArticles,
     popularArticles,
+    auStateArticles,
+    auTerritoryArticles,
   ] = await Promise.all([
     prisma.article.findMany({
       where: whereClause,
@@ -151,6 +155,24 @@ async function loadHomePayload(lang: LanguageEditionType) {
       orderBy: { views: "desc" },
       take: 5,
     }),
+    prisma.article.findMany({
+      where: {
+        ...whereClause,
+        auRegion: { in: AU_STATE_CODES as AuRegion[] },
+      },
+      select: homeArticleSelect,
+      orderBy: { publishedAt: "desc" },
+      take: 24,
+    }),
+    prisma.article.findMany({
+      where: {
+        ...whereClause,
+        auRegion: { in: AU_TERRITORY_CODES as AuRegion[] },
+      },
+      select: homeArticleSelect,
+      orderBy: { publishedAt: "desc" },
+      take: 12,
+    }),
   ]);
 
   return {
@@ -162,6 +184,8 @@ async function loadHomePayload(lang: LanguageEditionType) {
     sportsArticles,
     provinceArticles,
     popularArticles,
+    auStateArticles,
+    auTerritoryArticles,
   };
 }
 

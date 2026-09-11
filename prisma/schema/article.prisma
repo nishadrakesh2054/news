@@ -25,6 +25,18 @@ enum HomeDisplayMode {
   TITLE_MEDIA
 }
 
+/** Australia — 6 states + 2 territories (homepage Australia News). */
+enum AuRegion {
+  NSW
+  VIC
+  QLD
+  SA
+  WA
+  TAS
+  ACT
+  NT
+}
+
 model Article {
   id              String          @id @default(cuid())
   title           String
@@ -65,6 +77,8 @@ model Article {
   analyticsEvents AnalyticsEvent[]
   province        Int?
   district        String?
+  /** Australia state/territory for homepage Australia News block. */
+  auRegion        AuRegion?
   publishedAt     DateTime?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -81,6 +95,8 @@ model Article {
   @@index([status, type])
   @@index([province])
   @@index([district])
+  @@index([status, auRegion, publishedAt(sort: Desc)])
+  @@index([auRegion])
   @@index([authorId])
   @@index([isFeatured, featuredOrder])
   @@index([showOnHome, homeOrder])

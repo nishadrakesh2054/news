@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Play, X } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, X } from "lucide-react";
 import type { LanguageEditionType } from "@/lib/language";
 import { parseYoutubeVideoId } from "@/lib/youtube";
-import { SectionHeader } from "@/components/portal/SectionHeader";
+import { PORTAL } from "@/constants/portal";
+import { YoutubeIcon } from "@/components/portal/SocialIcons";
 
 type VideoItem = {
   id: string;
@@ -74,13 +76,24 @@ export function ReelsSection({ lang = "ne", videos = [], showHeader = true }: Re
   if (videos.length === 0) return null;
 
   return (
-    <section className={showHeader ? "py-2" : undefined}>
+    <section className={`overflow-x-clip ${showHeader ? "py-2" : ""}`.trim()}>
       {showHeader ? (
-        <SectionHeader
-          title={isEnglish ? "Reels" : "रिल्स"}
-          href={`/media${langQ}`}
-          linkLabel={isEnglish ? "More videos" : "थप भिडियो"}
-        />
+        <div className="mb-4 flex items-center gap-3 py-2 pr-10 sm:pr-6">
+          <h2 className="portal-section-title shrink-0" style={{ color: PORTAL.brand }}>
+            {isEnglish ? "Reels" : "रिल्स"}
+          </h2>
+          <div
+            className="h-px min-w-4 flex-1"
+            style={{ backgroundColor: PORTAL.accent, opacity: 0.35 }}
+          />
+          <Link
+            href={`/media${langQ}`}
+            className="reels-yt-pulse inline-flex shrink-0 items-center justify-center text-[#FF0000]"
+            aria-label={isEnglish ? "More videos" : "थप भिडियो"}
+          >
+            <YoutubeIcon className="h-8 w-8 sm:h-9 sm:w-9" />
+          </Link>
+        </div>
       ) : null}
 
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
@@ -102,23 +115,29 @@ export function ReelsSection({ lang = "ne", videos = [], showHeader = true }: Re
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                 />
               ) : null}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-              <span className="absolute inset-0 flex items-center justify-center">
-                <span
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-full text-white"
-                  style={{ backgroundColor: "rgba(25, 87, 166, 0.85)" }}
-                >
-                  <Play className="h-3 w-3 fill-white" />
-                </span>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+              <span className="absolute inset-0 z-10 flex items-center justify-center text-white drop-shadow-md" aria-hidden>
+                <YoutubeIcon className="h-6 w-6 sm:h-7 sm:w-7" />
               </span>
               <span className="absolute inset-x-0 bottom-0 z-10 p-2.5">
-                <span className="line-clamp-2 text-[11px] font-bold leading-snug text-white">
+                <span className="line-clamp-2 text-[11px] font-semibold leading-snug text-white/90">
                   {video.filename}
                 </span>
               </span>
             </button>
           );
         })}
+      </div>
+
+      <div className="mt-5 flex justify-center">
+        <Link
+          href={`/media${langQ}`}
+          className="inline-flex items-center gap-0.5 text-sm font-bold hover:underline sm:text-base"
+          style={{ color: PORTAL.brand }}
+        >
+          {isEnglish ? "More videos" : "थप भिडियो"}
+          <ChevronRight className="h-4 w-4" />
+        </Link>
       </div>
 
       {active && activeEmbedId ? (

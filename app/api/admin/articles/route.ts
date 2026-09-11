@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ArticleStatus, ArticleType, LanguageEdition, Prisma, Role } from "@prisma/client";
+import { ArticleStatus, ArticleType, AuRegion, LanguageEdition, Prisma, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requireStaff } from "@/lib/admin-auth";
@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     const tagId = searchParams.get("tagId") || "";
     const province = searchParams.get("province") || "";
     const district = searchParams.get("district") || "";
+    const auRegion = searchParams.get("auRegion") || "";
     const languageEdition = searchParams.get("languageEdition") || "";
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "10", 10) || 10));
@@ -77,6 +78,10 @@ export async function GET(request: NextRequest) {
       where.district = { contains: district.trim(), mode: "insensitive" };
     }
 
+    if (auRegion && Object.values(AuRegion).includes(auRegion as AuRegion)) {
+      where.auRegion = auRegion as AuRegion;
+    }
+
     if (
       languageEdition &&
       Object.values(LanguageEdition).includes(languageEdition as LanguageEdition)
@@ -101,6 +106,7 @@ export async function GET(request: NextRequest) {
       publishedAt: true,
       province: true,
       district: true,
+      auRegion: true,
       createdAt: true,
       author: {
         select: {
@@ -271,6 +277,7 @@ export async function POST(request: NextRequest) {
         ogImage: data.ogImage ?? null,
         province: data.province ?? null,
         district: data.district ?? null,
+        auRegion: data.auRegion ?? null,
         publishedAt,
         ...(data.tagIds?.length
           ? { tags: { connect: data.tagIds.map((id) => ({ id })) } }

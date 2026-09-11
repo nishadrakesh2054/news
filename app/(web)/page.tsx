@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 import { headers } from "next/headers";
 import {
   resolveLanguageEdition,
-  resolveCategoryName,
-  resolveCategoryDescription,
 } from "@/lib/language";
 import { SITE_CONFIG } from "@/constants/site";
 import {
@@ -25,10 +22,11 @@ import { OpinionSection } from "@/components/portal/OpinionSection";
 import { ProvinceNewsWidget } from "@/components/portal/ProvinceNewsWidget";
 import { LatestNewsSection } from "@/components/portal/LatestNewsSection";
 import { HomeSpotlightSection } from "@/components/portal/HomeSpotlightSection";
+import { AustraliaNewsSection } from "@/components/portal/AustraliaNewsSection";
 import { MediaShowcaseAboveFooter } from "@/components/portal/MediaShowcaseAboveFooter";
 import { RashifalSection } from "@/components/portal/RashifalSection";
 import { EpaperSection } from "@/components/portal/EpaperSection";
-import { PortalContainer } from "@/components/portal/SectionHeader";
+import { PortalContainer, SectionHeader } from "@/components/portal/SectionHeader";
 import {
   getCachedActiveAds,
   getCachedEpapers,
@@ -37,9 +35,6 @@ import {
   getCachedReels,
   getCachedTags,
 } from "@/lib/public-cache";
-import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
-import { PortalImage } from "@/components/portal/PortalImage";
-import { PORTAL } from "@/constants/portal";
 
 interface WebHomeProps {
   searchParams: Promise<{ lang?: string }>;
@@ -74,7 +69,6 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
   const headerList = await headers();
   const lang = resolveLanguageEdition(params.lang, requestHost(headerList));
   const isEnglish = lang === "en";
-  const langQ = isEnglish ? "?lang=en" : "";
 
   const [
     home,
@@ -95,12 +89,13 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
   const {
     publishedArticles,
     homeSpotlightArticles,
-    categories,
     opinionArticles,
     economyArticles,
     sportsArticles,
     provinceArticles,
     popularArticles,
+    auStateArticles,
+    auTerritoryArticles,
   } = home;
 
   const sidebarAdsTop = activeAds
@@ -161,84 +156,50 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
         </PortalContainer>
       ) : null}
 
-      {categories.length > 0 ? (
-        <section className="border-y border-gray-200 bg-white py-5">
-          <PortalContainer>
-            <div className="mb-4 flex items-center gap-2">
-              <span
-                className="px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide text-white"
-                style={{ backgroundColor: PORTAL.accent }}
-              >
-                {isEnglish ? "News Categories" : "समाचार श्रेणी"}
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              {categories.map((cat) => {
-                const cover =
-                  optimizeCloudinaryUrl(cat.articles[0]?.coverImage, "card") ||
-                  cat.articles[0]?.coverImage;
-                const name = resolveCategoryName(cat, lang);
-                const description = resolveCategoryDescription(cat, lang);
-                return (
-                  <Link
-                    key={cat.id}
-                    href={`/category/${cat.slug}${langQ}`}
-                    className="group block space-y-2"
-                  >
-                    <div className="relative aspect-[16/10] overflow-hidden bg-gray-200">
-                      {cover ? (
-                        <PortalImage
-                          src={cover}
-                          alt={name}
-                          fill
-                          sizes="(max-width: 640px) 50vw, 200px"
-                          className="object-cover"
-                        />
-                      ) : null}
-                    </div>
-                    <h3 className="text-sm font-bold group-hover:underline" style={{ color: PORTAL.brand }}>
-                      {name}
-                    </h3>
-                    {description ? (
-                      <p className="line-clamp-2 text-[11px] leading-snug text-gray-500">{description}</p>
-                    ) : null}
-                  </Link>
-                );
-              })}
-            </div>
-          </PortalContainer>
-        </section>
-      ) : null}
-
       <PortalContainer className="py-6">
         {mainStories.length === 0 ? (
           <div className="border border-dashed border-gray-300 px-6 py-16 text-center text-sm text-gray-500">
             {emptyLabel}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
-            <div className="flex flex-col gap-4 lg:col-span-9">
-              {mainStories.map((art, index) => (
-                <NewsCard
-                  key={art.id}
-                  article={art}
-                  lang={lang}
-                  variant="lead"
-                  priority={index === 0}
-                  badge={isEnglish ? "Main News" : "मुख्य समाचार"}
-                />
-              ))}
-            </div>
+          <>
+            <SectionHeader
+              title={isEnglish ? "Main News" : "मुख्य समाचार"}
+            />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
+              <div className="flex flex-col gap-4 lg:col-span-9">
+                {mainStories.map((art, index) => (
+                  <NewsCard
+                    key={art.id}
+                    article={art}
+                    lang={lang}
+                    variant="lead"
+                    priority={index === 0}
+                    badge={isEnglish ? "Main News" : "मुख्य समाचार"}
+                  />
+                ))}
+              </div>
 
-            <aside className="flex flex-col gap-4 lg:col-span-3">
-              <HomeSidebarTabs popular={popularSidebar} lang={lang} />
-              <Suspense fallback={null}>
-                <OpinionPollWidget />
-              </Suspense>
-            </aside>
-          </div>
+              <aside className="flex flex-col gap-4 lg:col-span-3">
+                <HomeSidebarTabs popular={popularSidebar} lang={lang} />
+                <Suspense fallback={null}>
+                  <OpinionPollWidget />
+                </Suspense>
+              </aside>
+            </div>
+          </>
         )}
       </PortalContainer>
+
+      {auStateArticles.length > 0 || auTerritoryArticles.length > 0 ? (
+        <PortalContainer className="py-5">
+          <AustraliaNewsSection
+            stateArticles={auStateArticles}
+            territoryArticles={auTerritoryArticles}
+            lang={lang}
+          />
+        </PortalContainer>
+      ) : null}
 
       <PortalContainer className="py-6">
         <ProvinceNewsWidget articles={provinceArticles} lang={lang} />
