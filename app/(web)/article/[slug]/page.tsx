@@ -298,7 +298,7 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
             </header>
 
             {coverSrc ? (
-              <figure className="mb-4">
+              <figure className="mb-2">
                 <div className="relative aspect-[16/10] w-full overflow-hidden bg-gray-100">
                   <PortalImage
                     src={coverSrc}
@@ -309,12 +309,6 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
                     className="object-cover"
                   />
                 </div>
-                {article.caption ? (
-                  <figcaption className="mt-2.5 text-[13px] leading-relaxed text-gray-500">
-                    {isEnglish ? "Photo: " : "तस्बिर: "}
-                    {article.caption}
-                  </figcaption>
-                ) : null}
               </figure>
             ) : null}
 
@@ -323,7 +317,7 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
                 ads={inArticleAds}
                 path={articlePath}
                 isEnglish={isEnglish}
-                className="mb-8"
+                className="mb-3"
               />
             ) : null}
 
