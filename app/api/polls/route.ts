@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { PollStatus } from "@prisma/client";
@@ -6,49 +6,48 @@ import { authOptions } from "@/lib/auth";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { buildPollVoterKey, hasPollVote, recordPollVote } from "@/lib/poll-votes";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { getCachedActivePoll } from "@/lib/public-cache";
 
 export async function GET() {
   try {
-    const activePoll = await prisma.poll.findFirst({
-      where: { status: PollStatus.ACTIVE },
-      orderBy: { createdAt: "desc" },
-      include: {
-        options: {
-          orderBy: { createdAt: "asc" },
-        },
-      },
-    });
+    const cached = await getCachedActivePoll();
 
-    if (!activePoll) {
-      return apiSuccess(null);
+    if (!cached) {
+      return NextResponse.json(
+        { success: true, data: null },
+        {
+          headers: {
+            "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+          },
+        }
+      );
     }
 
-    if (activePoll.expiresAt && activePoll.expiresAt.getTime() <= Date.now()) {
+    if (cached.expired) {
       await prisma.poll.update({
-        where: { id: activePoll.id },
+        where: { id: cached.id },
         data: { status: PollStatus.CLOSED },
       });
-      return apiSuccess(null);
+      return NextResponse.json(
+        { success: true, data: null },
+        {
+          headers: {
+            "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+          },
+        }
+      );
     }
 
-    const totalVotes = activePoll.options.reduce((acc, opt) => acc + opt.votes, 0);
-
-    const optionsWithPercent = activePoll.options.map((opt) => ({
-      id: opt.id,
-      option: opt.option,
-      optionNp: opt.optionNp,
-      votes: opt.votes,
-      percentage: totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0,
-    }));
-
-    return apiSuccess({
-      id: activePoll.id,
-      question: activePoll.question,
-      questionNp: activePoll.questionNp,
-      expiresAt: activePoll.expiresAt,
-      totalVotes,
-      options: optionsWithPercent,
-    });
+    const { expired, ...poll } = cached;
+    void expired;
+    return NextResponse.json(
+      { success: true, data: poll },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+        },
+      }
+    );
   } catch (error) {
     return handleServerError(error, "Failed to fetch poll");
   }

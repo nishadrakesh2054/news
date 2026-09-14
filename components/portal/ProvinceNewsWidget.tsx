@@ -6,6 +6,7 @@ import type { LanguageEditionType } from "@/lib/language";
 import { resolveArticleTitle } from "@/lib/language";
 import { formatTimeAgo } from "@/lib/nepaliDate";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
+import { PortalImage } from "@/components/portal/PortalImage";
 import { PORTAL } from "@/constants/portal";
 import { SectionHeader } from "@/components/portal/SectionHeader";
 import { PROVINCES } from "@/constants/provinces";
@@ -80,10 +81,15 @@ export function ProvinceNewsWidget({ articles, lang = "ne" }: ProvinceNewsWidget
                 href={`/article/${art.slug}${langQ}`}
                 className="group flex gap-3 border border-gray-200 p-3 hover:border-gray-300 hover:bg-gray-50"
               >
-                <div className="h-16 w-20 shrink-0 overflow-hidden bg-gray-200">
+                <div className="relative h-16 w-20 shrink-0 overflow-hidden bg-gray-200">
                   {image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={image} alt={title} className="h-full w-full object-cover" />
+                    <PortalImage
+                      src={image}
+                      alt={title}
+                      fill
+                      sizes="80px"
+                      className="object-cover"
+                    />
                   ) : null}
                 </div>
                 <div className="min-w-0 flex-1 space-y-1">

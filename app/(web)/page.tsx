@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { headers } from "next/headers";
 import {
   resolveLanguageEdition,
@@ -15,16 +16,10 @@ import {
 import { TrendingHashtags } from "@/components/portal/TrendingHashtags";
 import { NewsCard } from "@/components/portal/NewsCard";
 import { HomeSidebarTabs } from "@/components/portal/HomeSidebarTabs";
-import { OpinionPollWidget } from "@/components/portal/OpinionPollWidget";
 import { CategoryGridSection } from "@/components/portal/CategoryGridSection";
 import { OpinionSection } from "@/components/portal/OpinionSection";
-import { ProvinceNewsWidget } from "@/components/portal/ProvinceNewsWidget";
 import { LatestNewsSection } from "@/components/portal/LatestNewsSection";
 import { HomeSpotlightSection } from "@/components/portal/HomeSpotlightSection";
-import { AustraliaNewsSection } from "@/components/portal/AustraliaNewsSection";
-import { MediaShowcaseAboveFooter } from "@/components/portal/MediaShowcaseAboveFooter";
-import { RashifalSection } from "@/components/portal/RashifalSection";
-import { EpaperSection } from "@/components/portal/EpaperSection";
 import { PortalContainer, SectionHeader } from "@/components/portal/SectionHeader";
 import {
   getCachedActiveAds,
@@ -35,6 +30,72 @@ import {
   getCachedTags,
 } from "@/lib/public-cache";
 import { adMatchesSurface } from "@/lib/ad-surfaces";
+
+const OpinionPollWidget = dynamic(
+  () =>
+    import("@/components/portal/OpinionPollWidget").then((m) => m.OpinionPollWidget),
+  { loading: () => null }
+);
+
+const AustraliaNewsSection = dynamic(
+  () =>
+    import("@/components/portal/AustraliaNewsSection").then(
+      (m) => m.AustraliaNewsSection
+    ),
+  {
+    loading: () => (
+      <div className="h-48 animate-pulse bg-gray-50" aria-hidden />
+    ),
+  }
+);
+
+const ProvinceNewsWidget = dynamic(
+  () =>
+    import("@/components/portal/ProvinceNewsWidget").then(
+      (m) => m.ProvinceNewsWidget
+    ),
+  {
+    loading: () => (
+      <div className="h-56 animate-pulse bg-gray-50" aria-hidden />
+    ),
+  }
+);
+
+const MediaShowcaseAboveFooter = dynamic(
+  () =>
+    import("@/components/portal/MediaShowcaseAboveFooter").then(
+      (m) => m.MediaShowcaseAboveFooter
+    ),
+  {
+    loading: () => (
+      <div className="h-64 animate-pulse bg-gray-50" aria-hidden />
+    ),
+  }
+);
+
+const EpaperSection = dynamic(
+  () =>
+    import("@/components/portal/EpaperSection").then((m) => m.EpaperSection),
+  {
+    loading: () => (
+      <div className="h-40 animate-pulse bg-gray-50" aria-hidden />
+    ),
+  }
+);
+
+const RashifalSection = dynamic(
+  () =>
+    import("@/components/portal/RashifalSection").then((m) => m.RashifalSection),
+  {
+    loading: () => (
+      <div
+        className="h-48"
+        style={{ backgroundColor: "rgba(25, 87, 166, 0.06)" }}
+        aria-hidden
+      />
+    ),
+  }
+);
 
 interface WebHomeProps {
   searchParams: Promise<{ lang?: string }>;
@@ -132,6 +193,8 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
   const popularSidebar = popularArticles.slice(0, 5);
   const latestBelow = rest.slice(0, 6);
 
+  // One LCP candidate: spotlight wins when present; otherwise first main story.
+  const spotlightOwnsLcp = homeSpotlightArticles.length > 0;
   const emptyLabel = isEnglish ? "No stories available yet." : "कुनै समाचार उपलब्ध छैन।";
 
   return (
@@ -192,7 +255,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
                     article={art}
                     lang={lang}
                     variant="lead"
-                    priority={index === 0}
+                    priority={!spotlightOwnsLcp && index === 0}
                     badge={isEnglish ? "Main News" : "मुख्य समाचार"}
                   />
                 ))}
@@ -261,7 +324,14 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
 
       <EpaperSection editions={epapers} />
 
-      <Suspense fallback={<div className="h-48" style={{ backgroundColor: "rgba(25, 87, 166, 0.06)" }} />}>
+      <Suspense
+        fallback={
+          <div
+            className="h-48"
+            style={{ backgroundColor: "rgba(25, 87, 166, 0.06)" }}
+          />
+        }
+      >
         <RashifalSection />
       </Suspense>
     </main>

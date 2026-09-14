@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { ArticleStatus, ArticleType, AuRegion, Prisma } from "@prisma/client";
+import { ArticleStatus, ArticleType, AuRegion, PollStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { LanguageEditionType } from "@/lib/language";
 import { languageEditionWhere, resolveArticleTitle } from "@/lib/language";
@@ -41,16 +41,34 @@ const homeArticleSelect = {
   },
 } satisfies Prisma.ArticleSelect;
 
+const HOME_OPINION_SLUGS = ["opinion", "vichar"];
+const HOME_ECONOMY_SLUGS = ["economy-business", "economy", "arthatantra"];
+const HOME_SPORTS_SLUGS = ["sports", "entertainment", "khelkud", "manoranjan"];
+
 async function loadHomePayload(lang: LanguageEditionType) {
   const whereClause: Prisma.ArticleWhereInput = {
     status: ArticleStatus.PUBLISHED,
     ...languageEditionWhere(lang),
   };
 
+  const sectionCategories = await prisma.category.findMany({
+    where: {
+      slug: {
+        in: [...HOME_OPINION_SLUGS, ...HOME_ECONOMY_SLUGS, ...HOME_SPORTS_SLUGS],
+      },
+    },
+    select: { id: true, slug: true },
+  });
+  const idsFor = (slugs: string[]) =>
+    sectionCategories.filter((c) => slugs.includes(c.slug)).map((c) => c.id);
+
+  const opinionIds = idsFor(HOME_OPINION_SLUGS);
+  const economyIds = idsFor(HOME_ECONOMY_SLUGS);
+  const sportsIds = idsFor(HOME_SPORTS_SLUGS);
+
   const [
     publishedArticles,
     homeSpotlightArticles,
-    categories,
     opinionArticles,
     economyArticles,
     sportsArticles,
@@ -74,30 +92,11 @@ async function loadHomePayload(lang: LanguageEditionType) {
       orderBy: [{ homeOrder: "asc" }, { publishedAt: "desc" }],
       take: 5,
     }),
-    prisma.category.findMany({
-      where: { isActive: true },
-      orderBy: { order: "asc" },
-      take: 6,
-      select: {
-        id: true,
-        name: true,
-        nameNp: true,
-        slug: true,
-        description: true,
-        descriptionNp: true,
-        articles: {
-          where: whereClause,
-          orderBy: { publishedAt: "desc" },
-          take: 1,
-          select: { coverImage: true },
-        },
-      },
-    }),
     prisma.article.findMany({
       where: {
         ...whereClause,
         OR: [
-          { category: { slug: { in: ["opinion", "vichar"] } } },
+          ...(opinionIds.length > 0 ? [{ categoryId: { in: opinionIds } }] : []),
           { type: ArticleType.OPINION },
         ],
       },
@@ -117,7 +116,9 @@ async function loadHomePayload(lang: LanguageEditionType) {
     prisma.article.findMany({
       where: {
         ...whereClause,
-        category: { slug: { in: ["economy-business", "economy", "arthatantra"] } },
+        ...(economyIds.length > 0
+          ? { categoryId: { in: economyIds } }
+          : { category: { slug: { in: HOME_ECONOMY_SLUGS } } }),
       },
       select: homeArticleSelect,
       orderBy: { publishedAt: "desc" },
@@ -126,7 +127,9 @@ async function loadHomePayload(lang: LanguageEditionType) {
     prisma.article.findMany({
       where: {
         ...whereClause,
-        category: { slug: { in: ["sports", "entertainment", "khelkud", "manoranjan"] } },
+        ...(sportsIds.length > 0
+          ? { categoryId: { in: sportsIds } }
+          : { category: { slug: { in: HOME_SPORTS_SLUGS } } }),
       },
       select: homeArticleSelect,
       orderBy: { publishedAt: "desc" },
@@ -179,7 +182,6 @@ async function loadHomePayload(lang: LanguageEditionType) {
   return {
     publishedArticles,
     homeSpotlightArticles,
-    categories,
     opinionArticles,
     economyArticles,
     sportsArticles,
@@ -487,3 +489,332 @@ export function getCachedCategoryArchive(
     { revalidate: 60, tags: [CACHE_TAGS.articles, CACHE_TAGS.categories] }
   )();
 }
+
+const articleSidebarSelect = {
+  id: true,
+  title: true,
+  titleNp: true,
+  slug: true,
+  coverImage: true,
+  createdAt: true,
+} satisfies Prisma.ArticleSelect;
+
+const articleSidebarTrendingSelect = {
+  ...articleSidebarSelect,
+  views: true,
+} satisfies Prisma.ArticleSelect;
+
+/** Shared latest list for article sidebars (filter current id at call site). */
+export function getCachedLatestArticles(lang: LanguageEditionType) {
+  return unstable_cache(
+    () =>
+      prisma.article.findMany({
+        where: {
+          status: ArticleStatus.PUBLISHED,
+          ...languageEditionWhere(lang),
+        },
+        select: articleSidebarSelect,
+        orderBy: { publishedAt: "desc" },
+        take: 8,
+      }),
+    [`public-article-latest-${lang}-v1`],
+    { revalidate: 60, tags: [CACHE_TAGS.articles] }
+  )();
+}
+
+/** Shared trending list for article sidebars. */
+export function getCachedTrendingArticles(lang: LanguageEditionType) {
+  return unstable_cache(
+    () =>
+      prisma.article.findMany({
+        where: {
+          status: ArticleStatus.PUBLISHED,
+          ...languageEditionWhere(lang),
+        },
+        select: articleSidebarTrendingSelect,
+        orderBy: { views: "desc" },
+        take: 8,
+      }),
+    [`public-article-trending-${lang}-v1`],
+    { revalidate: 60, tags: [CACHE_TAGS.articles] }
+  )();
+}
+
+/** Related-by-category for article pages (exclude current id at call site). */
+export function getCachedRelatedByCategory(
+  lang: LanguageEditionType,
+  categoryId: string
+) {
+  return unstable_cache(
+    () =>
+      prisma.article.findMany({
+        where: {
+          categoryId,
+          status: ArticleStatus.PUBLISHED,
+          ...languageEditionWhere(lang),
+        },
+        select: articleSidebarSelect,
+        orderBy: { publishedAt: "desc" },
+        take: 6,
+      }),
+    [`public-related-${lang}-${categoryId}-v1`],
+    { revalidate: 60, tags: [CACHE_TAGS.articles] }
+  )();
+}
+
+const tagArchiveArticleSelect = {
+  id: true,
+  title: true,
+  titleNp: true,
+  slug: true,
+  excerpt: true,
+  excerptNp: true,
+  coverImage: true,
+  createdAt: true,
+  views: true,
+  isFeatured: true,
+  author: { select: { name: true } },
+  category: { select: { name: true, nameNp: true, slug: true } },
+} satisfies Prisma.ArticleSelect;
+
+export function getCachedTagArchive(slug: string, lang: LanguageEditionType) {
+  return unstable_cache(
+    async () => {
+      const [tag, otherTags] = await Promise.all([
+        prisma.tag.findUnique({
+          where: { slug },
+          select: { id: true, name: true, nameNp: true, slug: true },
+        }),
+        prisma.tag.findMany({
+          where: { slug: { not: slug } },
+          select: {
+            id: true,
+            name: true,
+            nameNp: true,
+            slug: true,
+            _count: {
+              select: {
+                articles: { where: { status: ArticleStatus.PUBLISHED } },
+              },
+            },
+          },
+          orderBy: { name: "asc" },
+          take: 12,
+        }),
+      ]);
+
+      const articles = tag
+        ? await prisma.article.findMany({
+            where: {
+              status: ArticleStatus.PUBLISHED,
+              tags: { some: { id: tag.id } },
+              ...languageEditionWhere(lang),
+            },
+            select: tagArchiveArticleSelect,
+            orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+            take: 36,
+          })
+        : await prisma.article.findMany({
+            where: {
+              status: ArticleStatus.PUBLISHED,
+              ...languageEditionWhere(lang),
+              OR: [
+                { keywords: { contains: slug, mode: "insensitive" } },
+                { keywordsNp: { contains: slug, mode: "insensitive" } },
+                { title: { contains: slug, mode: "insensitive" } },
+                { titleNp: { contains: slug, mode: "insensitive" } },
+              ],
+            },
+            select: tagArchiveArticleSelect,
+            orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+            take: 36,
+          });
+
+      return {
+        tag,
+        otherTags: otherTags.map((t) => ({
+          id: t.id,
+          name: t.name,
+          nameNp: t.nameNp,
+          slug: t.slug,
+          articlesCount: t._count.articles,
+        })),
+        articles,
+      };
+    },
+    [`public-tag-archive-v1-${slug}-${lang}`],
+    { revalidate: 60, tags: [CACHE_TAGS.articles, CACHE_TAGS.tags] }
+  )();
+}
+
+export function getCachedProvinceArticles(provinceId: number) {
+  return unstable_cache(
+    () =>
+      prisma.article.findMany({
+        where: {
+          status: ArticleStatus.PUBLISHED,
+          province: provinceId,
+        },
+        select: {
+          id: true,
+          title: true,
+          titleNp: true,
+          slug: true,
+          excerpt: true,
+          coverImage: true,
+          district: true,
+          createdAt: true,
+          category: { select: { name: true, nameNp: true, slug: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+      }),
+    [`public-province-articles-v1-${provinceId}`],
+    { revalidate: 60, tags: [CACHE_TAGS.articles] }
+  )();
+}
+
+export function getCachedAustraliaIndex(lang: LanguageEditionType) {
+  return unstable_cache(
+    () =>
+      prisma.article.findMany({
+        where: {
+          status: ArticleStatus.PUBLISHED,
+          auRegion: { not: null },
+          ...languageEditionWhere(lang),
+        },
+        select: {
+          id: true,
+          title: true,
+          titleNp: true,
+          slug: true,
+          coverImage: true,
+          auRegion: true,
+          createdAt: true,
+        },
+        orderBy: { publishedAt: "desc" },
+        take: 40,
+      }),
+    [`public-australia-index-v1-${lang}`],
+    { revalidate: 60, tags: [CACHE_TAGS.articles] }
+  )();
+}
+
+export function getCachedAustraliaRegion(
+  lang: LanguageEditionType,
+  auRegion: AuRegion
+) {
+  return unstable_cache(
+    () =>
+      prisma.article.findMany({
+        where: {
+          status: ArticleStatus.PUBLISHED,
+          auRegion,
+          ...languageEditionWhere(lang),
+        },
+        select: {
+          id: true,
+          title: true,
+          titleNp: true,
+          slug: true,
+          coverImage: true,
+          createdAt: true,
+        },
+        orderBy: { publishedAt: "desc" },
+        take: 30,
+      }),
+    [`public-australia-region-v1-${lang}-${auRegion}`],
+    { revalidate: 60, tags: [CACHE_TAGS.articles] }
+  )();
+}
+
+export function getCachedAuthorProfile(authorId: string, lang: LanguageEditionType) {
+  return unstable_cache(
+    () =>
+      prisma.user.findUnique({
+        where: { id: authorId },
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          articles: {
+            where: {
+              status: ArticleStatus.PUBLISHED,
+              ...languageEditionWhere(lang),
+            },
+            select: {
+              id: true,
+              title: true,
+              titleNp: true,
+              slug: true,
+              excerpt: true,
+              excerptNp: true,
+              coverImage: true,
+              createdAt: true,
+              views: true,
+              category: {
+                select: { name: true, nameNp: true, slug: true },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 24,
+          },
+        },
+      }),
+    [`public-author-v1-${authorId}-${lang}`],
+    { revalidate: 60, tags: [CACHE_TAGS.articles] }
+  )();
+}
+
+export const getCachedEpapersList = unstable_cache(
+  async () =>
+    prisma.ePaper.findMany({
+      orderBy: { publishDate: "desc" },
+      take: 40,
+    }),
+  ["public-epapers-list-v1"],
+  { revalidate: 300, tags: [CACHE_TAGS.home] }
+);
+
+export const getCachedActivePoll = unstable_cache(
+  async () => {
+    const activePoll = await prisma.poll.findFirst({
+      where: { status: PollStatus.ACTIVE },
+      orderBy: { createdAt: "desc" },
+      include: {
+        options: {
+          orderBy: { createdAt: "asc" },
+        },
+      },
+    });
+
+    if (!activePoll) return null;
+
+    if (activePoll.expiresAt && activePoll.expiresAt.getTime() <= Date.now()) {
+      return {
+        expired: true as const,
+        id: activePoll.id,
+      };
+    }
+
+    const totalVotes = activePoll.options.reduce((acc, opt) => acc + opt.votes, 0);
+
+    return {
+      expired: false as const,
+      id: activePoll.id,
+      question: activePoll.question,
+      questionNp: activePoll.questionNp,
+      expiresAt: activePoll.expiresAt,
+      totalVotes,
+      options: activePoll.options.map((opt) => ({
+        id: opt.id,
+        option: opt.option,
+        optionNp: opt.optionNp,
+        votes: opt.votes,
+        percentage: totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0,
+      })),
+    };
+  },
+  ["public-active-poll-v1"],
+  { revalidate: 30, tags: [CACHE_TAGS.home] }
+);

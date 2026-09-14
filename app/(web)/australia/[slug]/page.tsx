@@ -3,12 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { Clock } from "lucide-react";
-import { ArticleStatus, AuRegion } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { AuRegion } from "@prisma/client";
 import {
   resolveLanguageEdition,
   resolveArticleTitle,
-  languageEditionWhere,
 } from "@/lib/language";
 import { formatTimeAgo } from "@/lib/nepaliDate";
 import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
@@ -20,6 +18,8 @@ import {
   resolveAuRegionName,
 } from "@/constants/australia-regions";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
+import { PortalImage } from "@/components/portal/PortalImage";
+import { getCachedAustraliaRegion } from "@/lib/public-cache";
 
 interface AustraliaRegionPageProps {
   params: Promise<{ slug: string }>;
@@ -73,23 +73,7 @@ export default async function AustraliaRegionPage({
   const region = getAuRegionBySlug(slug);
   if (!region) return notFound();
 
-  const articles = await prisma.article.findMany({
-    where: {
-      status: ArticleStatus.PUBLISHED,
-      auRegion: region.code as AuRegion,
-      ...languageEditionWhere(lang),
-    },
-    select: {
-      id: true,
-      title: true,
-      titleNp: true,
-      slug: true,
-      coverImage: true,
-      createdAt: true,
-    },
-    orderBy: { publishedAt: "desc" },
-    take: 30,
-  });
+  const articles = await getCachedAustraliaRegion(lang, region.code as AuRegion);
 
   const regionName = resolveAuRegionName(region, isEnglish ? "en" : "ne");
   const lead = articles[0] ?? null;
@@ -139,13 +123,14 @@ export default async function AustraliaRegionPage({
                   className="group relative block min-h-[280px] overflow-hidden bg-neutral-800 sm:min-h-[360px] lg:col-span-8"
                 >
                   {lead.coverImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <PortalImage
                       src={
                         optimizeCloudinaryUrl(lead.coverImage, "hero") || lead.coverImage
                       }
                       alt={resolveArticleTitle(lead, lang)}
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 70vw"
+                      className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                     />
                   ) : null}
                   <div
@@ -184,11 +169,12 @@ export default async function AustraliaRegionPage({
                       className="group relative block min-h-[170px] flex-1 overflow-hidden bg-neutral-800"
                     >
                       {image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <PortalImage
                           src={image}
                           alt={title}
-                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                          fill
+                          sizes="(max-width: 640px) 50vw, 25vw"
+                          className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                         />
                       ) : null}
                       <div
@@ -232,11 +218,12 @@ export default async function AustraliaRegionPage({
                       >
                         <div className="relative aspect-[16/10] overflow-hidden bg-gray-200">
                           {image ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
+                            <PortalImage
                               src={image}
                               alt={title}
-                              className="h-full w-full object-cover transition-opacity group-hover:opacity-95"
+                              fill
+                              sizes="(max-width: 640px) 50vw, 33vw"
+                              className="object-cover transition-opacity group-hover:opacity-95"
                             />
                           ) : null}
                         </div>

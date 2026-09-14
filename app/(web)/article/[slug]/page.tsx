@@ -2,7 +2,6 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { headers } from "next/headers";
-import { prisma } from "@/lib/prisma";
 import { ArticleStatus, AdSlot, LanguageEdition } from "@prisma/client";
 import { formatTimeAgo, getFormattedNepaliDate } from "@/lib/nepaliDate";
 import { ArticleBodyClient } from "@/components/web/ArticleBodyClient";
@@ -16,7 +15,6 @@ import { absoluteUrl } from "@/lib/site-url";
 import { SITE_CONFIG } from "@/constants/site";
 import {
   articleMatchesLang,
-  languageEditionWhere,
   resolveArticleContent,
   resolveArticleExcerpt,
   resolveArticleTitle,
@@ -36,7 +34,12 @@ import {
   requestHost,
 } from "@/lib/seo";
 import { getArticleBySlug, getArticleMetaBySlug } from "@/lib/article-page";
-import { getCachedActiveAds } from "@/lib/public-cache";
+import {
+  getCachedActiveAds,
+  getCachedLatestArticles,
+  getCachedRelatedByCategory,
+  getCachedTrendingArticles,
+} from "@/lib/public-cache";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { PortalImage } from "@/components/portal/PortalImage";
 import { enhanceArticleBodyHtml } from "@/lib/enhance-article-html";
@@ -125,62 +128,22 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
     return notFound();
   }
 
-  const [allAds, relatedArticles, latestArticles, trendingArticles] = await Promise.all([
+  const [allAds, relatedRaw, latestRaw, trendingRaw] = await Promise.all([
     getCachedActiveAds(),
-    prisma.article.findMany({
-      where: {
-        categoryId: article.categoryId,
-        id: { not: article.id },
-        status: ArticleStatus.PUBLISHED,
-        ...languageEditionWhere(lang),
-      },
-      select: {
-        id: true,
-        title: true,
-        titleNp: true,
-        slug: true,
-        coverImage: true,
-        createdAt: true,
-      },
-      orderBy: { publishedAt: "desc" },
-      take: 4,
-    }),
-    prisma.article.findMany({
-      where: {
-        id: { not: article.id },
-        status: ArticleStatus.PUBLISHED,
-        ...languageEditionWhere(lang),
-      },
-      select: {
-        id: true,
-        title: true,
-        titleNp: true,
-        slug: true,
-        coverImage: true,
-        createdAt: true,
-      },
-      orderBy: { publishedAt: "desc" },
-      take: 5,
-    }),
-    prisma.article.findMany({
-      where: {
-        id: { not: article.id },
-        status: ArticleStatus.PUBLISHED,
-        ...languageEditionWhere(lang),
-      },
-      select: {
-        id: true,
-        title: true,
-        titleNp: true,
-        slug: true,
-        coverImage: true,
-        createdAt: true,
-        views: true,
-      },
-      orderBy: { views: "desc" },
-      take: 5,
-    }),
+    getCachedRelatedByCategory(lang, article.categoryId),
+    getCachedLatestArticles(lang),
+    getCachedTrendingArticles(lang),
   ]);
+
+  const relatedArticles = relatedRaw
+    .filter((a) => a.id !== article.id)
+    .slice(0, 4);
+  const latestArticles = latestRaw
+    .filter((a) => a.id !== article.id)
+    .slice(0, 5);
+  const trendingArticles = trendingRaw
+    .filter((a) => a.id !== article.id)
+    .slice(0, 5);
 
   const articleAds = allAds.filter(
     (a) =>
@@ -402,12 +365,13 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
                           className="group flex gap-4 py-4"
                         >
                           {thumb ? (
-                            <div className="h-16 w-24 shrink-0 overflow-hidden bg-gray-100 sm:h-[4.5rem] sm:w-28">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
+                            <div className="relative h-16 w-24 shrink-0 overflow-hidden bg-gray-100 sm:h-[4.5rem] sm:w-28">
+                              <PortalImage
                                 src={thumb}
                                 alt={relTitle}
-                                className="h-full w-full object-cover transition-opacity group-hover:opacity-90"
+                                fill
+                                sizes="112px"
+                                className="object-cover transition-opacity group-hover:opacity-90"
                               />
                             </div>
                           ) : null}

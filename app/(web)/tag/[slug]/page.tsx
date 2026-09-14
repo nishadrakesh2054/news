@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
-import { prisma } from "@/lib/prisma";
-import { AdSlot, ArticleStatus } from "@prisma/client";
+import { AdSlot } from "@prisma/client";
 import { absoluteUrl } from "@/lib/site-url";
 import { SITE_CONFIG } from "@/constants/site";
 import {
-  languageEditionWhere,
   resolveArticleTitle,
   resolveLanguageEdition,
 } from "@/lib/language";
@@ -16,7 +14,7 @@ import { NewsCard } from "@/components/portal/NewsCard";
 import { ArticleAdSlot } from "@/components/portal/ArticleAdSlot";
 import { PORTAL } from "@/constants/portal";
 import { formatTimeAgo } from "@/lib/nepaliDate";
-import { getCachedActiveAds } from "@/lib/public-cache";
+import { getCachedActiveAds, getCachedTagArchive } from "@/lib/public-cache";
 import { adMatchesSurface } from "@/lib/ad-surfaces";
 
 interface TagPageProps {
@@ -33,7 +31,8 @@ export async function generateMetadata({ params, searchParams }: TagPageProps): 
   const { slug } = await params;
   const query = await searchParams;
   const lang = await resolvePageLang(query.lang);
-  const tag = await prisma.tag.findUnique({ where: { slug } });
+  const archive = await getCachedTagArchive(slug, lang);
+  const tag = archive.tag;
   const label =
     lang === "en"
       ? tag?.name || slug
@@ -67,25 +66,12 @@ export default async function TagArchivePage({ params, searchParams }: TagPagePr
   const langQuery = isEnglish ? "?lang=en" : "";
   const homeHref = isEnglish ? "/?lang=en" : "/";
 
-  const [tag, allAds, otherTags] = await Promise.all([
-    prisma.tag.findUnique({
-      where: { slug },
-      select: { id: true, name: true, nameNp: true, slug: true },
-    }),
+  const [archive, allAds] = await Promise.all([
+    getCachedTagArchive(slug, lang),
     getCachedActiveAds(),
-    prisma.tag.findMany({
-      where: { slug: { not: slug } },
-      select: {
-        id: true,
-        name: true,
-        nameNp: true,
-        slug: true,
-        _count: { select: { articles: true } },
-      },
-      orderBy: { name: "asc" },
-      take: 12,
-    }),
   ]);
+
+  const { tag, otherTags, articles } = archive;
 
   const sidebarAds = allAds.filter(
     (a) =>
@@ -98,59 +84,6 @@ export default async function TagArchivePage({ params, searchParams }: TagPagePr
       ? tag.name || tag.nameNp || slug.replace(/-/g, " ")
       : tag.nameNp || tag.name || slug.replace(/-/g, " ")
     : slug.replace(/-/g, " ");
-
-  const articles = tag
-    ? await prisma.article.findMany({
-        where: {
-          status: ArticleStatus.PUBLISHED,
-          tags: { some: { id: tag.id } },
-          ...languageEditionWhere(lang),
-        },
-        select: {
-          id: true,
-          title: true,
-          titleNp: true,
-          slug: true,
-          excerpt: true,
-          excerptNp: true,
-          coverImage: true,
-          createdAt: true,
-          views: true,
-          isFeatured: true,
-          author: { select: { name: true } },
-          category: { select: { name: true, nameNp: true, slug: true } },
-        },
-        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-        take: 36,
-      })
-    : await prisma.article.findMany({
-        where: {
-          status: ArticleStatus.PUBLISHED,
-          ...languageEditionWhere(lang),
-          OR: [
-            { keywords: { contains: slug, mode: "insensitive" } },
-            { keywordsNp: { contains: slug, mode: "insensitive" } },
-            { title: { contains: slug, mode: "insensitive" } },
-            { titleNp: { contains: slug, mode: "insensitive" } },
-          ],
-        },
-        select: {
-          id: true,
-          title: true,
-          titleNp: true,
-          slug: true,
-          excerpt: true,
-          excerptNp: true,
-          coverImage: true,
-          createdAt: true,
-          views: true,
-          isFeatured: true,
-          author: { select: { name: true } },
-          category: { select: { name: true, nameNp: true, slug: true } },
-        },
-        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-        take: 36,
-      });
 
   const lead = articles.find((a) => a.isFeatured) || articles[0] || null;
   const rest = articles.filter((a) => a.id !== lead?.id);

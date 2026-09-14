@@ -28,7 +28,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   };
 }
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export default async function RashifalHubPage({ searchParams }: PageProps) {
   const sp = await searchParams;

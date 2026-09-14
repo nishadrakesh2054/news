@@ -2,13 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
-import { prisma } from "@/lib/prisma";
-import { ArticleStatus } from "@prisma/client";
 import { formatTimeAgo } from "@/lib/nepaliDate";
 import { MapPin, ChevronRight } from "lucide-react";
 import { PROVINCES } from "@/constants/provinces";
 import { resolveLanguageEdition } from "@/lib/language";
 import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
+import { getCachedProvinceArticles } from "@/lib/public-cache";
 
 interface ProvincePageProps {
   params: Promise<{ slug: string }>;
@@ -54,6 +53,8 @@ export async function generateMetadata({
   };
 }
 
+export const revalidate = 60;
+
 export default async function ProvinceArchivePage({ params, searchParams }: ProvincePageProps) {
   const { slug } = await params;
   const sp = await searchParams;
@@ -66,25 +67,7 @@ export default async function ProvinceArchivePage({ params, searchParams }: Prov
     return notFound();
   }
 
-  const articles = await prisma.article.findMany({
-    where: {
-      status: ArticleStatus.PUBLISHED,
-      province: provinceObj.id,
-    },
-    select: {
-      id: true,
-      title: true,
-      titleNp: true,
-      slug: true,
-      excerpt: true,
-      coverImage: true,
-      district: true,
-      createdAt: true,
-      category: { select: { name: true, nameNp: true, slug: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 30,
-  });
+  const articles = await getCachedProvinceArticles(provinceObj.id);
 
   const provinceName = isEnglish ? provinceObj.nameEn : provinceObj.name;
 

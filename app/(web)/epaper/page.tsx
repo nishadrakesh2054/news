@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { Newspaper } from "lucide-react";
-import { prisma } from "@/lib/prisma";
 import { resolveLanguageEdition } from "@/lib/language";
 import { getFormattedNepaliDate } from "@/lib/nepaliDate";
 import { SITE_CONFIG } from "@/constants/site";
@@ -10,8 +9,9 @@ import { PORTAL } from "@/constants/portal";
 import { EpaperPdfCard } from "@/components/portal/EpaperPdfCard";
 import { PortalContainer, SectionHeader } from "@/components/portal/SectionHeader";
 import { editionAlternates, pageTitle as seoPageTitle, requestHost } from "@/lib/seo";
+import { getCachedEpapersList } from "@/lib/public-cache";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 interface PageProps {
   searchParams: Promise<{ lang?: string }>;
@@ -44,12 +44,9 @@ export default async function PublicEPaperPage({ searchParams }: PageProps) {
     ? `${SITE_CONFIG.name} special materials`
     : `${SITE_CONFIG.nameNp} विशेष सामग्रीहरू`;
 
-  let epapers: Awaited<ReturnType<typeof prisma.ePaper.findMany>> = [];
+  let epapers: Awaited<ReturnType<typeof getCachedEpapersList>> = [];
   try {
-    epapers = await prisma.ePaper.findMany({
-      orderBy: { publishDate: "desc" },
-      take: 40,
-    });
+    epapers = await getCachedEpapersList();
   } catch {
     // Empty when DB unavailable
   }

@@ -6,6 +6,7 @@ import type { LanguageEditionType } from "@/lib/language";
 import { resolveArticleTitle, resolveCategoryName } from "@/lib/language";
 import { formatTimeAgo } from "@/lib/nepaliDate";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
+import { PortalImage } from "@/components/portal/PortalImage";
 import { PORTAL } from "@/constants/portal";
 import { SectionHeader } from "@/components/portal/SectionHeader";
 import {
@@ -53,11 +54,12 @@ function AuCard({
         className="group relative block min-h-[200px] flex-1 overflow-hidden bg-neutral-800 sm:min-h-[240px]"
       >
         {image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <PortalImage
             src={image}
             alt={title}
-            className="absolute inset-0 z-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            fill
+            sizes="(max-width: 640px) 100vw, 40vw"
+            className="z-0 object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
         ) : null}
         <div
@@ -95,8 +97,13 @@ function AuCard({
     >
       <div className="relative h-14 w-14 shrink-0 overflow-hidden bg-gray-200 sm:h-16 sm:w-16">
         {image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={image} alt={title} className="h-full w-full object-cover" />
+          <PortalImage
+            src={image}
+            alt={title}
+            fill
+            sizes="64px"
+            className="object-cover"
+          />
         ) : null}
       </div>
       <div className="min-w-0 flex-1 space-y-0.5">

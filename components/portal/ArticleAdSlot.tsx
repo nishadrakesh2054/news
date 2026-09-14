@@ -54,7 +54,7 @@ export function ArticleAdSlot({
               src={src!}
               alt={only.title}
               className={imageClassName}
-              loading="eager"
+              loading="lazy"
               decoding="async"
               fetchPriority="low"
             />

@@ -1,10 +1,9 @@
-"use client";
-
 import Link from "next/link";
 import type { LanguageEditionType } from "@/lib/language";
 import { resolveArticleTitle, resolveCategoryName } from "@/lib/language";
 import { formatTimeAgo } from "@/lib/nepaliDate";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
+import { PortalImage } from "@/components/portal/PortalImage";
 import { PORTAL } from "@/constants/portal";
 import type { PortalArticleCard } from "@/components/portal/NewsCard";
 import { Clock } from "lucide-react";
@@ -45,10 +44,19 @@ export function HomeSidebarTabs({ popular, lang }: HomeSidebarTabsProps) {
 
             return (
               <li key={art.id} className="flex gap-3 p-3 hover:bg-gray-50">
-                <Link href={href} className="relative h-16 w-16 shrink-0 overflow-hidden bg-gray-200" aria-label={title}>
+                <Link
+                  href={href}
+                  className="relative h-16 w-16 shrink-0 overflow-hidden bg-gray-200"
+                  aria-label={title}
+                >
                   {image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={image} alt={title} className="h-full w-full object-cover" />
+                    <PortalImage
+                      src={image}
+                      alt={title}
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                    />
                   ) : null}
                 </Link>
                 <div className="min-w-0 flex-1 space-y-1">

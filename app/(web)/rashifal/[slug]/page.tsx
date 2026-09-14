@@ -35,7 +35,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   };
 }
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export default async function RashiDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;

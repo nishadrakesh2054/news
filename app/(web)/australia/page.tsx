@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
-import { ArticleStatus } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
 import {
   resolveLanguageEdition,
   resolveArticleTitle,
-  languageEditionWhere,
 } from "@/lib/language";
 import { formatTimeAgo } from "@/lib/nepaliDate";
 import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
@@ -17,6 +14,8 @@ import {
   resolveAuRegionName,
 } from "@/constants/australia-regions";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
+import { PortalImage } from "@/components/portal/PortalImage";
+import { getCachedAustraliaIndex } from "@/lib/public-cache";
 
 interface AustraliaIndexProps {
   searchParams: Promise<{ lang?: string }>;
@@ -62,24 +61,7 @@ export default async function AustraliaIndexPage({ searchParams }: AustraliaInde
   const isEnglish = lang === "en";
   const langQ = isEnglish ? "?lang=en" : "";
 
-  const articles = await prisma.article.findMany({
-    where: {
-      status: ArticleStatus.PUBLISHED,
-      auRegion: { not: null },
-      ...languageEditionWhere(lang),
-    },
-    select: {
-      id: true,
-      title: true,
-      titleNp: true,
-      slug: true,
-      coverImage: true,
-      auRegion: true,
-      createdAt: true,
-    },
-    orderBy: { publishedAt: "desc" },
-    take: 40,
-  });
+  const articles = await getCachedAustraliaIndex(lang);
 
   return (
     <main className="w-full bg-white pb-16 pt-6 text-gray-900">
@@ -120,9 +102,14 @@ export default async function AustraliaIndexPage({ searchParams }: AustraliaInde
                     className="group flex gap-4 py-4"
                   >
                     {thumb ? (
-                      <div className="h-16 w-24 shrink-0 overflow-hidden bg-gray-100">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={thumb} alt={title} className="h-full w-full object-cover" />
+                      <div className="relative h-16 w-24 shrink-0 overflow-hidden bg-gray-100">
+                        <PortalImage
+                          src={thumb}
+                          alt={title}
+                          fill
+                          sizes="96px"
+                          className="object-cover"
+                        />
                       </div>
                     ) : null}
                     <div className="min-w-0 flex-1">

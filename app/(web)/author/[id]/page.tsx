@@ -2,13 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { ArticleStatus } from "@prisma/client";
 import { ChevronRight } from "lucide-react";
 import { absoluteUrl } from "@/lib/site-url";
 import { SITE_CONFIG } from "@/constants/site";
 import {
-  languageEditionWhere,
   resolveAuthorName,
   resolveLanguageEdition,
 } from "@/lib/language";
@@ -16,6 +13,8 @@ import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 import { NewsCard } from "@/components/portal/NewsCard";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { PORTAL } from "@/constants/portal";
+import { getCachedAuthorProfile } from "@/lib/public-cache";
+import { prisma } from "@/lib/prisma";
 
 interface AuthorProfilePageProps {
   params: Promise<{ id: string }>;
@@ -34,6 +33,7 @@ export async function generateMetadata({
   const { id } = await params;
   const query = await searchParams;
   const lang = await resolvePageLang(query.lang);
+  // Lean meta lookup — full profile cached on page render
   const author = await prisma.user.findUnique({
     where: { id },
     select: { name: true, image: true },
@@ -78,36 +78,7 @@ export default async function AuthorProfilePage({
   const isEnglish = lang === "en";
   const homeHref = isEnglish ? "/?lang=en" : "/";
 
-  const author = await prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      name: true,
-      image: true,
-      articles: {
-        where: {
-          status: ArticleStatus.PUBLISHED,
-          ...languageEditionWhere(lang),
-        },
-        select: {
-          id: true,
-          title: true,
-          titleNp: true,
-          slug: true,
-          excerpt: true,
-          excerptNp: true,
-          coverImage: true,
-          createdAt: true,
-          views: true,
-          category: {
-            select: { name: true, nameNp: true, slug: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 24,
-      },
-    },
-  });
+  const author = await getCachedAuthorProfile(id, lang);
 
   if (!author) {
     notFound();

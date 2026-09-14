@@ -1,7 +1,9 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { CACHE_TAGS } from "@/lib/public-cache";
 
-const articleMetaSelect = {
+const articlePageSelect = {
   id: true,
   slug: true,
   title: true,
@@ -18,10 +20,6 @@ const articleMetaSelect = {
   ogImage: true,
   languageEdition: true,
   category: { select: { id: true, name: true, nameNp: true, slug: true } },
-} as const;
-
-const articlePageSelect = {
-  ...articleMetaSelect,
   content: true,
   contentNp: true,
   caption: true,
@@ -37,17 +35,21 @@ const articlePageSelect = {
   showAds: true,
 } as const;
 
-/** Dedupes metadata + page queries within a single request. */
+/**
+ * Cross-request cache + per-request React cache.
+ * Metadata and page share one DB read for the same slug.
+ */
 export const getArticleBySlug = cache(async (slug: string) => {
-  return prisma.article.findUnique({
-    where: { slug },
-    select: articlePageSelect,
-  });
+  return unstable_cache(
+    () =>
+      prisma.article.findUnique({
+        where: { slug },
+        select: articlePageSelect,
+      }),
+    [`public-article-v1-${slug}`],
+    { revalidate: 60, tags: [CACHE_TAGS.articles] }
+  )();
 });
 
-export const getArticleMetaBySlug = cache(async (slug: string) => {
-  return prisma.article.findUnique({
-    where: { slug },
-    select: articleMetaSelect,
-  });
-});
+/** Same loader as getArticleBySlug — kept for call-site clarity in generateMetadata. */
+export const getArticleMetaBySlug = getArticleBySlug;
