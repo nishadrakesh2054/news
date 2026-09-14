@@ -12,6 +12,7 @@ import {
 import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { NewsCard } from "@/components/portal/NewsCard";
+import { PortalPagination } from "@/components/portal/PortalPagination";
 import { PORTAL } from "@/constants/portal";
 
 interface SearchPageProps {
@@ -240,65 +241,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         )}
 
         {totalPages > 1 ? (
-          <nav
-            className="mt-10 flex flex-wrap items-center justify-center gap-2 border-t pt-6"
-            style={{ borderColor: PORTAL.rule }}
-            aria-label={isEnglish ? "Pagination" : "पृष्ठहरू"}
-          >
-            {currentPage > 1 ? (
-              <Link
-                href={buildPageHref(currentPage - 1)}
-                className="inline-flex h-10 items-center px-3 text-sm font-bold hover:underline"
-                style={{ color: PORTAL.brand }}
-              >
-                {isEnglish ? "Previous" : "अघिल्लो"}
-              </Link>
-            ) : null}
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter((p) => {
-                if (totalPages <= 7) return true;
-                return (
-                  p === 1 ||
-                  p === totalPages ||
-                  Math.abs(p - currentPage) <= 1
-                );
-              })
-              .map((p, idx, arr) => {
-                const prev = arr[idx - 1];
-                const showEllipsis = prev != null && p - prev > 1;
-                const isCurrent = p === currentPage;
-                return (
-                  <span key={p} className="inline-flex items-center gap-2">
-                    {showEllipsis ? (
-                      <span className="px-1 text-gray-400" aria-hidden>
-                        …
-                      </span>
-                    ) : null}
-                    <Link
-                      href={buildPageHref(p)}
-                      aria-current={isCurrent ? "page" : undefined}
-                      className={`inline-flex h-10 min-w-10 items-center justify-center px-3 text-sm font-bold ${
-                        isCurrent ? "text-white" : "border border-gray-200 text-gray-700 hover:bg-gray-50"
-                      }`}
-                      style={isCurrent ? { backgroundColor: PORTAL.brand } : undefined}
-                    >
-                      {p}
-                    </Link>
-                  </span>
-                );
-              })}
-
-            {currentPage < totalPages ? (
-              <Link
-                href={buildPageHref(currentPage + 1)}
-                className="inline-flex h-10 items-center px-3 text-sm font-bold hover:underline"
-                style={{ color: PORTAL.brand }}
-              >
-                {isEnglish ? "Next" : "अर्को"}
-              </Link>
-            ) : null}
-          </nav>
+          <PortalPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            buildHref={buildPageHref}
+            isEnglish={isEnglish}
+            totalItems={total}
+            pageSize={limit}
+          />
         ) : null}
       </PortalContainer>
     </main>

@@ -24,15 +24,30 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type") || "";
     const cursor = searchParams.get("cursor") || "";
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
-    const limit = Math.min(Math.max(1, parseInt(searchParams.get("limit") || "10", 10) || 10), 50);
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get("limit") || "12", 10) || 12), 50);
 
     const where: Prisma.ArticleWhereInput = {
       status: ArticleStatus.PUBLISHED,
       ...languageEditionWhere(lang),
     };
 
+    // Resolve slug → id so Postgres can use (status, categoryId) index.
     if (categorySlug) {
-      where.category = { slug: categorySlug };
+      const category = await prisma.category.findUnique({
+        where: { slug: categorySlug },
+        select: { id: true },
+      });
+      if (!category) {
+        const empty = apiSuccess({
+          lang,
+          articles: [],
+          pagination: { total: 0, page: 1, limit, totalPages: 0 },
+        });
+        empty.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+        empty.headers.set("Content-Language", lang === "en" ? "en" : "ne");
+        return empty;
+      }
+      where.categoryId = category.id;
     }
 
     if (tagSlug) {
@@ -65,7 +80,7 @@ export async function GET(request: NextRequest) {
         ...(useCursor
           ? { cursor: { id: cursor }, skip: 1 }
           : { skip }),
-        orderBy: { publishedAt: "desc" },
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
         select: articleListSelect,
       }),
     ]);

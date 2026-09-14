@@ -3,11 +3,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { AdSlot, ArticleStatus } from "@prisma/client";
+import { AdSlot } from "@prisma/client";
 import { absoluteUrl } from "@/lib/site-url";
 import { SITE_CONFIG } from "@/constants/site";
 import {
-  languageEditionWhere,
   resolveArticleTitle,
   resolveCategoryDescription,
   resolveCategoryName,
@@ -16,14 +15,19 @@ import {
 import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 import { PortalContainer } from "@/components/portal/SectionHeader";
 import { NewsCard } from "@/components/portal/NewsCard";
-import { getCachedActiveAds } from "@/lib/public-cache";
+import { PortalPagination } from "@/components/portal/PortalPagination";
+import {
+  CATEGORY_PAGE_SIZE,
+  getCachedActiveAds,
+  getCachedCategoryArchive,
+} from "@/lib/public-cache";
 import { ArticleAdSlot } from "@/components/portal/ArticleAdSlot";
 import { PORTAL } from "@/constants/portal";
 import { formatTimeAgo } from "@/lib/nepaliDate";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ lang?: string }>;
+  searchParams: Promise<{ lang?: string; page?: string }>;
 }
 
 async function resolvePageLang(searchParamsLang?: string) {
@@ -35,6 +39,7 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
   const { slug } = await params;
   const query = await searchParams;
   const lang = await resolvePageLang(query.lang);
+  const page = Math.max(1, parseInt(query.page || "1", 10) || 1);
   const category = await prisma.category.findUnique({
     where: { slug },
     select: {
@@ -53,7 +58,14 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
   }
 
   const name = resolveCategoryName(category, lang);
-  const headline = lang === "en" ? `${name} news` : `${name} समाचार`;
+  const headline =
+    page > 1
+      ? lang === "en"
+        ? `${name} news — page ${page}`
+        : `${name} समाचार — पृष्ठ ${page}`
+      : lang === "en"
+        ? `${name} news`
+        : `${name} समाचार`;
   const description =
     resolveCategoryDescription(category, lang) ||
     (lang === "en"
@@ -75,6 +87,7 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
       title: pageTitle(headline, lang),
       description,
     },
+    ...(page > 1 ? { robots: { index: false, follow: true } } : {}),
   };
 }
 
@@ -87,62 +100,43 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
   const isEnglish = lang === "en";
   const langQuery = isEnglish ? "?lang=en" : "";
   const homeHref = isEnglish ? "/?lang=en" : "/";
+  const requestedPage = Math.max(1, parseInt(query.page || "1", 10) || 1);
 
-  const [category, allAds] = await Promise.all([
-    prisma.category.findUnique({
-      where: { slug },
-      select: {
-        id: true,
-        name: true,
-        nameNp: true,
-        slug: true,
-        description: true,
-        descriptionNp: true,
-        articles: {
-          where: {
-            status: ArticleStatus.PUBLISHED,
-            ...languageEditionWhere(lang),
-          },
-          select: {
-            id: true,
-            title: true,
-            titleNp: true,
-            slug: true,
-            excerpt: true,
-            excerptNp: true,
-            coverImage: true,
-            createdAt: true,
-            views: true,
-            isFeatured: true,
-            author: { select: { name: true } },
-          },
-          orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-          take: 36,
-        },
-      },
-    }),
+  const [archive, allAds] = await Promise.all([
+    getCachedCategoryArchive(slug, lang, requestedPage),
     getCachedActiveAds(),
   ]);
 
-  if (!category) {
+  if (!archive) {
     notFound();
   }
 
+  const { category, articles, popular, pagination } = archive;
   const categoryName = resolveCategoryName(category, lang);
   const categoryDescription = resolveCategoryDescription(category, lang);
-  const articles = category.articles;
+  const currentPage = pagination.page;
+
   const lead =
-    articles.find((a) => a.isFeatured) || articles[0] || null;
-  const rest = articles.filter((a) => a.id !== lead?.id);
-  const popular = [...articles]
-    .sort((a, b) => (b.views || 0) - (a.views || 0))
-    .slice(0, 6);
+    currentPage === 1
+      ? articles.find((a) => a.isFeatured) || articles[0] || null
+      : null;
+  const listArticles =
+    lead != null ? articles.filter((a) => a.id !== lead.id) : articles;
+
   const sidebarAds = allAds.filter(
     (a) => a.slot === AdSlot.SIDEBAR_TOP || a.slot === AdSlot.SIDEBAR_BOTTOM
   );
   const adsTop = sidebarAds.filter((a) => a.slot === AdSlot.SIDEBAR_TOP);
   const adsBottom = sidebarAds.filter((a) => a.slot === AdSlot.SIDEBAR_BOTTOM);
   const pagePath = `/category/${category.slug}`;
+
+  const buildPageHref = (page: number) => {
+    const qs = new URLSearchParams();
+    if (isEnglish) qs.set("lang", "en");
+    if (page > 1) qs.set("page", String(page));
+    const s = qs.toString();
+    return s ? `${pagePath}?${s}` : pagePath;
+  };
 
   const breadcrumbSchema = {
     "@context": "https://schema.org",
@@ -207,6 +201,16 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
             <span className="font-medium" style={{ color: PORTAL.ink }}>
               {categoryName}
             </span>
+            {currentPage > 1 ? (
+              <>
+                <span aria-hidden className="text-gray-300">
+                  /
+                </span>
+                <span className="text-gray-500">
+                  {isEnglish ? `Page ${currentPage}` : `पृष्ठ ${currentPage}`}
+                </span>
+              </>
+            ) : null}
           </nav>
 
           <header className="mb-8 max-w-3xl">
@@ -219,6 +223,21 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
             {categoryDescription ? (
               <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">
                 {categoryDescription}
+              </p>
+            ) : null}
+            {pagination.total > 0 ? (
+              <p className="mt-2 text-xs text-gray-500">
+                {pagination.total.toLocaleString()}{" "}
+                {isEnglish
+                  ? pagination.total === 1
+                    ? "story"
+                    : "stories"
+                  : "समाचार"}
+                {pagination.totalPages > 1
+                  ? isEnglish
+                    ? ` · page ${currentPage} of ${pagination.totalPages}`
+                    : ` · पृष्ठ ${currentPage} / ${pagination.totalPages}`
+                  : ""}
               </p>
             ) : null}
           </header>
@@ -244,9 +263,9 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
                 />
               </div>
 
-              {rest.length > 0 ? (
+              {listArticles.length > 0 ? (
                 <div>
-                  {rest.map((art) => (
+                  {listArticles.map((art) => (
                     <NewsCard
                       key={art.id}
                       article={art}
@@ -270,9 +289,21 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
                     : "थप समाचार चाँडै यहाँ आउनेछन्।"}
                 </p>
               )}
+
+              <PortalPagination
+                currentPage={currentPage}
+                totalPages={pagination.totalPages}
+                buildHref={buildPageHref}
+                isEnglish={isEnglish}
+                totalItems={pagination.total}
+                pageSize={CATEGORY_PAGE_SIZE}
+              />
             </section>
 
-            <aside className="min-w-0 space-y-8 border-t pt-8 lg:sticky lg:top-24 lg:border-t-0 lg:pt-0 lg:self-start" style={{ borderColor: PORTAL.rule }}>
+            <aside
+              className="min-w-0 space-y-8 border-t pt-8 lg:sticky lg:top-24 lg:self-start lg:border-t-0 lg:pt-0"
+              style={{ borderColor: PORTAL.rule }}
+            >
               <ArticleAdSlot
                 ads={adsTop}
                 path={pagePath}

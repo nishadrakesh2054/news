@@ -389,3 +389,98 @@ export const getCachedReels = unstable_cache(
   ["public-reels"],
   { revalidate: 180, tags: [CACHE_TAGS.home] }
 );
+
+/** Category archive page size — keep payloads small for TTFB. */
+export const CATEGORY_PAGE_SIZE = 12;
+
+const categoryArchiveArticleSelect = {
+  id: true,
+  title: true,
+  titleNp: true,
+  slug: true,
+  excerpt: true,
+  excerptNp: true,
+  coverImage: true,
+  createdAt: true,
+  publishedAt: true,
+  views: true,
+  isFeatured: true,
+  author: { select: { name: true, image: true } },
+} satisfies Prisma.ArticleSelect;
+
+/**
+ * Paginated category archive (category by slug → filter by categoryId for index use).
+ * Cached per slug + lang + page.
+ */
+export function getCachedCategoryArchive(
+  slug: string,
+  lang: LanguageEditionType,
+  page: number
+) {
+  const safePage = Math.max(1, page || 1);
+  const limit = CATEGORY_PAGE_SIZE;
+
+  return unstable_cache(
+    async () => {
+      const category = await prisma.category.findUnique({
+        where: { slug },
+        select: {
+          id: true,
+          name: true,
+          nameNp: true,
+          slug: true,
+          description: true,
+          descriptionNp: true,
+        },
+      });
+
+      if (!category) return null;
+
+      const where: Prisma.ArticleWhereInput = {
+        status: ArticleStatus.PUBLISHED,
+        categoryId: category.id,
+        ...languageEditionWhere(lang),
+      };
+
+      const [total, articles, popular] = await Promise.all([
+        prisma.article.count({ where }),
+        prisma.article.findMany({
+          where,
+          select: categoryArchiveArticleSelect,
+          orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+          skip: (safePage - 1) * limit,
+          take: limit,
+        }),
+        prisma.article.findMany({
+          where,
+          select: {
+            id: true,
+            title: true,
+            titleNp: true,
+            slug: true,
+            views: true,
+            createdAt: true,
+          },
+          orderBy: [{ views: "desc" }, { publishedAt: "desc" }],
+          take: 6,
+        }),
+      ]);
+
+      const totalPages = Math.max(1, Math.ceil(total / limit) || 1);
+
+      return {
+        category,
+        articles,
+        popular,
+        pagination: {
+          page: safePage,
+          limit,
+          total,
+          totalPages,
+        },
+      };
+    },
+    [`public-category-archive-v1-${slug}-${lang}-p${safePage}`],
+    { revalidate: 60, tags: [CACHE_TAGS.articles, CACHE_TAGS.categories] }
+  )();
+}
