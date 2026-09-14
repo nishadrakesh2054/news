@@ -38,6 +38,7 @@ import { getArticleBySlug, getArticleMetaBySlug } from "@/lib/article-page";
 import { getCachedActiveAds } from "@/lib/public-cache";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { PortalImage } from "@/components/portal/PortalImage";
+import { enhanceArticleBodyHtml } from "@/lib/enhance-article-html";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
 
 interface ArticlePageProps {
@@ -195,7 +196,9 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
   const articlePath = `/article/${article.slug}`;
 
   const articleTitle = resolveArticleTitle(article, lang);
-  const articleBody = sanitizeArticleHtml(resolveArticleContent(article, lang));
+  const articleBody = enhanceArticleBodyHtml(
+    sanitizeArticleHtml(resolveArticleContent(article, lang))
+  );
   const articleExcerpt = resolveArticleExcerpt(article, lang);
   const categoryName = resolveCategoryName(article.category, lang);
   const shareUrl = absoluteUrl(`/article/${article.slug}`, lang);

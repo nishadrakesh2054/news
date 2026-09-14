@@ -283,6 +283,28 @@
   margin: 1.4em 0;
   width: 100%;
   height: auto;
+  border-radius: 2px;
+}
+.article-prose video,
+.article-prose .article-prose-video {
+  display: block;
+  margin: 1.4em 0;
+  width: 100%;
+  max-height: min(70vh, 520px);
+  background: #111827;
+  border-radius: 4px;
+}
+.article-prose .article-embed-iframe,
+.article-prose iframe.article-embed-iframe {
+  display: block;
+  margin: 1.4em 0;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  min-height: 200px;
+  border: 0;
+  border-radius: 4px;
+  background: #111827;
 }
 .article-prose figure {
   margin: 1.4em 0;

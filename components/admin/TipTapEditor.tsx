@@ -5,10 +5,20 @@ import { createPortal } from "react-dom";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import LinkExtension from "@tiptap/extension-link";
-import ImageExtension from "@tiptap/extension-image";
 import UnderlineExtension from "@tiptap/extension-underline";
 import PlaceholderExtension from "@tiptap/extension-placeholder";
-import { MAX_ADMIN_IMAGE_BYTES, MAX_ADMIN_IMAGE_LABEL } from "@/constants/media";
+import {
+  MAX_ADMIN_IMAGE_BYTES,
+  MAX_ADMIN_IMAGE_LABEL,
+  MAX_ADMIN_VIDEO_BYTES,
+  MAX_ADMIN_VIDEO_LABEL,
+} from "@/constants/media";
+import {
+  RemovableIframe,
+  RemovableImage,
+  RemovableVideo,
+  parseVideoEmbedUrl,
+} from "@/components/admin/tiptap-media-views";
 
 import {
   Bold,
@@ -38,6 +48,8 @@ import {
   Check,
   Maximize2,
   Minimize2,
+  Film,
+  PlayCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -85,6 +97,7 @@ export function TipTapEditor({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isExpanded) return;
@@ -121,11 +134,9 @@ export function TipTapEditor({
           class: "text-[#0C4EA0] underline font-medium",
         },
       }),
-      ImageExtension.configure({
-        HTMLAttributes: {
-          class: "rounded-xl max-w-full my-4 border border-slate-200 dark:border-slate-800 shadow-sm",
-        },
-      }),
+      RemovableImage,
+      RemovableIframe,
+      RemovableVideo,
       PlaceholderExtension.configure({
         placeholder,
       }),
@@ -181,14 +192,37 @@ export function TipTapEditor({
   };
 
   const addImageUrl = () => {
-    const url = window.prompt("Enter Image URL:");
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
+    const url = window.prompt("Enter image URL (https):");
+    if (!url?.trim()) return;
+    if (url.trim().toLowerCase().startsWith("data:")) {
+      toast.error("Use Upload Images — data URLs are removed when the article is saved");
+      return;
     }
+    editor.chain().focus().setImage({ src: url.trim() }).run();
   };
 
-  const MAX_FILE_SIZE = MAX_ADMIN_IMAGE_BYTES;
-  const VALID_IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+  const MAX_IMAGE_BYTES = MAX_ADMIN_IMAGE_BYTES;
+  const VALID_IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
+  const VALID_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
+
+  async function uploadToMediaLibrary(file: File, folder = "articles"): Promise<string | null> {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", folder);
+
+    const res = await fetch("/api/admin/media", {
+      method: "POST",
+      body: formData,
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.error || "Upload failed");
+    }
+    if (Array.isArray(json.data) && json.data[0]?.url) return json.data[0].url as string;
+    if (json.data?.url) return json.data.url as string;
+    return null;
+  }
 
   // Handle local multiple file upload
   const handleLocalFiles = async (files: FileList | null) => {
@@ -206,7 +240,7 @@ export function TipTapEditor({
       }
 
       // 2. Size check
-      if (file.size > MAX_FILE_SIZE) {
+      if (file.size > MAX_IMAGE_BYTES) {
         toast.error(
           `"${file.name}" exceeds ${MAX_ADMIN_IMAGE_LABEL} limit (${(file.size / 1024).toFixed(0)} KB)`
         );
@@ -214,34 +248,17 @@ export function TipTapEditor({
       }
 
       let finalUrl = "";
-
       try {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("folder", "articles");
-
-        const res = await fetch("/api/admin/media", {
-          method: "POST",
-          body: formData,
-        });
-
-        const json = await res.json();
-        if (res.ok && Array.isArray(json.data) && json.data[0]?.url) {
-          finalUrl = json.data[0].url;
-        } else if (res.ok && json.data?.url) {
-          finalUrl = json.data.url;
-        }
+        finalUrl = (await uploadToMediaLibrary(file)) || "";
       } catch (err) {
-        console.error("Upload error, using fallback Data URL:", err);
+        const message = err instanceof Error ? err.message : "Upload failed";
+        toast.error(`"${file.name}": ${message}`);
+        continue;
       }
 
-      // Local fallback if API fails or CDN not configured
       if (!finalUrl) {
-        finalUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.readAsDataURL(file);
-        });
+        toast.error(`"${file.name}" could not be uploaded to the media library`);
+        continue;
       }
 
       uploadedList.push({
@@ -302,6 +319,62 @@ export function TipTapEditor({
     toast.success(`Inserted ${selectedImages.length} image(s) into article`);
     setSelectedImages([]);
     setIsModalOpen(false);
+  };
+
+  const addVideoEmbed = () => {
+    const url = window.prompt("Paste YouTube or Vimeo URL:");
+    if (!url?.trim()) return;
+    const embedSrc = parseVideoEmbedUrl(url);
+    if (!embedSrc) {
+      toast.error("Use a YouTube or Vimeo link");
+      return;
+    }
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: "iframe",
+        attrs: { src: embedSrc, title: "Embedded video" },
+      })
+      .run();
+  };
+
+  const handleVideoFile = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const file = files[0];
+
+    if (!VALID_VIDEO_TYPES.includes(file.type)) {
+      toast.error("Only MP4, WebM, or MOV video files are supported");
+      return;
+    }
+    if (file.size > MAX_ADMIN_VIDEO_BYTES) {
+      toast.error(`Video exceeds ${MAX_ADMIN_VIDEO_LABEL} limit`);
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const url = await uploadToMediaLibrary(file);
+      if (!url) {
+        toast.error("Video upload failed");
+        return;
+      }
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: "video",
+          attrs: { src: url, controls: "true" },
+        })
+        .run();
+      toast.success("Video inserted");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Video upload failed";
+      toast.error(message);
+    } finally {
+      setIsUploading(false);
+      if (videoInputRef.current) videoInputRef.current.value = "";
+    }
   };
 
   const stats = getTextStats(value);
@@ -493,6 +566,30 @@ export function TipTapEditor({
           <ImageIcon className="h-3.5 w-3.5" />
         </Button>
 
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => videoInputRef.current?.click()}
+          disabled={isUploading}
+          className="h-7 px-2 gap-1 rounded text-muted-foreground"
+          title="Upload video file (MP4/WebM/MOV)"
+        >
+          <Film className="h-3.5 w-3.5" />
+          <span className="text-[11px] font-semibold hidden sm:inline">Video</span>
+        </Button>
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={addVideoEmbed}
+          className="h-7 w-7 p-0 rounded text-muted-foreground"
+          title="Embed YouTube / Vimeo"
+        >
+          <PlayCircle className="h-3.5 w-3.5" />
+        </Button>
+
         <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1" />
 
         {/* Undo, Redo, Clear */}
@@ -597,6 +694,13 @@ export function TipTapEditor({
         multiple
         className="hidden"
         onChange={(e) => handleLocalFiles(e.target.files)}
+      />
+      <input
+        type="file"
+        ref={videoInputRef}
+        accept="video/mp4,video/webm,video/quicktime"
+        className="hidden"
+        onChange={(e) => handleVideoFile(e.target.files)}
       />
 
       {/* Interactive Local Multi-Image Upload & Drag Re-order Modal */}

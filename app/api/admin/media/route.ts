@@ -4,7 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { Prisma, Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import cloudinary from "@/lib/cloudinary";
-import { MAX_ADMIN_IMAGE_BYTES, MAX_ADMIN_IMAGE_LABEL } from "@/constants/media";
+import {
+  MAX_ADMIN_IMAGE_BYTES,
+  MAX_ADMIN_IMAGE_LABEL,
+  MAX_ADMIN_VIDEO_BYTES,
+  MAX_ADMIN_VIDEO_LABEL,
+} from "@/constants/media";
 
 interface CloudinaryUploadResult {
   secure_url?: string;
@@ -13,8 +18,8 @@ interface CloudinaryUploadResult {
   height?: number;
 }
 
-const MAX_FILE_SIZE = MAX_ADMIN_IMAGE_BYTES;
 const VALID_IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
+const VALID_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 
 export async function GET(request: NextRequest) {
   try {
@@ -138,15 +143,21 @@ export async function POST(request: NextRequest) {
     const uploadedMediaRecords = [];
 
     for (const file of files) {
-      // 1. Validate MimeType
-      if (!VALID_IMAGE_TYPES.includes(file.type)) {
-        return apiError(`"${file.name}" rejected: Only PNG, JPG, JPEG, WEBP, and GIF allowed`, 400);
+      const isImage = VALID_IMAGE_TYPES.includes(file.type);
+      const isVideo = VALID_VIDEO_TYPES.includes(file.type);
+
+      if (!isImage && !isVideo) {
+        return apiError(
+          `"${file.name}" rejected: use PNG/JPG/WEBP/GIF or MP4/WebM/MOV video`,
+          400
+        );
       }
 
-      // 2. Validate max image size
-      if (file.size > MAX_FILE_SIZE) {
+      const maxBytes = isVideo ? MAX_ADMIN_VIDEO_BYTES : MAX_ADMIN_IMAGE_BYTES;
+      const maxLabel = isVideo ? MAX_ADMIN_VIDEO_LABEL : MAX_ADMIN_IMAGE_LABEL;
+      if (file.size > maxBytes) {
         return apiError(
-          `"${file.name}" exceeds ${MAX_ADMIN_IMAGE_LABEL} limit (${(file.size / 1024).toFixed(0)} KB)`,
+          `"${file.name}" exceeds ${maxLabel} limit (${(file.size / 1024).toFixed(0)} KB)`,
           400
         );
       }
@@ -165,7 +176,10 @@ export async function POST(request: NextRequest) {
           cloudinary.uploader.upload_stream(
             {
               folder: `news_${folder}`,
-              transformation: [{ quality: "auto:good", fetch_format: "auto" }],
+              resource_type: isVideo ? "video" : "image",
+              ...(isImage
+                ? { transformation: [{ quality: "auto:good", fetch_format: "auto" }] }
+                : {}),
             },
             (error, result) => {
               if (error) reject(error);
@@ -184,13 +198,13 @@ export async function POST(request: NextRequest) {
       } catch (err) {
         console.error("Cloudinary upload failed:", err);
         return apiError(
-          "Image upload failed. Check Cloudinary configuration and try again.",
+          "Upload failed. Check Cloudinary configuration and try again.",
           502
         );
       }
 
       if (!secureUrl) {
-        return apiError("Image upload failed: empty CDN response", 502);
+        return apiError("Upload failed: empty CDN response", 502);
       }
 
       // Store in PostgreSQL Media Model

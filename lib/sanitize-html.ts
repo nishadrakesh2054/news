@@ -23,6 +23,9 @@ const ALLOWED_TAGS = new Set([
   "li",
   "a",
   "img",
+  "video",
+  "source",
+  "iframe",
   "blockquote",
   "figure",
   "figcaption",
@@ -41,7 +44,7 @@ const ALLOWED_TAGS = new Set([
   "td",
 ]);
 
-const VOID_TAGS = new Set(["br", "hr", "img"]);
+const VOID_TAGS = new Set(["br", "hr", "img", "source"]);
 
 const ALLOWED_ATTR = new Set([
   "class",
@@ -55,19 +58,58 @@ const ALLOWED_ATTR = new Set([
   "height",
   "colspan",
   "rowspan",
+  "controls",
+  "preload",
+  "poster",
+  "playsinline",
+  "type",
+  "frameborder",
+  "allow",
+  "allowfullscreen",
+  "referrerpolicy",
+  "loading",
+  "decoding",
 ]);
 
+const EMBED_IFRAME_HOSTS = [
+  "youtube.com",
+  "youtube-nocookie.com",
+  "youtu.be",
+  "player.vimeo.com",
+  "vimeo.com",
+  "facebook.com",
+  "cloudinary.com",
+];
+
+function isAllowedEmbedIframe(url: string): boolean {
+  try {
+    const parsed = new URL(url.trim());
+    if (parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase();
+    return EMBED_IFRAME_HOSTS.some(
+      (allowed) => host === allowed || host.endsWith(`.${allowed}`)
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** Reject javascript:, data:, and protocol-relative // URLs. */
-function isSafeUrl(value: string): boolean {
+function isSafeUrl(value: string, tag?: string, attr?: string): boolean {
   const trimmed = value.trim();
   if (!trimmed || trimmed.startsWith("#")) return true;
   const lower = trimmed.toLowerCase();
   if (lower.startsWith("//")) return false;
+  if (lower.startsWith("data:")) return false;
   if (lower.startsWith("mailto:")) {
     return !lower.includes("javascript:");
   }
   if (lower.startsWith("/") && !lower.startsWith("//")) return true;
-  return lower.startsWith("https://") || lower.startsWith("http://");
+  if (!lower.startsWith("https://") && !lower.startsWith("http://")) return false;
+  if (tag === "iframe" && attr === "src") {
+    return isAllowedEmbedIframe(trimmed);
+  }
+  return true;
 }
 
 function decodeAttrValue(raw: string): string {
@@ -81,7 +123,9 @@ function decodeAttrValue(raw: string): string {
 
 function sanitizeAttributes(tag: string, attrText: string): string {
   if (!attrText?.trim()) {
-    return tag === "a" ? ' rel="noopener noreferrer"' : "";
+    if (tag === "a") return ' rel="noopener noreferrer"';
+    if (tag === "iframe") return "";
+    return "";
   }
 
   const kept: string[] = [];
@@ -96,7 +140,7 @@ function sanitizeAttributes(tag: string, attrText: string): string {
     const raw = match[2] ?? match[3] ?? match[4] ?? "";
     const value = decodeAttrValue(raw);
 
-    if ((name === "href" || name === "src") && !isSafeUrl(value)) {
+    if ((name === "href" || name === "src") && !isSafeUrl(value, tag, name)) {
       continue;
     }
 
@@ -108,6 +152,31 @@ function sanitizeAttributes(tag: string, attrText: string): string {
     const withoutRel = kept.filter((a) => !a.startsWith("rel="));
     withoutRel.push('rel="noopener noreferrer"');
     return withoutRel.length ? ` ${withoutRel.join(" ")}` : "";
+  }
+
+  if (tag === "iframe") {
+    const src = kept.find((a) => a.startsWith("src="));
+    if (!src) return "";
+    const defaults = [
+      'class="article-embed-iframe"',
+      'frameborder="0"',
+      'allowfullscreen="true"',
+      'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"',
+      'referrerpolicy="strict-origin-when-cross-origin"',
+    ];
+    const withoutDupes = kept.filter(
+      (a) =>
+        !a.startsWith("class=") &&
+        !a.startsWith("frameborder=") &&
+        !a.startsWith("allowfullscreen=") &&
+        !a.startsWith("allow=") &&
+        !a.startsWith("referrerpolicy=")
+    );
+    return ` ${[...withoutDupes, ...defaults].join(" ")}`;
+  }
+
+  if (tag === "video" && !kept.some((a) => a.startsWith("src="))) {
+    return "";
   }
 
   return kept.length ? ` ${kept.join(" ")}` : "";
@@ -122,8 +191,8 @@ export function sanitizeArticleHtml(html: string | null | undefined): string {
 
   let out = html
     .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(/<(script|style|iframe|object|embed|form|textarea|button|svg|math|link|meta|base)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
-    .replace(/<\/?(script|style|iframe|object|embed|form|input|textarea|button|svg|math|link|meta|base)\b[^>]*\/?>/gi, "");
+    .replace(/<(script|style|object|embed|form|textarea|button|svg|math|link|meta|base)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
+    .replace(/<\/?(script|style|object|embed|form|input|textarea|button|svg|math|link|meta|base)\b[^>]*\/?>/gi, "");
 
   out = out.replace(/<\/?([a-zA-Z][\w:-]*)(\s[^>]*)?\/?>/g, (full, rawTag: string, rawAttrs?: string) => {
     const isClose = full.startsWith("</");
@@ -138,6 +207,9 @@ export function sanitizeArticleHtml(html: string | null | undefined): string {
     }
 
     const attrs = sanitizeAttributes(tag, rawAttrs || "");
+    if ((tag === "iframe" || tag === "video" || tag === "img") && !/\bsrc=/.test(attrs)) {
+      return "";
+    }
     if (VOID_TAGS.has(tag) || selfClosing) {
       return `<${tag}${attrs} />`;
     }
