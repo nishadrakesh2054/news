@@ -59,6 +59,8 @@ model Article {
   homeDisplay     HomeDisplayMode @default(TITLE_ONLY)
   homeOrder       Int?
   isBreaking      Boolean         @default(false)
+  /** When false, hide in-article + article-page sidebar ads (site chrome ads unchanged). */
+  showAds         Boolean         @default(true)
   views           Int             @default(0)
   metaTitle       String?
   metaTitleNp     String?

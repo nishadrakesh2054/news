@@ -273,6 +273,7 @@ export function ArticleForm({ initialData, defaultCategoryId }: ArticleFormProps
   const [isFeatured, setIsFeatured] = useState<boolean>(initialData?.isFeatured || false);
   const [isBreaking, setIsBreaking] = useState<boolean>(initialData?.isBreaking || false);
   const [showOnHome, setShowOnHome] = useState<boolean>(initialData?.showOnHome || false);
+  const [showAds, setShowAds] = useState<boolean>(initialData?.showAds !== false);
   const [homeDisplay, setHomeDisplay] = useState<"TITLE_ONLY" | "TITLE_MEDIA">(
     initialData?.homeDisplay === "TITLE_MEDIA" ? "TITLE_MEDIA" : "TITLE_ONLY"
   );
@@ -327,6 +328,7 @@ export function ArticleForm({ initialData, defaultCategoryId }: ArticleFormProps
         isFeatured,
         isBreaking,
         showOnHome,
+        showAds,
         homeDisplay,
         categoryId,
         metaTitle,
@@ -357,6 +359,7 @@ export function ArticleForm({ initialData, defaultCategoryId }: ArticleFormProps
       isFeatured,
       isBreaking,
       showOnHome,
+      showAds,
       homeDisplay,
       categoryId,
       metaTitle,
@@ -509,6 +512,7 @@ export function ArticleForm({ initialData, defaultCategoryId }: ArticleFormProps
       isFeatured,
       isBreaking,
       showOnHome,
+      showAds,
       homeDisplay,
       categoryId,
       metaTitle: metaTitle || undefined,
@@ -876,7 +880,19 @@ export function ArticleForm({ initialData, defaultCategoryId }: ArticleFormProps
                   />
                   Show on home (spotlight)
                 </label>
+                <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={showAds}
+                    onChange={(e) => setShowAds(e.target.checked)}
+                    className="h-4 w-4 rounded-sm border-border accent-[#0C4EA0]"
+                  />
+                  Show ads on article page
+                </label>
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                Uncheck to hide in-article and article sidebar ads for this story only. Home page ads stay as configured.
+              </p>
               {showOnHome ? (
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                   <span className="text-[11px] font-semibold text-muted-foreground">

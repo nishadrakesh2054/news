@@ -22,6 +22,7 @@ export type ArticleInput = {
   isFeatured?: boolean;
   isBreaking?: boolean;
   showOnHome?: boolean;
+  showAds?: boolean;
   homeDisplay?: HomeDisplayMode;
   categoryId?: string;
   metaTitle?: string | null;
@@ -222,6 +223,7 @@ export function validateArticleCreate(body: unknown): ArticleValidationResult {
       isFeatured: Boolean(input.isFeatured),
       isBreaking: Boolean(input.isBreaking),
       showOnHome: Boolean(input.showOnHome),
+      showAds: input.showAds === undefined ? true : Boolean(input.showAds),
       homeDisplay:
         typeof input.homeDisplay === "string" &&
         Object.values(HomeDisplayMode).includes(input.homeDisplay as HomeDisplayMode)
@@ -326,6 +328,7 @@ export function validateArticleUpdate(body: unknown): ArticleValidationResult {
   if (input.isFeatured !== undefined) data.isFeatured = Boolean(input.isFeatured);
   if (input.isBreaking !== undefined) data.isBreaking = Boolean(input.isBreaking);
   if (input.showOnHome !== undefined) data.showOnHome = Boolean(input.showOnHome);
+  if (input.showAds !== undefined) data.showAds = Boolean(input.showAds);
   if (input.homeDisplay !== undefined) {
     if (
       typeof input.homeDisplay !== "string" ||

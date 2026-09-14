@@ -184,15 +184,22 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
       a.slot === AdSlot.SIDEBAR_BOTTOM
   );
 
-  const inArticleAds = articleAds
-    .filter((a) => a.slot === AdSlot.IN_ARTICLE)
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-  const sidebarAdsTop = articleAds
-    .filter((a) => a.slot === AdSlot.SIDEBAR_TOP)
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-  const sidebarAdsBottom = articleAds
-    .filter((a) => a.slot === AdSlot.SIDEBAR_BOTTOM)
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const adsEnabled = article.showAds !== false;
+  const inArticleAds = adsEnabled
+    ? articleAds
+        .filter((a) => a.slot === AdSlot.IN_ARTICLE)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    : [];
+  const sidebarAdsTop = adsEnabled
+    ? articleAds
+        .filter((a) => a.slot === AdSlot.SIDEBAR_TOP)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    : [];
+  const sidebarAdsBottom = adsEnabled
+    ? articleAds
+        .filter((a) => a.slot === AdSlot.SIDEBAR_BOTTOM)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    : [];
   const articlePath = `/article/${article.slug}`;
 
   const articleTitle = resolveArticleTitle(article, lang);
@@ -342,12 +349,14 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
               </figure>
             ) : null}
 
-            <ArticleAdSlot
-              ads={inArticleAds}
-              path={articlePath}
-              isEnglish={isEnglish}
-              className="mb-8"
-            />
+            {adsEnabled ? (
+              <ArticleAdSlot
+                ads={inArticleAds}
+                path={articlePath}
+                isEnglish={isEnglish}
+                className="mb-8"
+              />
+            ) : null}
 
             <ArticleBodyClient
               title={articleTitle}

@@ -265,6 +265,7 @@ export async function POST(request: NextRequest) {
         isFeatured: Boolean(data.isFeatured),
         isBreaking: Boolean(data.isBreaking),
         showOnHome: Boolean(data.showOnHome),
+        showAds: data.showAds !== false,
         homeDisplay: data.homeDisplay ?? "TITLE_ONLY",
         homeOrder,
         categoryId: data.categoryId!,

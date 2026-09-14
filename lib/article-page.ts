@@ -34,6 +34,7 @@ const articlePageSelect = {
   author: {
     select: { id: true, name: true, email: true, image: true },
   },
+  showAds: true,
 } as const;
 
 /** Dedupes metadata + page queries within a single request. */
