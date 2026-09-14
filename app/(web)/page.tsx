@@ -220,7 +220,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
       {homeSpotlightArticles.length > 0 ? (
         <PortalContainer className="py-4 sm:py-5">
           <HomeSpotlightSection
-            articles={homeSpotlightArticles.slice(0, 2)}
+            articles={homeSpotlightArticles}
             lang={lang}
             spotlightAds={homeSpotlightAds}
           />

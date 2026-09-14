@@ -58,14 +58,14 @@ function AuCard({
     return (
       <Link
         href={href}
-        className="group relative block min-h-[180px] flex-1 overflow-hidden bg-gray-100 sm:min-h-[200px]"
+        className="group relative block h-[280px] w-full overflow-hidden bg-gray-100 sm:h-[320px] lg:h-[340px]"
       >
         {image ? (
           <PortalImage
             src={image}
             alt={title}
             fill
-            sizes="(max-width: 640px) 100vw, 40vw"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 40vw"
             className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
         ) : (
@@ -78,16 +78,16 @@ function AuCard({
           />
         )}
         <div
-          className="absolute inset-x-0 bottom-0 z-10 px-3 pb-3 pt-12 sm:px-4 sm:pb-4 sm:pt-16"
+          className="absolute inset-x-0 bottom-0 z-10 px-3 pb-3.5 pt-16 sm:px-4 sm:pb-4 sm:pt-20"
           style={{
             background:
-              "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0) 100%)",
+              "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.4) 55%, rgba(0,0,0,0) 100%)",
           }}
         >
-          <h3 className="line-clamp-3 text-base font-extrabold leading-snug text-white sm:text-lg">
+          <h3 className="line-clamp-3 text-base font-extrabold leading-snug text-white sm:text-lg lg:text-xl">
             {title}
           </h3>
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-medium text-white/90">
+          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-medium text-white/90 sm:text-xs">
             {label ? <span>{label}</span> : null}
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3 w-3 opacity-80" aria-hidden />
@@ -190,14 +190,14 @@ export function AustraliaNewsSection({
           </div>
 
           {stateList.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1.45fr_1fr] sm:items-start sm:gap-4">
-              <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1.55fr_1fr] sm:items-start sm:gap-5">
+              <div className="flex flex-col gap-4">
                 {bigs.map((art) => (
                   <AuCard key={art.id} article={art} lang={lang} size="large" />
                 ))}
               </div>
               {smalls.length > 0 ? (
-                <aside className="flex flex-col">
+                <aside className="flex flex-col sm:pt-1">
                   {smalls.map((art) => (
                     <AuCard key={art.id} article={art} lang={lang} size="small" />
                   ))}
@@ -224,7 +224,7 @@ export function AustraliaNewsSection({
             ))}
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {territoryList.length > 0 ? (
               territoryList.map((art) => (
                 <AuCard key={art.id} article={art} lang={lang} size="large" />

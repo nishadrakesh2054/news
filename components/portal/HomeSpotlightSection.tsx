@@ -83,9 +83,15 @@ export function HomeSpotlightSection({
         const excerpt = resolveArticleExcerpt(article, lang);
         const href = lang === "en" ? `/article/${article.slug}?lang=en` : `/article/${article.slug}`;
         const withMedia = article.homeDisplay === "TITLE_MEDIA";
+        const rawCover = article.coverImage?.trim() || "";
+        const hasRealCover =
+          Boolean(rawCover) &&
+          rawCover !== "/logo/logo.png" &&
+          !rawCover.endsWith("/logo/logo.png") &&
+          !rawCover.includes("picsum.photos");
         const image =
-          withMedia
-            ? optimizeCloudinaryUrl(article.coverImage, "hero") || article.coverImage
+          withMedia && hasRealCover
+            ? optimizeCloudinaryUrl(rawCover, "hero") || rawCover
             : null;
         const when = formatTimeAgo(
           typeof article.createdAt === "string"

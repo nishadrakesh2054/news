@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { formatTimeAgo } from "@/lib/nepaliDate";
 import {
-  resolveArticleExcerpt,
   resolveArticleTitle,
   type LanguageEditionType,
 } from "@/lib/language";
@@ -15,11 +14,8 @@ type CategoryArticle = {
   title: string;
   titleNp?: string | null;
   slug: string;
-  excerpt?: string | null;
-  excerptNp?: string | null;
   coverImage?: string | null;
   createdAt: Date | string;
-  author?: { name?: string | null } | null;
   category?: { name?: string; nameNp?: string | null; slug?: string } | null;
 };
 
@@ -51,7 +47,6 @@ export function CategoryGridSection({
   const mainImage =
     optimizeCloudinaryUrl(mainArticle.coverImage, "hero") || mainArticle.coverImage;
   const mainTitle = resolveArticleTitle(mainArticle, edition);
-  const mainExcerpt = resolveArticleExcerpt(mainArticle, edition);
   const mainWhen = formatTimeAgo(
     typeof mainArticle.createdAt === "string"
       ? new Date(mainArticle.createdAt)
@@ -67,11 +62,11 @@ export function CategoryGridSection({
         linkLabel={isEnglish ? "More news" : "थप समाचार"}
       />
 
-      <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-12 lg:gap-4">
-        {/* Lead feature — ~70% */}
+      <div className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-12 lg:gap-4">
+        {/* Lead feature — big image, title + published only */}
         <Link
           href={`/article/${mainArticle.slug}${langQ}`}
-          className="group relative block min-h-[280px] overflow-hidden bg-neutral-800 sm:min-h-[340px] lg:col-span-8"
+          className="group relative block min-h-[320px] overflow-hidden bg-neutral-800 sm:min-h-[400px] lg:col-span-8 lg:min-h-[440px]"
         >
           {mainImage ? (
             <PortalImage
@@ -97,23 +92,15 @@ export function CategoryGridSection({
                 "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0) 100%)",
             }}
           >
-            <p className="mb-1.5 text-[10px] font-medium text-white/80">{mainWhen}</p>
             <h3
-              className="line-clamp-3 text-xl font-extrabold leading-snug text-white sm:text-2xl"
+              className="line-clamp-3 text-xl font-extrabold leading-snug text-white sm:text-2xl lg:text-[1.65rem]"
               style={{ textShadow: "0 1px 3px rgba(0,0,0,0.55)" }}
             >
               {mainTitle}
             </h3>
-            {mainExcerpt ? (
-              <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-white/85 sm:text-[13px]">
-                {mainExcerpt}
-              </p>
-            ) : null}
-            {mainArticle.author?.name ? (
-              <p className="mt-2 text-[11px] text-white/70">
-                {isEnglish ? "By" : "द्वारा"} {mainArticle.author.name}
-              </p>
-            ) : null}
+            <p className="mt-2 text-[11px] font-medium text-white/85 sm:text-xs">
+              {mainWhen}
+            </p>
           </div>
         </Link>
 
@@ -133,7 +120,7 @@ export function CategoryGridSection({
                 <Link
                   key={art.id}
                   href={`/article/${art.slug}${langQ}`}
-                  className="group flex gap-3 p-3 transition-colors hover:bg-gray-50"
+                  className="group flex flex-1 gap-3 p-3 transition-colors hover:bg-gray-50"
                 >
                   <div className="relative h-16 w-[4.5rem] shrink-0 overflow-hidden bg-gray-200">
                     {image ? (

@@ -90,7 +90,7 @@ async function loadHomePayload(lang: LanguageEditionType) {
       },
       select: homeArticleSelect,
       orderBy: [{ homeOrder: "asc" }, { publishedAt: "desc" }],
-      take: 5,
+      take: 10,
     }),
     prisma.article.findMany({
       where: {
@@ -196,7 +196,7 @@ async function loadHomePayload(lang: LanguageEditionType) {
 export function getCachedHomePayload(lang: LanguageEditionType) {
   return unstable_cache(
     () => loadHomePayload(lang),
-    [`public-home-payload-v2-${lang}`],
+    [`public-home-payload-v3-${lang}`],
     { revalidate: 60, tags: [CACHE_TAGS.home, CACHE_TAGS.articles] }
   )();
 }
