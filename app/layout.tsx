@@ -9,6 +9,10 @@ import {
   requestHost,
 } from "@/lib/seo";
 import { Toaster } from "sonner";
+import {
+  GoogleTagManagerNoscript,
+  TrackingScripts,
+} from "@/components/portal/TrackingScripts";
 import "./globals.css";
 
 const notoSansDevanagari = Noto_Sans_Devanagari({
@@ -136,8 +140,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        <GoogleTagManagerNoscript />
         {children}
         <Toaster richColors position="top-right" />
+        <TrackingScripts />
       </body>
     </html>
   );

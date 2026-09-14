@@ -5,7 +5,6 @@ import { RatesBreakingBar } from "@/components/portal/RatesBreakingBar";
 import { CategoryNavbar } from "@/components/portal/CategoryNavbar";
 import { PublicFooter } from "@/components/portal/PublicFooter";
 import { StickyFooterAd } from "@/components/portal/StickyFooterAd";
-import { TrackingScripts } from "@/components/portal/TrackingScripts";
 import { SkipToContent } from "@/components/a11y/SkipToContent";
 import { PORTAL } from "@/constants/portal";
 import {
@@ -45,9 +44,6 @@ export default async function WebLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen flex-col bg-white font-sans text-gray-900">
       <SkipToContent />
-      <Suspense fallback={null}>
-        <TrackingScripts />
-      </Suspense>
       <Suspense fallback={<div className="h-28" style={{ backgroundColor: PORTAL.brand }} />}>
         <PublicHeader leaderboardAds={leaderboardAds} categories={categories} />
       </Suspense>

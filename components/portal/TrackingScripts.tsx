@@ -1,45 +1,18 @@
 import Script from "next/script";
-import { getJsonSetting } from "@/lib/settings-store";
-import {
-  DEFAULT_TRAFFIC_CONFIG,
-  TRAFFIC_ANALYTICS_KEY,
-  type TrafficAnalyticsConfig,
-} from "@/lib/analytics-aggregate";
+import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
+import { resolveTrackingConfig } from "@/lib/tracking";
 
+/**
+ * Site tracking via Next.js `@next/third-parties` (GTM + GA4) plus optional Meta Pixel.
+ * @see https://nextjs.org/docs/app/guides/third-party-libraries
+ */
 export async function TrackingScripts() {
-  const config = await getJsonSetting<TrafficAnalyticsConfig>(
-    TRAFFIC_ANALYTICS_KEY,
-    DEFAULT_TRAFFIC_CONFIG
-  );
-
-  const { ga4Id, gtmId, fbPixelId } = config;
+  const { ga4Id, gtmId, fbPixelId } = await resolveTrackingConfig();
 
   return (
     <>
-      {gtmId ? (
-        <Script id="gtm-loader" strategy="afterInteractive">{`
-          (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-          new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-          j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-          'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-          })(window,document,'script','dataLayer','${gtmId}');
-        `}</Script>
-      ) : null}
-
-      {ga4Id && !gtmId ? (
-        <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${ga4Id}`}
-            strategy="afterInteractive"
-          />
-          <Script id="ga4-config" strategy="afterInteractive">{`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${ga4Id}');
-          `}</Script>
-        </>
-      ) : null}
+      {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
+      {ga4Id ? <GoogleAnalytics gaId={ga4Id} /> : null}
 
       {fbPixelId ? (
         <Script id="fb-pixel" strategy="afterInteractive">{`
@@ -56,5 +29,23 @@ export async function TrackingScripts() {
         `}</Script>
       ) : null}
     </>
+  );
+}
+
+/** GTM noscript fallback — place immediately after `<body>`. */
+export async function GoogleTagManagerNoscript() {
+  const { gtmId } = await resolveTrackingConfig();
+  if (!gtmId) return null;
+
+  return (
+    <noscript>
+      <iframe
+        src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+        height={0}
+        width={0}
+        style={{ display: "none", visibility: "hidden" }}
+        title="Google Tag Manager"
+      />
+    </noscript>
   );
 }

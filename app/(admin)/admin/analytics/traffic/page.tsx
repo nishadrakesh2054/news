@@ -69,7 +69,12 @@ function TrackingTagsForm({
   return (
     <form onSubmit={handleSaveTags} className="space-y-3 p-3">
       <p className="text-xs text-muted-foreground">
-        Google Analytics, Tag Manager, and Meta Pixel IDs for the public site.
+        Google Analytics, Tag Manager, and Meta Pixel. Values in{" "}
+        <span className="font-mono">.env</span> ({" "}
+        <span className="font-mono">NEXT_PUBLIC_GA_MEASUREMENT_ID</span>,{" "}
+        <span className="font-mono">NEXT_PUBLIC_GTM_ID</span>) take priority when set.
+        Loaded via{" "}
+        <span className="font-mono">@next/third-parties</span>.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-3">

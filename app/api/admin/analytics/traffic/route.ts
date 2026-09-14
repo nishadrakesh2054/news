@@ -2,14 +2,14 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiSuccess, handleServerError } from "@/lib/api-response";
 import { requirePermission } from "@/lib/admin-auth";
-import { getJsonSetting, setSettings } from "@/lib/settings-store";
+import { setSettings } from "@/lib/settings-store";
 import {
-  DEFAULT_TRAFFIC_CONFIG,
   getDeviceBreakdown,
   getPeakHours,
   TRAFFIC_ANALYTICS_KEY,
   type TrafficAnalyticsConfig,
 } from "@/lib/analytics-aggregate";
+import { resolveTrackingConfig } from "@/lib/tracking";
 
 export async function GET() {
   try {
@@ -19,10 +19,7 @@ export async function GET() {
     const totalViews = await prisma.article.aggregate({ _sum: { views: true } });
     const published = await prisma.article.count({ where: { status: "PUBLISHED" } });
 
-    const trafficConfig = await getJsonSetting<TrafficAnalyticsConfig>(
-      TRAFFIC_ANALYTICS_KEY,
-      DEFAULT_TRAFFIC_CONFIG
-    );
+    const trafficConfig = await resolveTrackingConfig();
 
     const [devices, peakHours] = await Promise.all([getDeviceBreakdown(), getPeakHours()]);
 
