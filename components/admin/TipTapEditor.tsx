@@ -188,7 +188,19 @@ export function TipTapEditor({
       editor.chain().focus().extendMarkRange("link").unsetLink().run();
       return;
     }
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+    const trimmed = url.trim();
+    const lower = trimmed.toLowerCase();
+    const ok =
+      lower.startsWith("https://") ||
+      lower.startsWith("http://") ||
+      lower.startsWith("/") ||
+      lower.startsWith("mailto:") ||
+      lower.startsWith("#");
+    if (!ok) {
+      toast.error("Only http(s), mailto, #, or relative links are allowed");
+      return;
+    }
+    editor.chain().focus().extendMarkRange("link").setLink({ href: trimmed }).run();
   };
 
   const addImageUrl = () => {

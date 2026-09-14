@@ -91,8 +91,8 @@ export async function POST(request: NextRequest) {
       return apiError("Article not found", 404);
     }
 
-    if (session.user.role === Role.AUTHOR && existing.authorId !== session.user.id) {
-      return apiError("Unauthorized: You can only review your own articles", 403);
+    if (session.user.role === Role.AUTHOR) {
+      return apiError("Authors cannot approve or reject articles", 403);
     }
 
     if (existing.status !== ArticleStatus.PENDING) {

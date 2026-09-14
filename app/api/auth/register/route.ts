@@ -5,12 +5,26 @@ import { Prisma, Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { MESSAGES } from "@/constants/messages";
 import { validatePassword, BCRYPT_COST } from "@/lib/password-policy";
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { checkRateLimitAsync, getClientIp } from "@/lib/rate-limit";
+
+/** Production blocks public register unless ALLOW_PUBLIC_REGISTER=1. */
+function registrationClosed(): boolean {
+  if (process.env.ALLOW_PUBLIC_REGISTER === "1") return false;
+  if (process.env.DISABLE_PUBLIC_REGISTER === "1") return true;
+  return process.env.NODE_ENV === "production";
+}
 
 export async function POST(request: NextRequest) {
   try {
+    if (registrationClosed()) {
+      return apiError(
+        "Public registration is disabled. Contact an administrator for access.",
+        403
+      );
+    }
+
     const ip = getClientIp(request);
-    const rate = checkRateLimit(`register:${ip}`, 10, 60 * 60 * 1000);
+    const rate = await checkRateLimitAsync(`register:${ip}`, 10, 60 * 60 * 1000);
     if (!rate.allowed) {
       return apiError("Too many registration attempts. Please try again later.", 429);
     }
@@ -28,6 +42,22 @@ export async function POST(request: NextRequest) {
 
     const normalizedEmail = email.trim().toLowerCase();
     const bootstrapEmail = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
+    const bootstrapSecret = process.env.BOOTSTRAP_ADMIN_SECRET?.trim();
+    const headerSecret = request.headers.get("x-bootstrap-secret")?.trim();
+
+    /**
+     * SUPER_ADMIN bootstrap only when:
+     * - no admin exists yet, AND
+     * - email matches BOOTSTRAP_ADMIN_EMAIL (if set), AND
+     * - in production, BOOTSTRAP_ADMIN_SECRET must match x-bootstrap-secret header
+     * Local/dev with no BOOTSTRAP_ADMIN_EMAIL: first user may still become SUPER_ADMIN.
+     */
+    const emailMatchesBootstrap =
+      !bootstrapEmail || normalizedEmail === bootstrapEmail;
+    const secretOk =
+      process.env.NODE_ENV !== "production" ||
+      (Boolean(bootstrapSecret) && headerSecret === bootstrapSecret);
+    const bootstrapAllowed = emailMatchesBootstrap && secretOk;
 
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
@@ -39,17 +69,14 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_COST);
 
-    // Serializable txn: only one first-admin race winner; others become READER.
     const user = await prisma.$transaction(
       async (tx) => {
         const adminCount = await tx.user.count({
           where: { role: { in: [Role.SUPER_ADMIN, Role.ADMIN] } },
         });
+
         const userRole: Role =
-          adminCount === 0 &&
-          (!bootstrapEmail || normalizedEmail === bootstrapEmail)
-            ? Role.SUPER_ADMIN
-            : Role.READER;
+          adminCount === 0 && bootstrapAllowed ? Role.SUPER_ADMIN : Role.READER;
 
         return tx.user.create({
           data: {

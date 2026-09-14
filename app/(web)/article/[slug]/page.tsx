@@ -45,6 +45,7 @@ import { PortalImage } from "@/components/portal/PortalImage";
 import { enhanceArticleBodyHtml } from "@/lib/enhance-article-html";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
 import { adMatchesSurface } from "@/lib/ad-surfaces";
+import { safeJsonLd } from "@/lib/json-ld";
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -211,11 +212,11 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
       <ArticleViewTracker articleId={article.id} path={`/article/${article.slug}`} />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }}
       />
 
       <main className="w-full bg-white pb-16 text-gray-900">

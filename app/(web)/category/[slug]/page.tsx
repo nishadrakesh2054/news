@@ -25,6 +25,7 @@ import { ArticleAdSlot } from "@/components/portal/ArticleAdSlot";
 import { PORTAL } from "@/constants/portal";
 import { formatTimeAgo } from "@/lib/nepaliDate";
 import { adMatchesSurface } from "@/lib/ad-surfaces";
+import { safeJsonLd } from "@/lib/json-ld";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -186,11 +187,11 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(collectionSchema) }}
       />
 
       <main className="w-full bg-white pb-16 text-gray-900">

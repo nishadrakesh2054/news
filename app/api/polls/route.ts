@@ -4,8 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { PollStatus } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
-import { buildPollVoterKey, hasPollVote, recordPollVote } from "@/lib/poll-votes";
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { buildPollVoterKey, recordPollVote } from "@/lib/poll-votes";
+import { checkRateLimitAsync, getClientIp } from "@/lib/rate-limit";
 import { getCachedActivePoll } from "@/lib/public-cache";
 
 export async function GET() {
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ip = getClientIp(req);
-    const rate = checkRateLimit(`poll:${ip}`, 10, 60 * 60 * 1000);
+    const rate = await checkRateLimitAsync(`poll:${ip}`, 10, 60 * 60 * 1000);
     if (!rate.allowed) {
       return apiError("धेरै मत प्रयास। पछि प्रयास गर्नुहोस्।", 429);
     }
@@ -87,11 +87,10 @@ export async function POST(req: NextRequest) {
     }
 
     const voterKey = buildPollVoterKey(ip, session?.user?.id);
-    if (await hasPollVote(option.poll.id, voterKey)) {
+    const recorded = await recordPollVote(option.poll.id, voterKey);
+    if (!recorded) {
       return apiError("तपाईंले यो पोलमा पहिले नै मत दिनुभएको छ", 400);
     }
-
-    await recordPollVote(option.poll.id, voterKey);
 
     const updatedOption = await prisma.pollOption.update({
       where: { id: optionId },

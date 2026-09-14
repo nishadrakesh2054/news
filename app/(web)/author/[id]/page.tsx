@@ -15,6 +15,7 @@ import { PortalContainer } from "@/components/portal/SectionHeader";
 import { PORTAL } from "@/constants/portal";
 import { getCachedAuthorProfile } from "@/lib/public-cache";
 import { prisma } from "@/lib/prisma";
+import { safeJsonLd } from "@/lib/json-ld";
 
 interface AuthorProfilePageProps {
   params: Promise<{ id: string }>;
@@ -99,7 +100,7 @@ export default async function AuthorProfilePage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(authorJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(authorJsonLd) }}
       />
 
       <main className="w-full bg-white pb-16 text-gray-900">

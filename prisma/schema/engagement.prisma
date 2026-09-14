@@ -1,4 +1,5 @@
 enum SubscriberStatus {
+  PENDING
   ACTIVE
   UNSUBSCRIBED
   BOUNCED
@@ -9,15 +10,17 @@ model NewsletterSubscriber {
   email            String           @unique
   name             String?
   locale           String           @default("ne")
-  status           SubscriberStatus @default(ACTIVE)
+  status           SubscriberStatus @default(PENDING)
   source           String?
   unsubscribeToken String           @unique @default(cuid())
+  confirmToken     String?          @unique
   confirmedAt      DateTime?
   unsubscribedAt   DateTime?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
   @@index([status, createdAt(sort: Desc)])
+  @@index([confirmToken])
 }
 
 model PushSubscription {

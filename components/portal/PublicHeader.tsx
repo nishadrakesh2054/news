@@ -215,7 +215,7 @@ export function PublicHeader({
                 alt={isEnglish ? SITE_CONFIG.name : SITE_CONFIG.nameNp}
                 width={240}
                 height={72}
-                fetchPriority="high"
+                fetchPriority="low"
                 decoding="async"
                 className="h-11 w-auto max-w-[13rem] object-contain"
               />

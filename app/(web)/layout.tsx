@@ -53,9 +53,9 @@ export default async function WebLayout({ children }: { children: React.ReactNod
       <Suspense fallback={<div className="h-10" style={{ backgroundColor: PORTAL.brand }} />}>
         <CategoryNavbar categories={categories} />
       </Suspense>
-      <div id="main-content" className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
         {children}
-      </div>
+      </main>
       <Suspense fallback={<div className="h-48" style={{ backgroundColor: PORTAL.brand }} />}>
         <PublicFooter categories={categories} />
       </Suspense>

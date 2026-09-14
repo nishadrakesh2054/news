@@ -1,21 +1,29 @@
 import Script from "next/script";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import { resolveTrackingConfig } from "@/lib/tracking";
+import { isValidFbPixelId, isValidGa4Id, isValidGtmId } from "@/lib/tracking-ids";
 
 /**
- * Site tracking via Next.js `@next/third-parties` (GTM + GA4) plus optional Meta Pixel.
- * @see https://nextjs.org/docs/app/guides/third-party-libraries
+ * Prefer GTM when both GTM and GA4 are configured (avoids double-counting).
+ * Meta Pixel loads lazily and only with a validated numeric ID.
  */
 export async function TrackingScripts() {
-  const { ga4Id, gtmId, fbPixelId } = await resolveTrackingConfig();
+  const raw = await resolveTrackingConfig();
+  const gtmId = isValidGtmId(raw.gtmId) ? raw.gtmId : "";
+  const ga4Id = isValidGa4Id(raw.ga4Id) ? raw.ga4Id : "";
+  const fbPixelId = isValidFbPixelId(raw.fbPixelId) ? raw.fbPixelId : "";
+
+  const useGtm = Boolean(gtmId);
+  // Skip standalone GA4 when GTM is present — load GA via GTM container instead.
+  const useGa4 = Boolean(ga4Id) && !useGtm;
 
   return (
     <>
-      {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
-      {ga4Id ? <GoogleAnalytics gaId={ga4Id} /> : null}
+      {useGtm ? <GoogleTagManager gtmId={gtmId} /> : null}
+      {useGa4 ? <GoogleAnalytics gaId={ga4Id} /> : null}
 
       {fbPixelId ? (
-        <Script id="fb-pixel" strategy="afterInteractive">{`
+        <Script id="fb-pixel" strategy="lazyOnload">{`
           !function(f,b,e,v,n,t,s)
           {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
           n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -24,7 +32,7 @@ export async function TrackingScripts() {
           t.src=v;s=b.getElementsByTagName(e)[0];
           s.parentNode.insertBefore(t,s)}(window, document,'script',
           'https://connect.facebook.net/en_US/fbevents.js');
-          fbq('init', '${fbPixelId}');
+          fbq('init', ${JSON.stringify(fbPixelId)});
           fbq('track', 'PageView');
         `}</Script>
       ) : null}
@@ -35,12 +43,12 @@ export async function TrackingScripts() {
 /** GTM noscript fallback — place immediately after `<body>`. */
 export async function GoogleTagManagerNoscript() {
   const { gtmId } = await resolveTrackingConfig();
-  if (!gtmId) return null;
+  if (!gtmId || !isValidGtmId(gtmId)) return null;
 
   return (
     <noscript>
       <iframe
-        src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+        src={`https://www.googletagmanager.com/ns.html?id=${encodeURIComponent(gtmId)}`}
         height={0}
         width={0}
         style={{ display: "none", visibility: "hidden" }}

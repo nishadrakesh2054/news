@@ -1,23 +1,29 @@
-import { getJsonSetting, setSettings } from "@/lib/settings-store";
-
-type PollVoteMap = Record<string, string[]>;
-
-const SETTING_KEY = "poll_voter_keys";
+import { prisma } from "@/lib/prisma";
+import { createHash } from "node:crypto";
 
 export async function hasPollVote(pollId: string, voterKey: string): Promise<boolean> {
-  const map = await getJsonSetting<PollVoteMap>(SETTING_KEY, {});
-  return (map[pollId] ?? []).includes(voterKey);
+  const row = await prisma.pollVote.findUnique({
+    where: { pollId_voterKey: { pollId, voterKey } },
+    select: { id: true },
+  });
+  return Boolean(row);
 }
 
-export async function recordPollVote(pollId: string, voterKey: string) {
-  const map = await getJsonSetting<PollVoteMap>(SETTING_KEY, {});
-  const existing = map[pollId] ?? [];
-  if (existing.includes(voterKey)) return;
-  map[pollId] = [...existing, voterKey];
-  await setSettings({ [SETTING_KEY]: JSON.stringify(map) });
+/** Record vote key; returns false if already voted (unique constraint). */
+export async function recordPollVote(pollId: string, voterKey: string): Promise<boolean> {
+  try {
+    await prisma.pollVote.create({
+      data: { pollId, voterKey },
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function buildPollVoterKey(ip: string, userId?: string | null): string {
   if (userId) return `user:${userId}`;
-  return `ip:${ip}`;
+  // Hash IP so raw addresses are not stored in the vote table.
+  const hash = createHash("sha256").update(`poll-ip:${ip}`).digest("hex").slice(0, 32);
+  return `ip:${hash}`;
 }

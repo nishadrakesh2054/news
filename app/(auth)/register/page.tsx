@@ -16,6 +16,24 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const registrationOpen =
+    process.env.NEXT_PUBLIC_ALLOW_PUBLIC_REGISTER === "1" ||
+    process.env.NODE_ENV !== "production";
+
+  if (!registrationOpen) {
+    return (
+      <main id="main-content" className="w-full max-w-md space-y-4 rounded-2xl border bg-card p-8 shadow-sm">
+        <h1 className="text-2xl font-bold tracking-tight">Registration closed</h1>
+        <p className="text-sm text-muted-foreground">
+          Public registration is disabled. Staff accounts are created by an administrator.
+        </p>
+        <Link href="/login" className="text-sm font-semibold text-primary hover:underline">
+          Back to sign in
+        </Link>
+      </main>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);

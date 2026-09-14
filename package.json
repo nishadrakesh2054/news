@@ -15,7 +15,11 @@
     "db:seed-dev": "tsx prisma/seed-dev/index.ts",
     "db:merge-categories-12": "tsx prisma/merge-categories-12.ts",
     "db:search-indexes": "prisma db execute --file prisma/sql/performance_indexes.sql --schema prisma/schema",
+    "db:audit-hardening": "prisma db execute --file prisma/sql/audit_hardening.sql --schema prisma/schema",
     "postinstall": "prisma generate"
+  },
+  "engines": {
+    "node": ">=20.19.0"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

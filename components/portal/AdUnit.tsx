@@ -20,6 +20,55 @@ type AdUnitProps = {
   path?: string;
 };
 
+function parseAdMarkup(html: string): {
+  scriptSrcs: { src: string; async?: boolean; defer?: boolean }[];
+  hasAdsbygoogle: boolean;
+  insHtml: string;
+} {
+  const scriptSrcs: { src: string; async?: boolean; defer?: boolean }[] = [];
+  const scriptRe = /<script\b([^>]*)><\/script>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = scriptRe.exec(html)) !== null) {
+    const attrs = match[1] || "";
+    const srcMatch = /\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(attrs);
+    const src = srcMatch?.[1] ?? srcMatch?.[2] ?? srcMatch?.[3] ?? "";
+    if (!src) continue;
+    scriptSrcs.push({
+      src,
+      async: /\basync\b/i.test(attrs),
+      defer: /\bdefer\b/i.test(attrs),
+    });
+  }
+
+  const insParts: string[] = [];
+  const insRe = /<ins\b[^>]*>/gi;
+  while ((match = insRe.exec(html)) !== null) {
+    insParts.push(`${match[0]}</ins>`);
+  }
+
+  return {
+    scriptSrcs,
+    hasAdsbygoogle: /adsbygoogle/i.test(html),
+    insHtml: insParts.join(""),
+  };
+}
+
+function loadExternalScript(src: string, async = true): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      resolve();
+      return;
+    }
+    const el = document.createElement("script");
+    el.src = src;
+    el.async = async;
+    el.onload = () => resolve();
+    el.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.head.appendChild(el);
+  });
+}
+
 export function AdUnit({
   ad,
   className = "",
@@ -27,7 +76,9 @@ export function AdUnit({
   path,
 }: AdUnitProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const slotRef = useRef<HTMLDivElement>(null);
   const impressionSent = useRef(false);
+  const scriptsLoaded = useRef(false);
 
   useEffect(() => {
     if (!ad.id || impressionSent.current) return;
@@ -43,7 +94,9 @@ export function AdUnit({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.5);
+        const visible = entries.some(
+          (entry) => entry.isIntersecting && entry.intersectionRatio >= 0.5
+        );
         if (!visible || impressionSent.current) return;
 
         impressionSent.current = true;
@@ -71,19 +124,63 @@ export function AdUnit({
     return () => observer.disconnect();
   }, [ad.id, path]);
 
-  const clickHref = `/api/ads/${ad.id}/click${path ? `?path=${encodeURIComponent(path)}` : ""}`;
   const safeScript = useMemo(
     () => (ad.scriptCode?.trim() ? sanitizeAdScriptCode(ad.scriptCode) : ""),
     [ad.scriptCode]
   );
 
-  if (safeScript) {
+  const parsed = useMemo(
+    () => (safeScript ? parseAdMarkup(safeScript) : null),
+    [safeScript]
+  );
+
+  useEffect(() => {
+    if (!parsed || !slotRef.current || scriptsLoaded.current) return;
+    let cancelled = false;
+
+    async function mount() {
+      if (!parsed || !slotRef.current) return;
+      scriptsLoaded.current = true;
+
+      if (parsed.insHtml) {
+        slotRef.current.innerHTML = parsed.insHtml;
+      }
+
+      for (const s of parsed.scriptSrcs) {
+        try {
+          await loadExternalScript(s.src, s.async !== false);
+        } catch {
+          // continue — impression still tracked
+        }
+      }
+
+      if (cancelled) return;
+
+      if (parsed.hasAdsbygoogle) {
+        try {
+          const w = window as unknown as {
+            adsbygoogle?: Record<string, unknown>[];
+          };
+          w.adsbygoogle = w.adsbygoogle || [];
+          w.adsbygoogle.push({});
+        } catch {
+          // Ad blocker / network
+        }
+      }
+    }
+
+    void mount();
+    return () => {
+      cancelled = true;
+    };
+  }, [parsed]);
+
+  const clickHref = `/api/ads/${ad.id}/click${path ? `?path=${encodeURIComponent(path)}` : ""}`;
+
+  if (safeScript && parsed) {
     return (
-      <div ref={containerRef} className={`relative ${className}`}>
-        <div
-          className="w-full"
-          dangerouslySetInnerHTML={{ __html: safeScript }}
-        />
+      <div ref={containerRef} className={`relative min-h-[90px] ${className}`}>
+        <div ref={slotRef} className="w-full" />
       </div>
     );
   }
@@ -96,7 +193,7 @@ export function AdUnit({
     <div ref={containerRef} className={`relative overflow-hidden ${className}`}>
       <a href={clickHref} target="_blank" rel="noreferrer" className="block h-full w-full group">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={ad.imageUrl} alt={ad.title} className={imageClassName} />
+        <img src={ad.imageUrl} alt={ad.title} className={imageClassName} loading="lazy" />
       </a>
     </div>
   );

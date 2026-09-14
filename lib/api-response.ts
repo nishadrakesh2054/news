@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { MESSAGES } from "@/constants/messages";
 import { logger } from "@/lib/logger";
+import { captureException } from "@/lib/sentry";
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -44,5 +45,6 @@ export function handleServerError(
     error,
     fallbackMessage,
   });
+  void captureException(error, { fallbackMessage });
   return apiError(clientSafeErrorMessage(error, fallbackMessage), 500);
 }

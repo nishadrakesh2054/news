@@ -7,7 +7,7 @@ import { Role } from "@prisma/client";
 import { checkRateLimit, getClientIpFromHeaders } from "@/lib/rate-limit";
 
 /** Re-check role / sessionVersion from DB (was 60s — too long after demotion). */
-const JWT_REFRESH_MS = 5_000;
+const JWT_REFRESH_MS = 30_000;
 
 async function clientIpFromHeaders(): Promise<string> {
   try {

@@ -1,15 +1,15 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { apiSuccess, handleServerError } from "@/lib/api-response";
+import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requirePermission } from "@/lib/admin-auth";
 import { setSettings } from "@/lib/settings-store";
 import {
   getDeviceBreakdown,
   getPeakHours,
   TRAFFIC_ANALYTICS_KEY,
-  type TrafficAnalyticsConfig,
 } from "@/lib/analytics-aggregate";
 import { resolveTrackingConfig } from "@/lib/tracking";
+import { sanitizeTrackingConfig } from "@/lib/tracking-ids";
 
 export async function GET() {
   try {
@@ -48,18 +48,21 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requirePermission("analytics.read");
+    // Writing tracking IDs requires SEO update (not analytics.read).
+    const auth = await requirePermission("seo.update");
     if (auth.error) return auth.error;
 
     const body = await request.json();
-    const ga4Id = typeof body.ga4Id === "string" ? body.ga4Id.trim() : "";
-    const gtmId = typeof body.gtmId === "string" ? body.gtmId.trim() : "";
-    const fbPixelId = typeof body.fbPixelId === "string" ? body.fbPixelId.trim() : "";
+    const validated = sanitizeTrackingConfig(body);
+    if (!validated.ok) {
+      return apiError(validated.error, 400);
+    }
 
-    const config: TrafficAnalyticsConfig = { ga4Id, gtmId, fbPixelId };
-    await setSettings({ [TRAFFIC_ANALYTICS_KEY]: JSON.stringify(config) });
+    await setSettings({
+      [TRAFFIC_ANALYTICS_KEY]: JSON.stringify(validated.config),
+    });
 
-    return apiSuccess(config, "Tracking configuration saved");
+    return apiSuccess(validated.config, "Tracking configuration saved");
   } catch (error) {
     return handleServerError(error, "Failed to save traffic configuration");
   }

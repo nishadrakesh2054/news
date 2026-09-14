@@ -30,6 +30,7 @@ import {
   getCachedTags,
 } from "@/lib/public-cache";
 import { adMatchesSurface } from "@/lib/ad-surfaces";
+import { safeJsonLd } from "@/lib/json-ld";
 
 const OpinionPollWidget = dynamic(
   () =>
@@ -201,11 +202,11 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
     <main className="w-full bg-white text-gray-900">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd(lang)) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteJsonLd(lang)) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd(lang)) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationJsonLd(lang)) }}
       />
 
       <h1 className="sr-only">
@@ -219,7 +220,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
       {homeSpotlightArticles.length > 0 ? (
         <PortalContainer className="py-4 sm:py-5">
           <HomeSpotlightSection
-            articles={homeSpotlightArticles}
+            articles={homeSpotlightArticles.slice(0, 2)}
             lang={lang}
             spotlightAds={homeSpotlightAds}
           />

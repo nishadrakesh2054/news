@@ -155,10 +155,17 @@ function LoginForm() {
       </form>
 
       <div className="text-center text-xs text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link href="/register" className="font-semibold text-primary hover:underline">
-          Register
-        </Link>
+        {process.env.NEXT_PUBLIC_ALLOW_PUBLIC_REGISTER === "1" ||
+        process.env.NODE_ENV !== "production" ? (
+          <>
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="font-semibold text-primary hover:underline">
+              Register
+            </Link>
+          </>
+        ) : (
+          <>Staff accounts are invite-only. Contact an administrator.</>
+        )}
       </div>
     </main>
   );

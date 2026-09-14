@@ -53,10 +53,12 @@ export function StickyFooterAd({
 
   if (dismissed || items.length === 0) return null;
 
+  // Soften CWV on article reading: no sticky footer covering thumb zone.
+  if (pathname?.startsWith("/article/")) return null;
+
   return (
     <>
-      {/* Spacer matches full 728×90 banner + thin bar padding */}
-      <div className="h-[98px]" aria-hidden />
+      <div className="h-[98px] sm:h-[98px]" aria-hidden />
       <div
         className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
         onMouseEnter={() => setPaused(true)}
