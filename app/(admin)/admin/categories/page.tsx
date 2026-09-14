@@ -8,6 +8,7 @@ import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
 import {
   adminBadgeMuted,
+  adminBadgeSuccess,
   adminBtnPrimary,
   adminBtnSecondary,
   adminInput,
@@ -29,6 +30,7 @@ interface CategoryItem {
   description: string | null;
   descriptionNp: string | null;
   order: number;
+  isActive: boolean;
   createdAt: string;
   _count?: {
     articles: number;
@@ -47,6 +49,7 @@ export default function AdminCategoriesPage() {
   const [description, setDescription] = useState("");
   const [descriptionNp, setDescriptionNp] = useState("");
   const [order, setOrder] = useState(0);
+  const [isActive, setIsActive] = useState(true);
 
   const { data: categories = [], isLoading, isError, refetch, isFetching } = useQuery<CategoryItem[]>({
     queryKey: ["admin-categories"],
@@ -66,6 +69,7 @@ export default function AdminCategoriesPage() {
       description?: string;
       descriptionNp?: string;
       order: number;
+      isActive: boolean;
     }) => {
       const res = await fetch("/api/admin/categories", {
         method: "POST",
@@ -103,6 +107,24 @@ export default function AdminCategoriesPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      const res = await fetch(`/api/admin/categories/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to update category");
+      return json.data;
+    },
+    onSuccess: (_data, vars) => {
+      toast.success(vars.isActive ? "Category shown on site" : "Category hidden from site");
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin/categories/${id}`, { method: "DELETE" });
@@ -125,6 +147,7 @@ export default function AdminCategoriesPage() {
     setDescription("");
     setDescriptionNp("");
     setOrder((categories.length || 0) + 1);
+    setIsActive(true);
     setIsModalOpen(true);
   };
 
@@ -136,6 +159,7 @@ export default function AdminCategoriesPage() {
     setDescription(category.description || "");
     setDescriptionNp(category.descriptionNp || "");
     setOrder(category.order);
+    setIsActive(category.isActive !== false);
     setIsModalOpen(true);
   };
 
@@ -171,6 +195,7 @@ export default function AdminCategoriesPage() {
       description: description || undefined,
       descriptionNp: descriptionNp || undefined,
       order: Number(order),
+      isActive,
     };
 
     if (editingCategory) {
@@ -193,6 +218,7 @@ export default function AdminCategoriesPage() {
   const totalArticles = categories.reduce((sum, cat) => sum + (cat._count?.articles ?? 0), 0);
   const withArticles = categories.filter((cat) => (cat._count?.articles ?? 0) > 0).length;
   const emptyCategories = categories.length - withArticles;
+  const activeOnSite = categories.filter((cat) => cat.isActive !== false).length;
 
   return (
     <AdminPageShell
@@ -210,8 +236,8 @@ export default function AdminCategoriesPage() {
       <AdminStatsStrip
         stats={[
           { label: "Total categories", value: categories.length },
+          { label: "Active on site", value: activeOnSite },
           { label: "Categorized articles", value: totalArticles },
-          { label: "With articles", value: withArticles },
           { label: "Empty", value: emptyCategories },
         ]}
       />
@@ -265,6 +291,7 @@ export default function AdminCategoriesPage() {
                   <th className={adminTableHeadCell}>Nepali name</th>
                   <th className={adminTableHeadCell}>English name</th>
                   <th className={adminTableHeadCell}>Slug</th>
+                  <th className={adminTableHeadCell}>On site</th>
                   <th className={adminTableHeadCell}>Articles</th>
                   <th className={`${adminTableHeadCell} text-right`}>Actions</th>
                 </tr>
@@ -280,6 +307,26 @@ export default function AdminCategoriesPage() {
                     </td>
                     <td className={`${adminTableCell} font-medium text-foreground`}>{cat.name}</td>
                     <td className={`${adminTableCell} font-mono text-muted-foreground`}>/{cat.slug}</td>
+                    <td className={adminTableCell}>
+                      <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={cat.isActive !== false}
+                          disabled={toggleActiveMutation.isPending}
+                          onChange={(e) =>
+                            toggleActiveMutation.mutate({
+                              id: cat.id,
+                              isActive: e.target.checked,
+                            })
+                          }
+                          className="h-4 w-4 rounded-sm border-border accent-[#0C4EA0]"
+                          title="Show in public navbar"
+                        />
+                        <span className={cat.isActive !== false ? adminBadgeSuccess : adminBadgeMuted}>
+                          {cat.isActive !== false ? "Active" : "Hidden"}
+                        </span>
+                      </label>
+                    </td>
                     <td className={adminTableCell}>
                       <span className={adminBadgeMuted}>{cat._count?.articles ?? 0}</span>
                     </td>
@@ -423,6 +470,17 @@ export default function AdminCategoriesPage() {
                   className={`${adminInput} min-h-16 w-full resize-y py-2`}
                 />
               </div>
+
+              <label className="flex cursor-pointer items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
+                  className="h-4 w-4 rounded-sm border-border accent-[#0C4EA0]"
+                />
+                <span className="font-medium text-foreground">Active on site</span>
+                <span className="text-muted-foreground">(navbar & public listings)</span>
+              </label>
 
               <div className="flex justify-end gap-2 border-t border-border/70 pt-3">
                 <button type="button" onClick={closeModal} className={adminBtnSecondary}>

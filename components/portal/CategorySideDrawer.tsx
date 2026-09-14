@@ -136,14 +136,6 @@ export function CategorySideDrawer({
       active: pathname === "/media",
     },
     {
-      key: "epaper",
-      href: `/epaper${langQuery}`,
-      label: isEnglish ? "E-Paper" : "इ-पत्रिका",
-      icon: Newspaper,
-      color: "#4F46E5",
-      active: pathname === "/epaper",
-    },
-    {
       key: "rashifal",
       href: `/rashifal${langQuery}`,
       label: isEnglish ? "Horoscope" : "राशिफल",

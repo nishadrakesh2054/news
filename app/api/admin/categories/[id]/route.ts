@@ -13,7 +13,7 @@ export async function PATCH(
     if (auth.error) return auth.error;
 
     const { id } = await params;
-    const { name, nameNp, slug, description, descriptionNp, order } = await request.json();
+    const { name, nameNp, slug, description, descriptionNp, order, isActive } = await request.json();
 
     const existingCategory = await prisma.category.findUnique({
       where: { id },
@@ -43,6 +43,7 @@ export async function PATCH(
           descriptionNp: descriptionNp ? descriptionNp.trim() : null,
         }),
         ...(typeof order === "number" && { order }),
+        ...(typeof isActive === "boolean" && { isActive }),
       },
     });
 

@@ -12,6 +12,8 @@
     "test:watch": "vitest",
     "db:push": "prisma db push",
     "db:seed-rbac": "tsx prisma/seed-rbac.ts",
+    "db:seed-dev": "tsx prisma/seed-dev/index.ts",
+    "db:merge-categories-12": "tsx prisma/merge-categories-12.ts",
     "db:search-indexes": "prisma db execute --file prisma/sql/performance_indexes.sql --schema prisma/schema",
     "postinstall": "prisma generate"
   },

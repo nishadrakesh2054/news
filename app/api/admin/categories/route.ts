@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
           nameNp: true,
           slug: true,
           order: true,
+          isActive: true,
         },
         orderBy: [{ order: "asc" }, { createdAt: "desc" }],
       });
@@ -35,6 +36,7 @@ export async function GET(request: NextRequest) {
         description: true,
         descriptionNp: true,
         order: true,
+        isActive: true,
         createdAt: true,
         _count: {
           select: {
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
     const auth = await requirePermission("categories.create");
     if (auth.error) return auth.error;
 
-    const { name, nameNp, slug, description, descriptionNp, order } = await request.json();
+    const { name, nameNp, slug, description, descriptionNp, order, isActive } = await request.json();
 
     if (!name || !slug) {
       return apiError("Category name and slug are required", 400);
@@ -78,6 +80,7 @@ export async function POST(request: NextRequest) {
         description: description?.trim() || null,
         descriptionNp: descriptionNp?.trim() || null,
         order: typeof order === "number" ? order : 0,
+        isActive: typeof isActive === "boolean" ? isActive : true,
       },
     });
 

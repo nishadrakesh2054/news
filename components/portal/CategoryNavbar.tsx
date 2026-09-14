@@ -201,15 +201,6 @@ export function CategoryNavbar({ categories = [] }: CategoryNavbarProps) {
                   </Link>
                 );
               })}
-              <Link
-                href={`/epaper${langQuery}`}
-                className={itemClass(pathname === "/epaper")}
-                style={activeStyle(pathname === "/epaper")}
-              >
-                <span className="inline-flex items-center leading-[1.45]">
-                  {isEnglish ? "E-Paper" : "इ-पत्रिका"}
-                </span>
-              </Link>
             </div>
           </div>
 

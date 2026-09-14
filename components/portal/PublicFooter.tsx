@@ -89,8 +89,8 @@ export function PublicFooter({ categories: initialCategories = [] }: PublicFoote
             label: isEnglish ? "Politics" : "राजनीति",
           },
           {
-            href: `/category/economy${langQ}`,
-            label: isEnglish ? "Economy" : "अर्थतन्त्र",
+            href: `/category/economy-business${langQ}`,
+            label: isEnglish ? "Economy & Business" : "अर्थ–व्यापार",
           },
         ];
 

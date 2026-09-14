@@ -232,8 +232,8 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
       <PortalContainer className="space-y-6 py-4 sm:py-5">
         <CategoryGridSection
           title="Economy & Business"
-          titleNp="अर्थतन्त्र"
-          categorySlug="economy"
+          titleNp="अर्थ–व्यापार"
+          categorySlug="economy-business"
           articles={economyArticles}
           lang={lang}
         />

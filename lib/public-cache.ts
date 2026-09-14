@@ -75,6 +75,7 @@ async function loadHomePayload(lang: LanguageEditionType) {
       take: 8,
     }),
     prisma.category.findMany({
+      where: { isActive: true },
       orderBy: { order: "asc" },
       take: 6,
       select: {
@@ -116,7 +117,7 @@ async function loadHomePayload(lang: LanguageEditionType) {
     prisma.article.findMany({
       where: {
         ...whereClause,
-        category: { slug: { in: ["economy", "arthatantra"] } },
+        category: { slug: { in: ["economy-business", "economy", "arthatantra"] } },
       },
       select: homeArticleSelect,
       orderBy: { publishedAt: "desc" },
@@ -201,6 +202,7 @@ export function getCachedHomePayload(lang: LanguageEditionType) {
 export const getCachedCategories = unstable_cache(
   async () =>
     prisma.category.findMany({
+      where: { isActive: true },
       select: {
         id: true,
         name: true,
@@ -208,10 +210,11 @@ export const getCachedCategories = unstable_cache(
         slug: true,
         description: true,
         order: true,
+        isActive: true,
       },
       orderBy: [{ order: "asc" }, { createdAt: "desc" }],
     }),
-  ["public-categories"],
+  ["public-categories-active-v1"],
   { revalidate: 300, tags: [CACHE_TAGS.categories] }
 );
 
