@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { CACHE_TAGS } from "@/lib/public-cache";
 
@@ -33,17 +34,16 @@ const articlePageSelect = {
     select: { id: true, name: true, email: true, image: true },
   },
   showAds: true,
-} as const;
+} satisfies Prisma.ArticleSelect;
 
-type ArticlePageRow = {
-  createdAt: Date | string;
-  updatedAt: Date | string;
-  publishedAt: Date | string | null;
-  [key: string]: unknown;
-};
+export type ArticlePageData = Prisma.ArticleGetPayload<{
+  select: typeof articlePageSelect;
+}>;
 
 /** unstable_cache JSON-serializes Dates → revive so .toISOString() works. */
-function reviveArticleDates<T extends ArticlePageRow>(article: T | null): T | null {
+function reviveArticleDates(
+  article: ArticlePageData | null
+): ArticlePageData | null {
   if (!article) return null;
   return {
     ...article,
@@ -67,7 +67,8 @@ export const getArticleBySlug = cache(async (slug: string) => {
     [`public-article-v2-${slug}`],
     { revalidate: 60, tags: [CACHE_TAGS.articles] }
   )();
-  return reviveArticleDates(row as ArticlePageRow | null);
+  // Cache may return ISO strings for Date fields — cast then revive.
+  return reviveArticleDates(row as ArticlePageData | null);
 });
 
 /** Same loader as getArticleBySlug — kept for call-site clarity in generateMetadata. */
