@@ -131,9 +131,9 @@ export const adminToolbarFilters =
 export const adminToolbarSearch =
   "relative min-w-0 w-full flex-1 sm:max-w-md lg:max-w-lg";
 
-export const adminToolbarSelectMd = `${adminSelect} w-full min-w-[7.5rem] sm:w-[132px]`;
-export const adminToolbarSelectSm = `${adminSelect} w-[72px] sm:w-[108px]`;
-export const adminToolbarSelectStatus = `${adminSelect} w-full min-w-[7.5rem] sm:w-[124px]`;
+export const adminToolbarSelectMd = `${adminSelect} w-[7.5rem] shrink-0 sm:w-[132px]`;
+export const adminToolbarSelectSm = `${adminSelect} w-[72px] shrink-0 sm:w-[108px]`;
+export const adminToolbarSelectStatus = `${adminSelect} w-[7.5rem] shrink-0 sm:w-[124px]`;
 
 /* Badges */
 export const adminBadge =

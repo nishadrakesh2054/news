@@ -39,7 +39,6 @@ import {
   adminTableRow,
   adminTextTruncate,
   adminToolbarPanel,
-  adminToolbarFilters,
   adminToolbarSearch,
   adminToolbarSelectMd,
   adminToolbarSelectSm,
@@ -104,7 +103,6 @@ export default function AdminArticlesPage() {
   const [provinceFilter, setProvinceFilter] = useState<string>("ALL");
   const [auRegionFilter, setAuRegionFilter] = useState<string>("ALL");
   const [languageFilter, setLanguageFilter] = useState<string>("ALL");
-  const [districtFilter, setDistrictFilter] = useState<string>("");
   const [limit, setLimit] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
   const [sortField, setSortField] = useState<SortField>("createdAt");
@@ -143,7 +141,6 @@ export default function AdminArticlesPage() {
       provinceFilter,
       auRegionFilter,
       languageFilter,
-      districtFilter,
       page,
       limit,
     ],
@@ -161,7 +158,6 @@ export default function AdminArticlesPage() {
       if (provinceFilter !== "ALL") params.append("province", provinceFilter);
       if (auRegionFilter !== "ALL") params.append("auRegion", auRegionFilter);
       if (languageFilter !== "ALL") params.append("languageEdition", languageFilter);
-      if (districtFilter.trim()) params.append("district", districtFilter.trim());
 
       const res = await fetch(`/api/admin/articles?${params.toString()}`);
       const json = await res.json();
@@ -247,7 +243,6 @@ export default function AdminArticlesPage() {
     setProvinceFilter("ALL");
     setAuRegionFilter("ALL");
     setLanguageFilter("ALL");
-    setDistrictFilter("");
     setPage(1);
     toast.success("Filters reset");
   };
@@ -260,8 +255,7 @@ export default function AdminArticlesPage() {
     tagFilter !== "ALL" ||
     provinceFilter !== "ALL" ||
     auRegionFilter !== "ALL" ||
-    languageFilter !== "ALL" ||
-    districtFilter.trim() !== "";
+    languageFilter !== "ALL";
 
   const pagination = data?.pagination;
   const summary = data?.summary;
@@ -395,7 +389,7 @@ export default function AdminArticlesPage() {
           </div>
         </div>
 
-        <div className={`${adminToolbarFilters} border-t border-border/50 pt-2`}>
+        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto border-t border-border/50 pt-2 pb-0.5">
           <select
             value={statusFilter}
             onChange={(e) => {
@@ -505,22 +499,11 @@ export default function AdminArticlesPage() {
             <option value="BOTH">Both editions</option>
           </select>
 
-          <input
-            type="text"
-            placeholder="District…"
-            value={districtFilter}
-            onChange={(e) => {
-              setDistrictFilter(e.target.value);
-              setPage(1);
-            }}
-            className={`${adminInput} h-8 w-full min-w-[7rem] sm:w-28`}
-          />
-
           {isFiltered ? (
             <button
               type="button"
               onClick={resetFilters}
-              className="inline-flex h-8 items-center px-2 text-xs font-medium text-[#C3272E] hover:underline"
+              className="inline-flex h-8 shrink-0 items-center px-2 text-xs font-medium text-[#C3272E] hover:underline"
             >
               Reset filters
             </button>

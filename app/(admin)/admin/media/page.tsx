@@ -599,7 +599,7 @@ export default function AdminMediaPage() {
                     <Upload className="mx-auto h-5 w-5 text-[#0C4EA0]" />
                     <p className="text-xs font-medium text-foreground">Choose image files</p>
                     <p className="text-[10px] text-muted-foreground">
-                      PNG, JPG, WEBP, GIF — max 500 KB each
+                      PNG, JPG, WEBP, GIF — max 1 MB each
                     </p>
                     <input
                       type="file"

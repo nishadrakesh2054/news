@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma, Role } from "@prisma/client";
 import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import cloudinary from "@/lib/cloudinary";
+import { MAX_ADMIN_IMAGE_BYTES, MAX_ADMIN_IMAGE_LABEL } from "@/constants/media";
 
 interface CloudinaryUploadResult {
   secure_url?: string;
@@ -12,7 +13,7 @@ interface CloudinaryUploadResult {
   height?: number;
 }
 
-const MAX_FILE_SIZE = 500 * 1024; // 500 KB limit for images
+const MAX_FILE_SIZE = MAX_ADMIN_IMAGE_BYTES;
 const VALID_IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
 
 export async function GET(request: NextRequest) {
@@ -142,9 +143,12 @@ export async function POST(request: NextRequest) {
         return apiError(`"${file.name}" rejected: Only PNG, JPG, JPEG, WEBP, and GIF allowed`, 400);
       }
 
-      // 2. Validate 500 KB Max Size
+      // 2. Validate max image size
       if (file.size > MAX_FILE_SIZE) {
-        return apiError(`"${file.name}" exceeds 500 KB limit (${(file.size / 1024).toFixed(0)} KB)`, 400);
+        return apiError(
+          `"${file.name}" exceeds ${MAX_ADMIN_IMAGE_LABEL} limit (${(file.size / 1024).toFixed(0)} KB)`,
+          400
+        );
       }
 
       const arrayBuffer = await file.arrayBuffer();

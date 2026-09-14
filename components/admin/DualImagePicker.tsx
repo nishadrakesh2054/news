@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Upload, ImageIcon, Link as LinkIcon, Loader2, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { MAX_ADMIN_IMAGE_BYTES, MAX_ADMIN_IMAGE_LABEL } from "@/constants/media";
 
 interface DualImagePickerProps {
   value: string;
@@ -33,7 +34,7 @@ export function DualImagePicker({
   const [urlInput, setUrlInput] = useState(value || "");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const MAX_FILE_SIZE = 500 * 1024; // 500 KB
+  const MAX_FILE_SIZE = MAX_ADMIN_IMAGE_BYTES;
   const VALID_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
 
   // Query Media Assets for Library Modal
@@ -61,7 +62,9 @@ export function DualImagePicker({
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      toast.error(`Image exceeds 500 KB limit (${(file.size / 1024).toFixed(0)} KB)`);
+      toast.error(
+        `Image exceeds ${MAX_ADMIN_IMAGE_LABEL} limit (${(file.size / 1024).toFixed(0)} KB)`
+      );
       return;
     }
 
@@ -203,7 +206,9 @@ export function DualImagePicker({
                 <label className="cursor-pointer space-y-1 block">
                   <Upload className="h-5 w-5 text-[#0C4EA0] mx-auto" />
                   <p className="text-xs font-bold text-foreground">Click to select image file from computer</p>
-                  <p className="text-[10px] text-muted-foreground">Supports PNG, JPG, WEBP, GIF (Max 500 KB)</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Supports PNG, JPG, WEBP, GIF (Max {MAX_ADMIN_IMAGE_LABEL})
+                  </p>
                   <input
                     ref={fileInputRef}
                     type="file"

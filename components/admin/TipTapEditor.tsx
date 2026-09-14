@@ -8,6 +8,7 @@ import LinkExtension from "@tiptap/extension-link";
 import ImageExtension from "@tiptap/extension-image";
 import UnderlineExtension from "@tiptap/extension-underline";
 import PlaceholderExtension from "@tiptap/extension-placeholder";
+import { MAX_ADMIN_IMAGE_BYTES, MAX_ADMIN_IMAGE_LABEL } from "@/constants/media";
 
 import {
   Bold,
@@ -186,7 +187,7 @@ export function TipTapEditor({
     }
   };
 
-  const MAX_FILE_SIZE = 500 * 1024; // 500 KB limit
+  const MAX_FILE_SIZE = MAX_ADMIN_IMAGE_BYTES;
   const VALID_IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 
   // Handle local multiple file upload
@@ -204,9 +205,11 @@ export function TipTapEditor({
         continue;
       }
 
-      // 2. Size check (Max 500 KB)
+      // 2. Size check
       if (file.size > MAX_FILE_SIZE) {
-        toast.error(`"${file.name}" exceeds 500 KB limit (${(file.size / 1024).toFixed(0)} KB)`);
+        toast.error(
+          `"${file.name}" exceeds ${MAX_ADMIN_IMAGE_LABEL} limit (${(file.size / 1024).toFixed(0)} KB)`
+        );
         continue;
       }
 

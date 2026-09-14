@@ -911,7 +911,7 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
           <AdminFormRow
             serial={1}
             label="Cover image"
-            hint="PNG, JPG, WEBP or GIF — maximum 500 KB"
+            hint="PNG, JPG, WEBP or GIF — maximum 1 MB"
           >
             <div className="max-w-lg space-y-3">
               <DualImagePicker

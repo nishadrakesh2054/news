@@ -26,6 +26,7 @@ import {
   adminInput,
   adminPanel,
 } from "@/constants/admin-layout";
+import { MAX_ADMIN_IMAGE_BYTES, MAX_ADMIN_IMAGE_LABEL } from "@/constants/media";
 
 type GalleryMedia = {
   id: string;
@@ -61,7 +62,7 @@ type MediaOption = {
   caption?: string | null;
 };
 
-const MAX_FILE_SIZE = 500 * 1024;
+const MAX_FILE_SIZE = MAX_ADMIN_IMAGE_BYTES;
 const VALID_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
 
 export default function AdminGalleryManagePage() {
@@ -203,7 +204,7 @@ export default function AdminGalleryManagePage() {
           continue;
         }
         if (file.size > MAX_FILE_SIZE) {
-          toast.error(`"${file.name}" exceeds 500 KB`);
+          toast.error(`"${file.name}" exceeds ${MAX_ADMIN_IMAGE_LABEL}`);
           continue;
         }
 
@@ -284,7 +285,7 @@ export default function AdminGalleryManagePage() {
                       Choose image files from your computer
                     </p>
                     <p className="text-[10px] text-muted-foreground">
-                      PNG, JPG, WEBP, GIF — max 500 KB each · multiple allowed
+                      PNG, JPG, WEBP, GIF — max {MAX_ADMIN_IMAGE_LABEL} each · multiple allowed
                     </p>
                     <input
                       ref={fileInputRef}

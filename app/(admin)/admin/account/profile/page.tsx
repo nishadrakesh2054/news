@@ -17,6 +17,7 @@ import {
   adminPanel,
 } from "@/constants/admin-layout";
 import { PASSWORD_MIN_LENGTH } from "@/lib/password-policy";
+import { MAX_ADMIN_IMAGE_BYTES, MAX_ADMIN_IMAGE_LABEL } from "@/constants/media";
 
 interface ProfileData {
   id: string;
@@ -129,8 +130,8 @@ function ProfileEditor({
       toast.error("Use PNG, JPG, WEBP, or GIF");
       return;
     }
-    if (file.size > 500 * 1024) {
-      toast.error("Image must be 500 KB or smaller");
+    if (file.size > MAX_ADMIN_IMAGE_BYTES) {
+      toast.error(`Image must be ${MAX_ADMIN_IMAGE_LABEL} or smaller`);
       return;
     }
 
@@ -336,7 +337,7 @@ function ProfileEditor({
             </div>
           </div>
           <p className="mt-3 text-[11px] text-muted-foreground">
-            Square photo works best · PNG/JPG/WEBP/GIF · max 500 KB
+            Square photo works best · PNG/JPG/WEBP/GIF · max {MAX_ADMIN_IMAGE_LABEL}
           </p>
         </div>
       </div>
