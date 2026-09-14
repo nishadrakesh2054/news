@@ -40,6 +40,7 @@ import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { PortalImage } from "@/components/portal/PortalImage";
 import { enhanceArticleBodyHtml } from "@/lib/enhance-article-html";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
+import { adMatchesSurface } from "@/lib/ad-surfaces";
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -179,9 +180,10 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
 
   const articleAds = allAds.filter(
     (a) =>
-      a.slot === AdSlot.IN_ARTICLE ||
-      a.slot === AdSlot.SIDEBAR_TOP ||
-      a.slot === AdSlot.SIDEBAR_BOTTOM
+      (a.slot === AdSlot.IN_ARTICLE ||
+        a.slot === AdSlot.SIDEBAR_TOP ||
+        a.slot === AdSlot.SIDEBAR_BOTTOM) &&
+      adMatchesSurface(a, "article")
   );
 
   const adsEnabled = article.showAds !== false;

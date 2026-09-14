@@ -17,6 +17,7 @@ import { ArticleAdSlot } from "@/components/portal/ArticleAdSlot";
 import { PORTAL } from "@/constants/portal";
 import { formatTimeAgo } from "@/lib/nepaliDate";
 import { getCachedActiveAds } from "@/lib/public-cache";
+import { adMatchesSurface } from "@/lib/ad-surfaces";
 
 interface TagPageProps {
   params: Promise<{ slug: string }>;
@@ -87,7 +88,9 @@ export default async function TagArchivePage({ params, searchParams }: TagPagePr
   ]);
 
   const sidebarAds = allAds.filter(
-    (a) => a.slot === AdSlot.SIDEBAR_TOP || a.slot === AdSlot.SIDEBAR_BOTTOM
+    (a) =>
+      (a.slot === AdSlot.SIDEBAR_TOP || a.slot === AdSlot.SIDEBAR_BOTTOM) &&
+      adMatchesSurface(a, "category")
   );
 
   const tagLabel = tag

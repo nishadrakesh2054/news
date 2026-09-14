@@ -24,6 +24,7 @@ import {
 import { ArticleAdSlot } from "@/components/portal/ArticleAdSlot";
 import { PORTAL } from "@/constants/portal";
 import { formatTimeAgo } from "@/lib/nepaliDate";
+import { adMatchesSurface } from "@/lib/ad-surfaces";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -124,7 +125,9 @@ export default async function CategoryArchivePage({ params, searchParams }: Cate
     lead != null ? articles.filter((a) => a.id !== lead.id) : articles;
 
   const sidebarAds = allAds.filter(
-    (a) => a.slot === AdSlot.SIDEBAR_TOP || a.slot === AdSlot.SIDEBAR_BOTTOM
+    (a) =>
+      (a.slot === AdSlot.SIDEBAR_TOP || a.slot === AdSlot.SIDEBAR_BOTTOM) &&
+      adMatchesSurface(a, "category")
   );
   const adsTop = sidebarAds.filter((a) => a.slot === AdSlot.SIDEBAR_TOP);
   const adsBottom = sidebarAds.filter((a) => a.slot === AdSlot.SIDEBAR_BOTTOM);

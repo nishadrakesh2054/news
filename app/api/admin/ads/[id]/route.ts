@@ -52,6 +52,9 @@ export async function PATCH(
           scriptCode: body.scriptCode ? sanitizeAdScriptCode(body.scriptCode) || null : null,
         }),
         ...(body.isActive !== undefined && { isActive: Boolean(body.isActive) }),
+        ...(body.showOnHome !== undefined && { showOnHome: Boolean(body.showOnHome) }),
+        ...(body.showOnArticle !== undefined && { showOnArticle: Boolean(body.showOnArticle) }),
+        ...(body.showOnCategory !== undefined && { showOnCategory: Boolean(body.showOnCategory) }),
         ...(body.sortOrder !== undefined &&
           typeof body.sortOrder === "number" &&
           Number.isFinite(body.sortOrder) && { sortOrder: Math.trunc(body.sortOrder) }),

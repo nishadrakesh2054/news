@@ -27,6 +27,11 @@ import {
   adminToolbarSelectMd,
   adminToolbarSelectStatus,
 } from "@/constants/admin-layout";
+import {
+  SLOT_WHERE,
+  defaultSurfacesForSlot,
+  slotUsesPageSurfaces,
+} from "@/lib/ad-surfaces";
 
 interface AdItem {
   id: string;
@@ -37,28 +42,31 @@ interface AdItem {
   scriptCode: string | null;
   isActive: boolean;
   sortOrder: number;
+  showOnHome: boolean;
+  showOnArticle: boolean;
+  showOnCategory: boolean;
   clicks: number;
   impressions: number;
   createdAt: string;
 }
 
 const SLOT_LABELS: Record<AdSlot, string> = {
-  HEADER_LEADERBOARD: "Header leaderboard",
-  SIDEBAR_TOP: "Sidebar top (rotating)",
-  SIDEBAR_BOTTOM: "Sidebar bottom (rotating)",
-  IN_ARTICLE: "In-article (article page)",
+  HEADER_LEADERBOARD: "Header banner",
+  SIDEBAR_TOP: "Sidebar top",
+  SIDEBAR_BOTTOM: "Sidebar bottom",
+  IN_ARTICLE: "In-article",
   STICKY_FOOTER: "Sticky footer",
-  HOME_SPOTLIGHT: "Home spotlight (under title)",
+  HOME_SPOTLIGHT: "Home spotlight",
 };
 
 /** Recommended banner size per placement (width*height). */
 const SLOT_SIZES: Record<AdSlot, string> = {
-  HEADER_LEADERBOARD: "728*90",
-  SIDEBAR_TOP: "300*250",
-  SIDEBAR_BOTTOM: "300*250",
-  IN_ARTICLE: "600*200",
-  STICKY_FOOTER: "728*90",
-  HOME_SPOTLIGHT: "970*90",
+  HEADER_LEADERBOARD: "728×90",
+  SIDEBAR_TOP: "300×250",
+  SIDEBAR_BOTTOM: "300×250",
+  IN_ARTICLE: "600×200",
+  STICKY_FOOTER: "728×90",
+  HOME_SPOTLIGHT: "970×90",
 };
 
 export default function AdminAdsPage() {
@@ -76,6 +84,9 @@ export default function AdminAdsPage() {
   const [scriptCode, setScriptCode] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [sortOrder, setSortOrder] = useState(0);
+  const [showOnHome, setShowOnHome] = useState(true);
+  const [showOnArticle, setShowOnArticle] = useState(true);
+  const [showOnCategory, setShowOnCategory] = useState(true);
 
   const { data: ads = [], isLoading, isError, refetch, isFetching } = useQuery<AdItem[]>({
     queryKey: ["admin-ads"],
@@ -171,6 +182,10 @@ export default function AdminAdsPage() {
     setTargetUrl("");
     setScriptCode("");
     setIsActive(true);
+    const defaults = defaultSurfacesForSlot(AdSlot.HEADER_LEADERBOARD);
+    setShowOnHome(defaults.showOnHome);
+    setShowOnArticle(defaults.showOnArticle);
+    setShowOnCategory(defaults.showOnCategory);
     const maxOrder = ads
       .filter((a) => a.slot === AdSlot.HEADER_LEADERBOARD)
       .reduce((m, a) => Math.max(m, a.sortOrder ?? 0), -1);
@@ -187,6 +202,9 @@ export default function AdminAdsPage() {
     setScriptCode(ad.scriptCode || "");
     setIsActive(ad.isActive);
     setSortOrder(ad.sortOrder ?? 0);
+    setShowOnHome(ad.showOnHome !== false);
+    setShowOnArticle(ad.showOnArticle !== false);
+    setShowOnCategory(ad.showOnCategory !== false);
     setIsModalOpen(true);
   };
 
@@ -210,6 +228,9 @@ export default function AdminAdsPage() {
       scriptCode: scriptCode || undefined,
       isActive,
       sortOrder,
+      showOnHome,
+      showOnArticle,
+      showOnCategory,
     };
 
     if (editingAd) {
@@ -248,7 +269,7 @@ export default function AdminAdsPage() {
   return (
     <AdminPageShell
       title="Advertisements"
-      description="Multiple header leaderboards rotate by display order · manage banners & scripts"
+      description="Pick a placement, then choose which pages it appears on"
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
       actions={
@@ -258,6 +279,29 @@ export default function AdminAdsPage() {
         </button>
       }
     >
+      <div className={`${adminPanel} px-3 py-2.5`}>
+        <p className="text-xs font-semibold text-foreground">Where each placement shows</p>
+        <ul className="mt-1.5 grid gap-1 text-[11px] text-muted-foreground sm:grid-cols-2 lg:grid-cols-3">
+          <li>
+            <span className="font-medium text-foreground">Header / Sticky footer</span> — every page
+          </li>
+          <li>
+            <span className="font-medium text-foreground">Home spotlight</span> — home only
+          </li>
+          <li>
+            <span className="font-medium text-foreground">In-article</span> — article detail only
+          </li>
+          <li>
+            <span className="font-medium text-foreground">Sidebar top/bottom</span> — Home / Article /
+            Category (you choose)
+          </li>
+          <li className="sm:col-span-2 lg:col-span-3">
+            Per article: edit the story → uncheck{" "}
+            <span className="font-medium text-foreground">Show ads on article page</span> to hide all
+            ads on that story.
+          </li>
+        </ul>
+      </div>
       <AdminStatsStrip
         stats={[
           { label: "Total units", value: ads.length },
@@ -344,6 +388,7 @@ export default function AdminAdsPage() {
                   <th className={adminTableHeadCell}>Order</th>
                   <th className={adminTableHeadCell}>Ad unit</th>
                   <th className={adminTableHeadCell}>Placement</th>
+                  <th className={adminTableHeadCell}>Shows on</th>
                   <th className={adminTableHeadCell}>Status</th>
                   <th className={adminTableHeadCell}>Impressions</th>
                   <th className={adminTableHeadCell}>Clicks / CTR</th>
@@ -428,6 +473,30 @@ export default function AdminAdsPage() {
                             {SLOT_SIZES[ad.slot]}
                           </span>
                         </span>
+                      </td>
+                      <td className={adminTableCell}>
+                        {slotUsesPageSurfaces(ad.slot) ? (
+                          <div className="flex flex-wrap gap-1">
+                            {ad.showOnHome !== false ? (
+                              <span className={adminBadgeMuted}>Home</span>
+                            ) : null}
+                            {ad.showOnArticle !== false ? (
+                              <span className={adminBadgeMuted}>Article</span>
+                            ) : null}
+                            {ad.slot !== AdSlot.IN_ARTICLE && ad.showOnCategory !== false ? (
+                              <span className={adminBadgeMuted}>Category</span>
+                            ) : null}
+                            {ad.showOnHome === false &&
+                            ad.showOnArticle === false &&
+                            (ad.slot === AdSlot.IN_ARTICLE || ad.showOnCategory === false) ? (
+                              <span className="text-[10px] text-muted-foreground">None</span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">
+                            {SLOT_WHERE[ad.slot]}
+                          </span>
+                        )}
                       </td>
                       <td className={adminTableCell}>
                         <button
@@ -532,21 +601,70 @@ export default function AdminAdsPage() {
                       <select
                         id="ad-slot"
                         value={slot}
-                        onChange={(e) => setSlot(e.target.value as AdSlot)}
+                        onChange={(e) => {
+                          const next = e.target.value as AdSlot;
+                          setSlot(next);
+                          const defaults = defaultSurfacesForSlot(next);
+                          setShowOnHome(defaults.showOnHome);
+                          setShowOnArticle(defaults.showOnArticle);
+                          setShowOnCategory(defaults.showOnCategory);
+                        }}
                         className={`${adminSelect} w-full`}
                       >
-                        <option value="HEADER_LEADERBOARD">Header leaderboard</option>
-                        <option value="SIDEBAR_TOP">Sidebar top (ad 1)</option>
-                        <option value="SIDEBAR_BOTTOM">Sidebar bottom (ad 2)</option>
-                        <option value="IN_ARTICLE">In-article inline</option>
-                        <option value="STICKY_FOOTER">Sticky footer</option>
-                        <option value="HOME_SPOTLIGHT">Home spotlight (under title)</option>
+                        <option value="HEADER_LEADERBOARD">Header banner (every page)</option>
+                        <option value="SIDEBAR_TOP">Sidebar top</option>
+                        <option value="SIDEBAR_BOTTOM">Sidebar bottom</option>
+                        <option value="IN_ARTICLE">In-article (article page)</option>
+                        <option value="STICKY_FOOTER">Sticky footer (every page)</option>
+                        <option value="HOME_SPOTLIGHT">Home spotlight (home only)</option>
                       </select>
                       <p className="text-[10px] text-muted-foreground">
-                        Size: {SLOT_SIZES[slot]}
+                        Size: {SLOT_SIZES[slot]} · {SLOT_WHERE[slot]}
                       </p>
                     </div>
                   </div>
+
+                  {slotUsesPageSurfaces(slot) ? (
+                    <div className="space-y-2 rounded-sm border border-border/70 bg-muted/20 px-3 py-2.5">
+                      <p className="text-xs font-medium text-foreground">Shows on</p>
+                      <div className="flex flex-wrap gap-4">
+                        {slot !== AdSlot.IN_ARTICLE ? (
+                          <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
+                            <input
+                              type="checkbox"
+                              checked={showOnHome}
+                              onChange={(e) => setShowOnHome(e.target.checked)}
+                              className="h-4 w-4 rounded-sm border-border accent-[#0C4EA0]"
+                            />
+                            Home
+                          </label>
+                        ) : null}
+                        <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={showOnArticle}
+                            onChange={(e) => setShowOnArticle(e.target.checked)}
+                            className="h-4 w-4 rounded-sm border-border accent-[#0C4EA0]"
+                          />
+                          Article detail
+                        </label>
+                        {slot !== AdSlot.IN_ARTICLE ? (
+                          <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
+                            <input
+                              type="checkbox"
+                              checked={showOnCategory}
+                              onChange={(e) => setShowOnCategory(e.target.checked)}
+                              className="h-4 w-4 rounded-sm border-border accent-[#0C4EA0]"
+                            />
+                            Category / tag pages
+                          </label>
+                        ) : null}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Uncheck pages where this ad should not appear.
+                      </p>
+                    </div>
+                  ) : null}
 
                   <div className="space-y-1">
                     <label htmlFor="ad-order" className="text-xs font-medium text-foreground">

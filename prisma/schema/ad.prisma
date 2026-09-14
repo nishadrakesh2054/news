@@ -16,6 +16,12 @@ model Ad {
   targetUrl   String?
   scriptCode  String?  @db.Text
   isActive    Boolean  @default(true)
+  /** Sidebar / in-article: show on homepage. */
+  showOnHome     Boolean @default(true)
+  /** Sidebar / in-article: show on article detail pages. */
+  showOnArticle  Boolean @default(true)
+  /** Sidebar: show on category & tag listing pages. */
+  showOnCategory Boolean @default(true)
   /** Lower numbers show first within the same slot (rotating leaderboard order). */
   sortOrder   Int      @default(0)
   clicks      Int      @default(0)

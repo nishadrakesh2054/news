@@ -5,6 +5,7 @@ import { apiSuccess, apiError, handleServerError } from "@/lib/api-response";
 import { requirePermission } from "@/lib/admin-auth";
 import { invalidatePublicAds } from "@/lib/cache-invalidation";
 import { sanitizeAdScriptCode } from "@/lib/sanitize-html";
+import { defaultSurfacesForSlot } from "@/lib/ad-surfaces";
 
 function isSafeAdTargetUrl(url: string | null | undefined): boolean {
   if (!url?.trim()) return true;
@@ -14,6 +15,11 @@ function isSafeAdTargetUrl(url: string | null | undefined): boolean {
   } catch {
     return url.trim().startsWith("/") && !url.trim().startsWith("//");
   }
+}
+
+function parseSurfaceFlag(value: unknown, fallback: boolean): boolean {
+  if (typeof value === "boolean") return value;
+  return fallback;
 }
 
 export async function GET(request: NextRequest) {
@@ -37,6 +43,9 @@ export async function GET(request: NextRequest) {
           scriptCode: true,
           isActive: true,
           sortOrder: true,
+          showOnHome: true,
+          showOnArticle: true,
+          showOnCategory: true,
           clicks: true,
           impressions: true,
           createdAt: true,
@@ -63,7 +72,18 @@ export async function POST(request: NextRequest) {
     const auth = await requirePermission("ads.create");
     if (auth.error) return auth.error;
 
-    const { title, slot, imageUrl, targetUrl, scriptCode, isActive, sortOrder } = await request.json();
+    const {
+      title,
+      slot,
+      imageUrl,
+      targetUrl,
+      scriptCode,
+      isActive,
+      sortOrder,
+      showOnHome,
+      showOnArticle,
+      showOnCategory,
+    } = await request.json();
 
     if (!title || !slot || !Object.values(AdSlot).includes(slot)) {
       return apiError("Valid title and ad slot are required", 400);
@@ -74,6 +94,8 @@ export async function POST(request: NextRequest) {
       return apiError("Invalid ad target URL", 400);
     }
 
+    const defaults = defaultSurfacesForSlot(slot);
+
     const ad = await prisma.ad.create({
       data: {
         title: title.trim(),
@@ -83,6 +105,9 @@ export async function POST(request: NextRequest) {
         scriptCode: scriptCode ? sanitizeAdScriptCode(scriptCode) || null : null,
         isActive: Boolean(isActive ?? true),
         sortOrder: typeof sortOrder === "number" && Number.isFinite(sortOrder) ? Math.trunc(sortOrder) : 0,
+        showOnHome: parseSurfaceFlag(showOnHome, defaults.showOnHome),
+        showOnArticle: parseSurfaceFlag(showOnArticle, defaults.showOnArticle),
+        showOnCategory: parseSurfaceFlag(showOnCategory, defaults.showOnCategory),
       },
     });
 

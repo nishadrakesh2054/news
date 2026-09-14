@@ -35,6 +35,7 @@ import {
   getCachedReels,
   getCachedTags,
 } from "@/lib/public-cache";
+import { adMatchesSurface } from "@/lib/ad-surfaces";
 
 interface WebHomeProps {
   searchParams: Promise<{ lang?: string }>;
@@ -112,13 +113,13 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
   } = home;
 
   const sidebarAdsTop = activeAds
-    .filter((a) => a.slot === "SIDEBAR_TOP" && a.isActive !== false)
+    .filter((a) => a.slot === "SIDEBAR_TOP" && a.isActive !== false && adMatchesSurface(a, "home"))
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   const sidebarAdsBottom = activeAds
-    .filter((a) => a.slot === "SIDEBAR_BOTTOM" && a.isActive !== false)
+    .filter((a) => a.slot === "SIDEBAR_BOTTOM" && a.isActive !== false && adMatchesSurface(a, "home"))
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   const homeSpotlightAds = activeAds
-    .filter((a) => a.slot === "HOME_SPOTLIGHT" && a.isActive !== false)
+    .filter((a) => a.slot === "HOME_SPOTLIGHT" && a.isActive !== false && adMatchesSurface(a, "home"))
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   const featured = publishedArticles.filter((a) => a.isFeatured);

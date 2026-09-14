@@ -262,10 +262,13 @@ export const getCachedActiveAds = unstable_cache(
         scriptCode: true,
         isActive: true,
         sortOrder: true,
+        showOnHome: true,
+        showOnArticle: true,
+        showOnCategory: true,
       },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     }),
-  ["public-active-ads-v2"],
+  ["public-active-ads-v3"],
   { revalidate: 120, tags: [CACHE_TAGS.ads] }
 );
 
