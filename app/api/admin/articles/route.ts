@@ -147,9 +147,12 @@ export async function GET(request: NextRequest) {
     };
 
     if (wantSummary) {
-      const summaryWhere: Prisma.ArticleWhereInput = { ...where };
+      // Status cards stay stable while browsing; exclude status from summary counts.
+      const { status: _statusFilter, ...summaryRest } = where;
+      void _statusFilter;
+      const summaryWhere: Prisma.ArticleWhereInput = summaryRest;
 
-      const [statusGroups, viewsAggregate, breakingCount] = await Promise.all([
+      const [statusGroups, viewsAggregate, breakingCount, summaryTotal] = await Promise.all([
         prisma.article.groupBy({
           by: ["status"],
           where: summaryWhere,
@@ -160,13 +163,14 @@ export async function GET(request: NextRequest) {
           _sum: { views: true },
         }),
         prisma.article.count({ where: { ...summaryWhere, isBreaking: true } }),
+        prisma.article.count({ where: summaryWhere }),
       ]);
 
       const statusCount = (value: ArticleStatus) =>
         statusGroups.find((group) => group.status === value)?._count._all ?? 0;
 
       summary = {
-        total,
+        total: summaryTotal,
         published: statusCount(ArticleStatus.PUBLISHED),
         draft: statusCount(ArticleStatus.DRAFT),
         pending: statusCount(ArticleStatus.PENDING),

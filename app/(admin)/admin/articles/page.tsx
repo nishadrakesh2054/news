@@ -300,6 +300,11 @@ export default function AdminArticlesPage() {
       ? `/admin/articles/new?categoryId=${encodeURIComponent(categoryFilter)}`
       : "/admin/articles/new";
 
+  const setStatus = (value: string) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
+
   const formatLanguageLabel = (edition?: LanguageEdition) => {
     switch (edition) {
       case LanguageEdition.ENGLISH_ONLY:
@@ -362,8 +367,10 @@ export default function AdminArticlesPage() {
           {
             label: "Total articles",
             value: summary?.total ?? 0,
-            hint: filteredHint,
+            hint: statusFilter === "ALL" ? filteredHint : "Click to show all statuses",
             icon: FileText,
+            onClick: () => setStatus("ALL"),
+            active: statusFilter === "ALL",
           },
           {
             label: "Published",
@@ -373,6 +380,8 @@ export default function AdminArticlesPage() {
                 ? `${summary.pending} in review`
                 : "Live on site",
             icon: Eye,
+            onClick: () => setStatus("PUBLISHED"),
+            active: statusFilter === "PUBLISHED",
           },
           {
             label: "Drafts",
@@ -382,6 +391,8 @@ export default function AdminArticlesPage() {
                 ? `${summary.archived} archived`
                 : "Not published",
             icon: Clock,
+            onClick: () => setStatus("DRAFT"),
+            active: statusFilter === "DRAFT",
           },
           {
             label: "Total views",
@@ -721,11 +732,23 @@ export default function AdminArticlesPage() {
                             </span>
                           </div>
                           <p className={`${adminTextTruncate} font-medium text-foreground`}>
-                            {art.titleNp || art.title}
+                            <Link
+                              href={`/admin/articles/${art.id}/edit`}
+                              className="hover:text-[#0C4EA0] hover:underline"
+                              title="Edit article"
+                            >
+                              {art.titleNp || art.title}
+                            </Link>
                           </p>
                           {art.titleNp ? (
                             <p className={`${adminTextTruncate} text-[11px] text-muted-foreground`}>
-                              {art.title}
+                              <Link
+                                href={`/admin/articles/${art.id}/edit`}
+                                className="hover:text-[#0C4EA0] hover:underline"
+                                title="Edit article"
+                              >
+                                {art.title}
+                              </Link>
                             </p>
                           ) : null}
                           {art.province || art.district || art.auRegion ? (
