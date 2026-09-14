@@ -21,6 +21,11 @@ export async function GET(request: NextRequest) {
           slug: true,
           order: true,
           isActive: true,
+          _count: {
+            select: {
+              articles: true,
+            },
+          },
         },
         orderBy: [{ order: "asc" }, { createdAt: "desc" }],
       });

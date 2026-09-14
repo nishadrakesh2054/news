@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -89,9 +89,28 @@ interface CategoryOption {
   name: string;
   nameNp: string | null;
   slug: string;
+  isActive?: boolean;
+  _count?: { articles: number };
 }
 
 type SortField = "title" | "views" | "createdAt" | "status";
+
+function readCategoryIdFromUrl() {
+  if (typeof window === "undefined") return "ALL";
+  return new URLSearchParams(window.location.search).get("categoryId")?.trim() || "ALL";
+}
+
+function syncCategoryIdToUrl(categoryId: string) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (!categoryId || categoryId === "ALL") {
+    url.searchParams.delete("categoryId");
+  } else {
+    url.searchParams.set("categoryId", categoryId);
+  }
+  const next = `${url.pathname}${url.search}${url.hash}`;
+  window.history.replaceState({}, "", next);
+}
 
 export default function AdminArticlesPage() {
   const queryClient = useQueryClient();
@@ -108,7 +127,19 @@ export default function AdminArticlesPage() {
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // Fetch Categories for Filter Dropdown
+  useEffect(() => {
+    const fromUrl = readCategoryIdFromUrl();
+    if (fromUrl !== "ALL") {
+      setCategoryFilter(fromUrl);
+    }
+  }, []);
+
+  const setCategory = (id: string) => {
+    setCategoryFilter(id);
+    setPage(1);
+    syncCategoryIdToUrl(id);
+  };
+
   const { data: categoriesData = [] } = useQuery<CategoryOption[]>({
     queryKey: ["admin-categories-filter"],
     queryFn: async () => {
@@ -129,7 +160,6 @@ export default function AdminArticlesPage() {
     },
   });
 
-  // Fetch Articles with Server Query Params
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: [
       "admin-articles",
@@ -166,7 +196,6 @@ export default function AdminArticlesPage() {
     },
   });
 
-  // Toggle status mutation
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: ArticleStatus }) => {
       const res = await fetch(`/api/admin/articles/${id}`, {
@@ -183,13 +212,13 @@ export default function AdminArticlesPage() {
     onSuccess: () => {
       toast.success("Status updated successfully");
       queryClient.invalidateQueries({ queryKey: ["admin-articles"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-categories-filter"] });
     },
     onError: (err: Error) => {
       toast.error(err.message);
     },
   });
 
-  // Delete article mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin/articles/${id}`, {
@@ -202,6 +231,7 @@ export default function AdminArticlesPage() {
     onSuccess: () => {
       toast.success("Article deleted");
       queryClient.invalidateQueries({ queryKey: ["admin-articles"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-categories-filter"] });
     },
     onError: (err: Error) => {
       toast.error(err.message);
@@ -238,7 +268,7 @@ export default function AdminArticlesPage() {
     setSearch("");
     setStatusFilter("ALL");
     setTypeFilter("ALL");
-    setCategoryFilter("ALL");
+    setCategory("ALL");
     setTagFilter("ALL");
     setProvinceFilter("ALL");
     setAuRegionFilter("ALL");
@@ -260,6 +290,15 @@ export default function AdminArticlesPage() {
   const pagination = data?.pagination;
   const summary = data?.summary;
   const filteredHint = isFiltered ? "Matching filters" : "All articles";
+  const selectedCategory = categoriesData.find((cat) => cat.id === categoryFilter);
+  const totalCategoryArticles = categoriesData.reduce(
+    (sum, cat) => sum + (cat._count?.articles ?? 0),
+    0
+  );
+  const newArticleHref =
+    categoryFilter !== "ALL"
+      ? `/admin/articles/new?categoryId=${encodeURIComponent(categoryFilter)}`
+      : "/admin/articles/new";
 
   const formatLanguageLabel = (edition?: LanguageEdition) => {
     switch (edition) {
@@ -295,16 +334,25 @@ export default function AdminArticlesPage() {
     { value: "ARCHIVED", label: "Archived" },
   ];
 
+  const categoryChipClass = (active: boolean) =>
+    `inline-flex h-8 shrink-0 items-center gap-1.5 rounded-sm border px-2.5 text-xs font-medium transition-colors ${
+      active
+        ? "border-[#0C4EA0] bg-[#0C4EA0] text-white"
+        : "border-border/70 bg-background text-foreground hover:border-[#0C4EA0]/40 hover:bg-[#0C4EA0]/5"
+    }`;
+
   return (
     <AdminPageShell
       title="Articles"
-      description="Manage stories, drafts, and published content"
+      description="Browse by category, then search or filter to edit and publish"
       onRefresh={() => refetch()}
       isRefreshing={isFetching}
       actions={
-        <Link href="/admin/articles/new" className={adminBtnPrimary}>
+        <Link href={newArticleHref} className={adminBtnPrimary}>
           <Plus className="h-3.5 w-3.5" />
-          New article
+          {selectedCategory
+            ? `New in ${selectedCategory.nameNp || selectedCategory.name}`
+            : "New article"}
         </Link>
       }
     >
@@ -347,13 +395,80 @@ export default function AdminArticlesPage() {
         ]}
       />
 
+      <div className={adminPanel}>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
+          <div>
+            <p className="text-xs font-semibold text-foreground">Categories</p>
+            <p className="text-[11px] text-muted-foreground">
+              Click a category to list its articles
+              {selectedCategory
+                ? ` · showing ${selectedCategory.nameNp || selectedCategory.name}`
+                : ""}
+            </p>
+          </div>
+          {categoryFilter !== "ALL" ? (
+            <button type="button" onClick={() => setCategory("ALL")} className={adminBtnGhost}>
+              Clear category
+            </button>
+          ) : null}
+        </div>
+        <div className="flex gap-1.5 overflow-x-auto px-3 py-2.5">
+          <button
+            type="button"
+            onClick={() => setCategory("ALL")}
+            className={categoryChipClass(categoryFilter === "ALL")}
+          >
+            All
+            <span
+              className={`rounded-sm px-1 py-0.5 font-mono text-[10px] tabular-nums ${
+                categoryFilter === "ALL" ? "bg-white/20" : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {totalCategoryArticles}
+            </span>
+          </button>
+          {categoriesData.map((cat) => {
+            const active = categoryFilter === cat.id;
+            const label = cat.nameNp || cat.name;
+            const count = cat._count?.articles ?? 0;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setCategory(cat.id)}
+                className={categoryChipClass(active)}
+                title={cat.nameNp ? `${cat.nameNp} · ${cat.name}` : cat.name}
+              >
+                <span className="max-w-[9rem] truncate">{label}</span>
+                <span
+                  className={`rounded-sm px-1 py-0.5 font-mono text-[10px] tabular-nums ${
+                    active ? "bg-white/20" : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {count}
+                </span>
+                {cat.isActive === false ? (
+                  <span className={`text-[10px] ${active ? "text-white/80" : "text-muted-foreground"}`}>
+                    hidden
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className={adminToolbarPanel}>
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
           <div className={adminToolbarSearch}>
             <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search articles…"
+              placeholder={
+                selectedCategory
+                  ? `Search in ${selectedCategory.nameNp || selectedCategory.name}…`
+                  : "Search articles…"
+              }
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -401,22 +516,6 @@ export default function AdminArticlesPage() {
             {statusOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={categoryFilter}
-            onChange={(e) => {
-              setCategoryFilter(e.target.value);
-              setPage(1);
-            }}
-            className={adminToolbarSelectMd}
-          >
-            <option value="ALL">All categories</option>
-            {categoriesData.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.nameNp || cat.name}
               </option>
             ))}
           </select>
@@ -519,7 +618,12 @@ export default function AdminArticlesPage() {
         ) : sortedArticles.length === 0 ? (
           <div className="px-3 py-8 text-center text-xs text-muted-foreground">
             <p>No articles match your filters.</p>
-            {isFiltered ? (
+            {categoryFilter !== "ALL" ? (
+              <Link href={newArticleHref} className={`${adminBtnPrimary} mt-3 inline-flex`}>
+                <Plus className="h-3.5 w-3.5" />
+                Write first article in this category
+              </Link>
+            ) : isFiltered ? (
               <button type="button" onClick={resetFilters} className={`${adminBtnGhost} mt-2`}>
                 Clear filters
               </button>
@@ -537,7 +641,11 @@ export default function AdminArticlesPage() {
                     <span className="inline-flex items-center gap-1">
                       Title
                       {sortField === "title" ? (
-                        sortOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                        sortOrder === "asc" ? (
+                          <ArrowUp className="h-3 w-3" />
+                        ) : (
+                          <ArrowDown className="h-3 w-3" />
+                        )
                       ) : (
                         <ArrowUpDown className="h-3 w-3 opacity-40" />
                       )}
@@ -552,7 +660,11 @@ export default function AdminArticlesPage() {
                     <span className="inline-flex items-center gap-1">
                       Status
                       {sortField === "status" ? (
-                        sortOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                        sortOrder === "asc" ? (
+                          <ArrowUp className="h-3 w-3" />
+                        ) : (
+                          <ArrowDown className="h-3 w-3" />
+                        )
                       ) : (
                         <ArrowUpDown className="h-3 w-3 opacity-40" />
                       )}
@@ -565,7 +677,11 @@ export default function AdminArticlesPage() {
                     <span className="inline-flex items-center gap-1">
                       Views
                       {sortField === "views" ? (
-                        sortOrder === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                        sortOrder === "asc" ? (
+                          <ArrowUp className="h-3 w-3" />
+                        ) : (
+                          <ArrowDown className="h-3 w-3" />
+                        )
                       ) : (
                         <ArrowUpDown className="h-3 w-3 opacity-40" />
                       )}
@@ -600,7 +716,9 @@ export default function AdminArticlesPage() {
                                 Breaking
                               </span>
                             ) : null}
-                            <span className={adminBadgeMuted}>{formatLanguageLabel(art.languageEdition)}</span>
+                            <span className={adminBadgeMuted}>
+                              {formatLanguageLabel(art.languageEdition)}
+                            </span>
                           </div>
                           <p className={`${adminTextTruncate} font-medium text-foreground`}>
                             {art.titleNp || art.title}
@@ -625,9 +743,14 @@ export default function AdminArticlesPage() {
                       </div>
                     </td>
                     <td className={`${adminTableCell} whitespace-nowrap`}>
-                      <span className={adminBadgeMuted}>
+                      <button
+                        type="button"
+                        onClick={() => setCategory(art.category.id)}
+                        className={`${adminBadgeMuted} cursor-pointer hover:border-[#0C4EA0]/40 hover:text-[#0C4EA0]`}
+                        title="Filter by this category"
+                      >
                         {art.category.nameNp || art.category.name}
-                      </span>
+                      </button>
                     </td>
                     <td className={`${adminTableCell} whitespace-nowrap`}>
                       <span className={adminBadgeMuted}>{formatTypeLabel(art.type)}</span>
@@ -649,7 +772,9 @@ export default function AdminArticlesPage() {
                         <option value="ARCHIVED">Archived</option>
                       </select>
                     </td>
-                    <td className={`${adminTableCell} whitespace-nowrap font-mono tabular-nums text-muted-foreground`}>
+                    <td
+                      className={`${adminTableCell} whitespace-nowrap font-mono tabular-nums text-muted-foreground`}
+                    >
                       {art.views.toLocaleString()}
                     </td>
                     <td className={`${adminTableCell} whitespace-nowrap text-muted-foreground`}>

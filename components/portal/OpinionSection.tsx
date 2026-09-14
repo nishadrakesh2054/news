@@ -48,9 +48,11 @@ export function OpinionSection({ articles, lang = "ne" }: OpinionSectionProps) {
           );
 
           return (
-            <Link key={art.id} href={`/article/${art.slug}${langQ}`} className="group block space-y-0.5">
-              <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-gray-900 group-hover:underline sm:text-base">
-                {title}
+            <article key={art.id} className="group space-y-0.5">
+              <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-gray-900 sm:text-base">
+                <Link href={`/article/${art.slug}${langQ}`} className="hover:underline">
+                  {title}
+                </Link>
               </h3>
               {excerpt?.trim() ? (
                 <p className="line-clamp-2 text-xs leading-snug text-gray-500 sm:text-[13px]">
@@ -58,7 +60,7 @@ export function OpinionSection({ articles, lang = "ne" }: OpinionSectionProps) {
                 </p>
               ) : null}
               <time className="block pt-0.5 text-[10px] leading-none text-gray-400">{when}</time>
-            </Link>
+            </article>
           );
         })}
       </div>

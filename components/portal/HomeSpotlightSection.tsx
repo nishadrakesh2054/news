@@ -99,35 +99,36 @@ export function HomeSpotlightSection({
             key={article.id}
             className="border-b border-gray-200 py-7 first:pt-2 last:border-b-0 sm:py-9"
           >
-            <Link href={href} className="group block">
-              {/* Title block — padded / constrained like before */}
-              <div className="mx-auto max-w-[920px] px-5 sm:px-10 lg:px-16 xl:px-20">
-                <h2
-                  className="text-center font-khand-nav text-pretty text-gray-700 transition-colors duration-200 group-hover:text-[#1957A6]"
-                  style={{
-                    fontSize: "clamp(2rem, 4.2vw, 68px)",
-                    fontWeight: 600,
-                    lineHeight: "clamp(2.6rem, 5.5vw, 88px)",
-                  }}
+            {/* Title is the only text link — author/date stay selectable & unlinked */}
+            <div className="mx-auto max-w-[920px] px-5 sm:px-10 lg:px-16 xl:px-20">
+              <h2
+                className="text-center font-khand-nav text-pretty text-gray-700"
+                style={{
+                  fontSize: "clamp(2rem, 4.2vw, 68px)",
+                  fontWeight: 600,
+                  lineHeight: "clamp(2.6rem, 5.5vw, 88px)",
+                }}
+              >
+                <Link
+                  href={href}
+                  className="transition-colors duration-200 hover:text-[#1957A6]"
                 >
                   {title}
-                </h2>
+                </Link>
+              </h2>
 
-                {/* Date above, editor/author below — reference style */}
-                <SpotlightMeta
-                  authorName={article.author?.name}
-                  authorImage={article.author?.image}
-                  when={when}
-                />
-              </div>
-            </Link>
+              <SpotlightMeta
+                authorName={article.author?.name}
+                authorImage={article.author?.image}
+                when={when}
+              />
+            </div>
 
             {/* Nepali portal pattern: heading first, then full-width ad */}
             {index === 0 ? <HomeFullWidthAd lang={lang} ads={spotlightAds} /> : null}
 
-            <Link href={href} className="group block">
-              {/* Image = layout/container width, centered */}
-              {withMedia && image ? (
+            {withMedia && image ? (
+              <Link href={href} className="group block" aria-label={title}>
                 <div className="relative mx-auto mt-6 aspect-[16/9] w-full overflow-hidden bg-gray-200 sm:mt-8">
                   <PortalImage
                     src={image}
@@ -139,14 +140,14 @@ export function HomeSpotlightSection({
                     className="object-cover object-center transition-transform duration-200 group-hover:translate-y-px"
                   />
                 </div>
-              ) : null}
+              </Link>
+            ) : null}
 
-              {withMedia && excerpt ? (
-                <p className="mx-auto mt-4 max-w-[920px] px-5 text-center text-sm leading-relaxed text-gray-600 sm:mt-5 sm:px-10 sm:text-base lg:px-16">
-                  {excerpt}
-                </p>
-              ) : null}
-            </Link>
+            {withMedia && excerpt ? (
+              <p className="mx-auto mt-4 max-w-[920px] px-5 text-center text-sm leading-relaxed text-gray-600 sm:mt-5 sm:px-10 sm:text-base lg:px-16">
+                {excerpt}
+              </p>
+            ) : null}
           </article>
         );
       })}

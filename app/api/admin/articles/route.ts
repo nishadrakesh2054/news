@@ -147,10 +147,7 @@ export async function GET(request: NextRequest) {
     };
 
     if (wantSummary) {
-      const summaryWhere: Prisma.ArticleWhereInput =
-        auth.session!.user.role === Role.AUTHOR
-          ? { authorId: auth.session!.user.id }
-          : {};
+      const summaryWhere: Prisma.ArticleWhereInput = { ...where };
 
       const [statusGroups, viewsAggregate, breakingCount] = await Promise.all([
         prisma.article.groupBy({

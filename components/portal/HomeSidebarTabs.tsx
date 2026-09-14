@@ -44,27 +44,29 @@ export function HomeSidebarTabs({ popular, lang }: HomeSidebarTabsProps) {
             );
 
             return (
-              <li key={art.id}>
-                <Link href={href} className="flex gap-3 p-3 hover:bg-gray-50">
-                  <div className="h-16 w-16 shrink-0 overflow-hidden bg-gray-200">
-                    {image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={image} alt={title} className="h-full w-full object-cover" />
-                    ) : null}
-                  </div>
-                  <div className="min-w-0 flex-1 space-y-1">
-                    {category ? (
-                      <span className="text-[10px] font-bold uppercase" style={{ color: PORTAL.accent }}>
-                        {category}
-                      </span>
-                    ) : null}
-                    <h3 className="line-clamp-2 text-sm font-bold leading-snug text-gray-900">{title}</h3>
-                    <span className="inline-flex items-center gap-1 text-[10px] text-gray-500">
-                      <Clock className="h-3 w-3" />
-                      {when}
-                    </span>
-                  </div>
+              <li key={art.id} className="flex gap-3 p-3 hover:bg-gray-50">
+                <Link href={href} className="relative h-16 w-16 shrink-0 overflow-hidden bg-gray-200" aria-label={title}>
+                  {image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={image} alt={title} className="h-full w-full object-cover" />
+                  ) : null}
                 </Link>
+                <div className="min-w-0 flex-1 space-y-1">
+                  {category ? (
+                    <span className="text-[10px] font-bold uppercase" style={{ color: PORTAL.accent }}>
+                      {category}
+                    </span>
+                  ) : null}
+                  <h3 className="line-clamp-2 text-sm font-bold leading-snug text-gray-900">
+                    <Link href={href} className="hover:underline">
+                      {title}
+                    </Link>
+                  </h3>
+                  <span className="inline-flex items-center gap-1 text-[10px] text-gray-500">
+                    <Clock className="h-3 w-3" />
+                    {when}
+                  </span>
+                </div>
               </li>
             );
           })

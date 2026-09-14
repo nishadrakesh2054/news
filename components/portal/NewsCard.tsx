@@ -78,46 +78,46 @@ export function NewsCard({
       <article
         className={`border-b border-gray-200 py-8 first:pt-2 last:border-b-0 sm:py-10 ${className}`}
       >
-        <Link href={href} className="group block">
-          <h2
-            className="text-center font-khand-nav font-extrabold tracking-tight text-balance"
-            style={{
-              color: PORTAL.brand,
-              fontSize: "clamp(2rem, 5.2vw, 4.125rem)", // ~32–66px
-              lineHeight: 1.2,
-            }}
-          >
+        <h2
+          className="text-center font-khand-nav font-extrabold tracking-tight text-balance"
+          style={{
+            color: PORTAL.brand,
+            fontSize: "clamp(2rem, 5.2vw, 4.125rem)", // ~32–66px
+            lineHeight: 1.2,
+          }}
+        >
+          <Link href={href} className="hover:opacity-90">
             {title}
-          </h2>
+          </Link>
+        </h2>
 
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-gray-500 sm:mt-4 sm:text-[15px]">
-            {showAuthor && article.author?.name ? (
-              <span className="font-medium text-gray-600">{article.author.name}</span>
-            ) : category ? (
-              <span className="font-semibold" style={{ color: PORTAL.accent }}>
-                {category}
-              </span>
-            ) : null}
-            <span className="inline-flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
-              {when}
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-gray-500 sm:mt-4 sm:text-[15px]">
+          {showAuthor && article.author?.name ? (
+            <span className="font-medium text-gray-600">{article.author.name}</span>
+          ) : category ? (
+            <span className="font-semibold" style={{ color: PORTAL.accent }}>
+              {category}
             </span>
-          </div>
-
-          {image ? (
-            <div className="relative mt-5 aspect-[16/9] w-full overflow-hidden bg-gray-200 sm:mt-6">
-              <PortalImage
-                src={image}
-                alt={title}
-                fill
-                priority={priority}
-                quality={80}
-                sizes="(max-width: 1024px) 100vw, 900px"
-                className="object-cover transition-transform duration-300 group-hover:scale-[1.01]"
-              />
-            </div>
           ) : null}
-        </Link>
+          <span className="inline-flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+            {when}
+          </span>
+        </div>
+
+        {image ? (
+          <Link href={href} className="group relative mt-5 block aspect-[16/9] w-full overflow-hidden bg-gray-200 sm:mt-6" aria-label={title}>
+            <PortalImage
+              src={image}
+              alt={title}
+              fill
+              priority={priority}
+              quality={80}
+              sizes="(max-width: 1024px) 100vw, 900px"
+              className="object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+            />
+          </Link>
+        ) : null}
       </article>
     );
   }
@@ -184,27 +184,29 @@ export function NewsCard({
 
   if (variant === "ranked") {
     return (
-      <Link href={href} className={`group flex items-start gap-3 ${className}`}>
+      <article className={`flex items-start gap-3 ${className}`}>
         <span className="w-7 shrink-0 font-mono text-lg font-black tabular-nums" style={{ color: PORTAL.brand }}>
           {String(rank ?? 1).padStart(2, "0")}
         </span>
         <div className="min-w-0 space-y-1">
-          <h3 className="line-clamp-2 text-sm font-bold leading-snug text-gray-900 group-hover:underline">
-            {title}
+          <h3 className="line-clamp-2 text-sm font-bold leading-snug text-gray-900">
+            <Link href={href} className="hover:underline">
+              {title}
+            </Link>
           </h3>
           <p className="text-[10px] text-gray-500">{when}</p>
         </div>
-      </Link>
+      </article>
     );
   }
 
   if (variant === "compact") {
     return (
-      <Link href={href} className={`group flex gap-3 border-b border-gray-100 pb-3 last:border-0 ${className}`}>
+      <article className={`flex gap-3 border-b border-gray-100 pb-3 last:border-0 ${className}`}>
         {image ? (
-          <div className="relative h-16 w-20 shrink-0 overflow-hidden bg-gray-200">
+          <Link href={href} className="relative h-16 w-20 shrink-0 overflow-hidden bg-gray-200" aria-label={title}>
             <PortalImage src={image} alt={title} fill sizes="80px" className="object-cover" />
-          </div>
+          </Link>
         ) : null}
         <div className="min-w-0 space-y-1">
           {category ? (
@@ -212,19 +214,21 @@ export function NewsCard({
               {category}
             </span>
           ) : null}
-          <h3 className="line-clamp-2 text-sm font-bold leading-snug text-gray-900 group-hover:underline">
-            {title}
+          <h3 className="line-clamp-2 text-sm font-bold leading-snug text-gray-900">
+            <Link href={href} className="hover:underline">
+              {title}
+            </Link>
           </h3>
           <span className="block text-[10px] text-gray-500">{when}</span>
         </div>
-      </Link>
+      </article>
     );
   }
 
   if (variant === "feature") {
     return (
-      <Link href={href} className={`group block space-y-2 ${className}`}>
-        <div className="relative aspect-[16/10] overflow-hidden bg-gray-200">
+      <article className={`space-y-2 ${className}`}>
+        <Link href={href} className="relative block aspect-[16/10] overflow-hidden bg-gray-200" aria-label={title}>
           {image ? (
             <PortalImage
               src={image}
@@ -234,19 +238,21 @@ export function NewsCard({
               className="object-cover"
             />
           ) : null}
-        </div>
+        </Link>
         {category ? (
           <span className="text-[10px] font-bold uppercase" style={{ color: PORTAL.accent }}>
             {category}
           </span>
         ) : null}
-        <h3 className="line-clamp-3 text-base font-bold leading-snug text-gray-900 group-hover:underline">
-          {title}
+        <h3 className="line-clamp-3 text-base font-bold leading-snug text-gray-900">
+          <Link href={href} className="hover:underline">
+            {title}
+          </Link>
         </h3>
         {showExcerpt && excerpt ? (
           <p className="line-clamp-2 text-xs leading-relaxed text-gray-600">{excerpt}</p>
         ) : null}
-      </Link>
+      </article>
     );
   }
 

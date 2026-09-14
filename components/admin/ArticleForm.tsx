@@ -47,6 +47,8 @@ interface CategoryItem {
 interface ArticleFormProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   initialData?: Record<string, any>;
+  /** Prefill category when creating from a category-filtered articles list. */
+  defaultCategoryId?: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -249,7 +251,7 @@ function TagsMultiSelect({ tags, value, onChange }: TagsMultiSelectProps) {
   );
 }
 
-export function ArticleForm({ initialData }: ArticleFormProps) {
+export function ArticleForm({ initialData, defaultCategoryId }: ArticleFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const isEditing = Boolean(initialData?.id);
@@ -274,7 +276,9 @@ export function ArticleForm({ initialData }: ArticleFormProps) {
   const [homeDisplay, setHomeDisplay] = useState<"TITLE_ONLY" | "TITLE_MEDIA">(
     initialData?.homeDisplay === "TITLE_MEDIA" ? "TITLE_MEDIA" : "TITLE_ONLY"
   );
-  const [categoryId, setCategoryId] = useState<string>((initialData?.categoryId as string) || "");
+  const [categoryId, setCategoryId] = useState<string>(
+    (initialData?.categoryId as string) || defaultCategoryId?.trim() || ""
+  );
   const [metaTitle, setMetaTitle] = useState<string>((initialData?.metaTitle as string) || "");
   const [metaTitleNp, setMetaTitleNp] = useState<string>(
     (initialData?.metaTitleNp as string) || ""

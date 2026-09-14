@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Search, FileText } from "lucide-react";
 import { AdminPageShell } from "@/components/admin/AdminPageShell";
 import { AdminStatsStrip } from "@/components/admin/content";
 import {
@@ -328,10 +329,23 @@ export default function AdminCategoriesPage() {
                       </label>
                     </td>
                     <td className={adminTableCell}>
-                      <span className={adminBadgeMuted}>{cat._count?.articles ?? 0}</span>
+                      <Link
+                        href={`/admin/articles?categoryId=${encodeURIComponent(cat.id)}`}
+                        className={`${adminBadgeMuted} hover:border-[#0C4EA0]/40 hover:text-[#0C4EA0]`}
+                        title="Open articles in this category"
+                      >
+                        {cat._count?.articles ?? 0}
+                      </Link>
                     </td>
                     <td className={`${adminTableCell} text-right`}>
                       <div className="inline-flex items-center gap-1">
+                        <Link
+                          href={`/admin/articles?categoryId=${encodeURIComponent(cat.id)}`}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#027081] hover:bg-[#027081]/10"
+                          title="View articles"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                        </Link>
                         <button
                           type="button"
                           onClick={() => openEditModal(cat)}
