@@ -72,7 +72,7 @@ async function loadHomePayload(lang: LanguageEditionType) {
       },
       select: homeArticleSelect,
       orderBy: [{ homeOrder: "asc" }, { publishedAt: "desc" }],
-      take: 8,
+      take: 5,
     }),
     prisma.category.findMany({
       where: { isActive: true },
