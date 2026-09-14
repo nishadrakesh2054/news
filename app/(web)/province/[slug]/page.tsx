@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@prisma/client";
 import { formatTimeAgo } from "@/lib/nepaliDate";
 import { MapPin, ChevronRight } from "lucide-react";
-import { PROVINCES } from "@/components/portal/ProvinceNewsWidget";
+import { PROVINCES } from "@/constants/provinces";
 import { resolveLanguageEdition } from "@/lib/language";
 import { editionAlternates, pageTitle, requestHost } from "@/lib/seo";
 
@@ -37,6 +37,20 @@ export async function generateMetadata({
         ? `Latest news from ${name}.`
         : `${name} बाट ताजा समाचार।`,
     alternates: editionAlternates(`/province/${slug}`, lang),
+    openGraph: {
+      title: pageTitle(title, lang),
+      description:
+        lang === "en"
+          ? `Latest news from ${name}.`
+          : `${name} बाट ताजा समाचार।`,
+      type: "website",
+      images: [{ url: "/logo/logo.png", width: 1200, height: 630, alt: name }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: pageTitle(title, lang),
+      images: ["/logo/logo.png"],
+    },
   };
 }
 

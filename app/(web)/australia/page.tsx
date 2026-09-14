@@ -36,6 +36,20 @@ export async function generateMetadata({
         ? "Latest news from Australian states and territories."
         : "अष्ट्रेलियाका राज्य र टेरिटोरीबाट ताजा समाचार।",
     alternates: editionAlternates("/australia", lang),
+    openGraph: {
+      title: pageTitle(title, lang),
+      description:
+        lang === "en"
+          ? "Latest news from Australian states and territories."
+          : "अष्ट्रेलियाका राज्य र टेरिटोरीबाट ताजा समाचार।",
+      type: "website",
+      images: [{ url: "/logo/logo.png", width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: pageTitle(title, lang),
+      images: ["/logo/logo.png"],
+    },
   };
 }
 

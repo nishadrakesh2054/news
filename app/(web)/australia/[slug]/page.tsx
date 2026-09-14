@@ -42,6 +42,18 @@ export async function generateMetadata({
     description:
       lang === "en" ? `Latest news from ${name}.` : `${name} बाट ताजा समाचार।`,
     alternates: editionAlternates(`/australia/${slug}`, lang),
+    openGraph: {
+      title: pageTitle(title, lang),
+      description:
+        lang === "en" ? `Latest news from ${name}.` : `${name} बाट ताजा समाचार।`,
+      type: "website",
+      images: [{ url: "/logo/logo.png", width: 1200, height: 630, alt: name }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: pageTitle(title, lang),
+      images: ["/logo/logo.png"],
+    },
   };
 }
 

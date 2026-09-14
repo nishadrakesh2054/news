@@ -211,7 +211,7 @@ export function PublicHeader({
             <Link href={homeHref} className="flex min-w-0 flex-1 items-center justify-center overflow-hidden px-1">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/newslogo.png"
+                src="/logo/logo.png"
                 alt={isEnglish ? SITE_CONFIG.name : SITE_CONFIG.nameNp}
                 width={240}
                 height={72}
@@ -282,33 +282,39 @@ export function PublicHeader({
                 <Globe className="h-3 w-3" />
                 {isEnglish ? "नेपाली" : "English"}
               </button>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noreferrer"
-                className="text-white hover:opacity-80"
-                title="Facebook"
-              >
-                <FacebookIcon className="h-3.5 w-3.5" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noreferrer"
-                className="text-white hover:opacity-80"
-                title="X"
-              >
-                <TwitterIcon className="h-3.5 w-3.5" />
-              </a>
-              <a
-                href="https://youtube.com"
-                target="_blank"
-                rel="noreferrer"
-                className="text-white hover:opacity-80"
-                title="YouTube"
-              >
-                <YoutubeIcon className="h-3.5 w-3.5" />
-              </a>
+              {SITE_CONFIG.social.facebook ? (
+                <a
+                  href={SITE_CONFIG.social.facebook}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white hover:opacity-80"
+                  title="Facebook"
+                >
+                  <FacebookIcon className="h-3.5 w-3.5" />
+                </a>
+              ) : null}
+              {SITE_CONFIG.social.twitter ? (
+                <a
+                  href={SITE_CONFIG.social.twitter}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white hover:opacity-80"
+                  title="X"
+                >
+                  <TwitterIcon className="h-3.5 w-3.5" />
+                </a>
+              ) : null}
+              {SITE_CONFIG.social.youtube ? (
+                <a
+                  href={SITE_CONFIG.social.youtube}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white hover:opacity-80"
+                  title="YouTube"
+                >
+                  <YoutubeIcon className="h-3.5 w-3.5" />
+                </a>
+              ) : null}
             </div>
           </div>
         </div>
@@ -320,7 +326,7 @@ export function PublicHeader({
           <Link href={homeHref} className="min-w-0 shrink overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/newslogo.png"
+              src="/logo/logo.png"
               alt={isEnglish ? SITE_CONFIG.name : SITE_CONFIG.nameNp}
               width={220}
               height={76}

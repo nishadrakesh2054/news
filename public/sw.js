@@ -11,8 +11,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: "/newslogo.png",
-      badge: "/newslogo.png",
+      icon: "/logo/logo.png",
+      badge: "/logo/logo.png",
       data: { url: data.url },
       tag: data.tag || "nepal-khabar-alert",
     })

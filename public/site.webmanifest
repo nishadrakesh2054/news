@@ -1,6 +1,15 @@
 {
-  "name": "Echo Manch",
+  "name": "Echo Manch / इको माञ्च",
   "short_name": "Echo Manch",
+  "description": "Nepali news — breaking, politics, economy, sports. नेपाली समाचार पोर्टल।",
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "lang": "ne",
+  "dir": "ltr",
+  "display": "standalone",
+  "theme_color": "#1957A6",
+  "background_color": "#ffffff",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
@@ -11,9 +20,12 @@
       "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
+    },
+    {
+      "src": "/logo/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
     }
-  ],
-  "theme_color": "#1957A6",
-  "background_color": "#ffffff",
-  "display": "standalone"
+  ]
 }

@@ -8,7 +8,6 @@ import { SITE_CONFIG } from "@/constants/site";
 import {
   editionAlternates,
   organizationJsonLd,
-  pageTitle,
   requestHost,
   resolveSiteSeoDefaults,
   websiteJsonLd,
@@ -49,7 +48,9 @@ export async function generateMetadata({ searchParams }: WebHomeProps): Promise<
   const lang = resolveLanguageEdition(params.lang, requestHost(headerList));
   const isEnglish = lang === "en";
   const seo = await resolveSiteSeoDefaults(lang);
-  const title = pageTitle(isEnglish ? "Home" : "गृहपृष्ठ", lang);
+  const title = seo.title;
+  const ogImage = seo.ogImage || SITE_CONFIG.ogImagePath;
+  const brand = isEnglish ? SITE_CONFIG.name : SITE_CONFIG.nameNp;
 
   return {
     title,
@@ -62,18 +63,16 @@ export async function generateMetadata({ searchParams }: WebHomeProps): Promise<
       title,
       description: seo.description,
       url: editionAlternates("/", lang).canonical as string,
-      siteName: SITE_CONFIG.name,
+      siteName: brand,
       locale: isEnglish ? "en_US" : "ne_NP",
       type: "website",
-      ...(seo.ogImage
-        ? { images: [{ url: seo.ogImage, width: 1200, height: 630 }] }
-        : {}),
+      images: [{ url: ogImage, width: 1200, height: 630, alt: brand }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description: seo.description,
-      ...(seo.ogImage ? { images: [seo.ogImage] } : {}),
+      images: [ogImage],
     },
   };
 }
@@ -147,9 +146,7 @@ export default async function WebHome({ searchParams }: WebHomeProps) {
       />
 
       <h1 className="sr-only">
-        {isEnglish
-          ? `${SITE_CONFIG.name} — Latest news from Nepal`
-          : `${SITE_CONFIG.nameNp} — नेपालका ताजा समाचार`}
+        {isEnglish ? SITE_CONFIG.title : SITE_CONFIG.titleNp}
       </h1>
 
       <Suspense fallback={<div className="h-10 border-b border-gray-200 bg-white" />}>

@@ -49,6 +49,7 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
       description: true,
       descriptionNp: true,
       slug: true,
+      isActive: true,
     },
   });
 
@@ -73,6 +74,8 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
       ? `${name} news and updates | ${SITE_CONFIG.name}`
       : `${name} श्रेणीका सबै समाचार | ${SITE_CONFIG.nameNp}`);
 
+  const shouldNoIndex = page > 1 || category.isActive === false;
+
   return {
     title: pageTitle(headline, lang),
     description,
@@ -82,13 +85,15 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
       description,
       url: absoluteUrl(`/category/${category.slug}`, lang),
       type: "website",
+      images: [{ url: SITE_CONFIG.ogImagePath, width: 1200, height: 630, alt: name }],
     },
     twitter: {
       card: "summary_large_image",
       title: pageTitle(headline, lang),
       description,
+      images: [SITE_CONFIG.ogImagePath],
     },
-    ...(page > 1 ? { robots: { index: false, follow: true } } : {}),
+    ...(shouldNoIndex ? { robots: { index: false, follow: true } } : {}),
   };
 }
 

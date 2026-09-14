@@ -29,13 +29,27 @@ export function pageTitle(title: string, lang: LanguageEditionType): string {
 }
 
 export function defaultDescription(lang: LanguageEditionType): string {
-  return lang === "en"
-    ? SITE_CONFIG.description
-    : "इको माञ्च — नेपालका ताजा समाचार, राजनीति, अर्थतन्त्र, खेलकुद र विचार।";
+  return lang === "en" ? SITE_CONFIG.description : SITE_CONFIG.descriptionNp;
 }
 
 export function defaultSiteTitle(lang: LanguageEditionType): string {
-  return lang === "en" ? SITE_CONFIG.title : `${SITE_CONFIG.nameNp} | नेपाली समाचार`;
+  return lang === "en" ? SITE_CONFIG.title : SITE_CONFIG.titleNp;
+}
+
+export function defaultOgImagePath(): string {
+  return SITE_CONFIG.ogImagePath;
+}
+
+/** Absolute logo URL for the active edition host. */
+export function siteLogoUrl(lang: LanguageEditionType = "ne"): string {
+  return absoluteUrl(SITE_CONFIG.logoPath, lang);
+}
+
+/** Real social profile URLs only (no generic network roots). */
+export function organizationSameAs(): string[] {
+  return [SITE_CONFIG.social.facebook, SITE_CONFIG.social.twitter, SITE_CONFIG.social.youtube]
+    .map((u) => u.trim())
+    .filter(Boolean);
 }
 
 export function ogLocale(lang: LanguageEditionType): string {
@@ -77,6 +91,7 @@ export function requestHost(headerList: Headers): string | null {
 }
 
 export function organizationJsonLd(lang: LanguageEditionType = "ne") {
+  const sameAs = organizationSameAs();
   return {
     "@context": "https://schema.org",
     "@type": "NewsMediaOrganization",
@@ -85,13 +100,9 @@ export function organizationJsonLd(lang: LanguageEditionType = "ne") {
     url: absoluteUrl("/", lang),
     logo: {
       "@type": "ImageObject",
-      url: absoluteUrl("/logo/logo.png", lang),
+      url: siteLogoUrl(lang),
     },
-    sameAs: [
-      "https://facebook.com",
-      "https://twitter.com",
-      "https://youtube.com",
-    ],
+    ...(sameAs.length ? { sameAs } : {}),
   };
 }
 
@@ -112,7 +123,7 @@ export function websiteJsonLd(lang: LanguageEditionType = "ne") {
       name: siteNameForLang(lang),
       logo: {
         "@type": "ImageObject",
-        url: absoluteUrl("/logo/logo.png", lang),
+        url: siteLogoUrl(lang),
       },
     },
     potentialAction: {
@@ -185,10 +196,10 @@ export function newsArticleJsonLd(input: NewsArticleLdInput) {
     },
     publisher: {
       "@type": "Organization",
-      name: SITE_CONFIG.name,
+      name: siteNameForLang(input.lang),
       logo: {
         "@type": "ImageObject",
-        url: absoluteUrl("/logo/logo.png", input.lang),
+        url: siteLogoUrl(input.lang),
       },
     },
   };
@@ -317,9 +328,11 @@ export async function resolveSiteSeoDefaults(
     const ogImage =
       (lang === "en"
         ? data.seo_og_image_en?.trim() || data.seo_og_image?.trim()
-        : data.seo_og_image?.trim() || data.seo_og_image_en?.trim()) || undefined;
+        : data.seo_og_image?.trim() || data.seo_og_image_en?.trim()) ||
+      defaultOgImagePath();
 
-    const twitterHandle = data.seo_twitter_handle?.trim() || undefined;
+    const twitterHandle =
+      data.seo_twitter_handle?.trim() || SITE_CONFIG.twitter || undefined;
     const robotsRaw = data.seo_robots?.trim();
     const robots =
       robotsRaw && robotsRaw !== "index,follow"
@@ -331,6 +344,8 @@ export async function resolveSiteSeoDefaults(
     return {
       title: defaultSiteTitle(lang),
       description: defaultDescription(lang),
+      ogImage: defaultOgImagePath(),
+      twitterHandle: SITE_CONFIG.twitter,
     };
   }
 }

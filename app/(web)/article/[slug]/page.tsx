@@ -29,6 +29,7 @@ import {
 } from "@/lib/language";
 import {
   breadcrumbJsonLd,
+  defaultDescription,
   editionAlternates,
   newsArticleJsonLd,
   pageTitle,
@@ -71,10 +72,13 @@ export async function generateMetadata({ params, searchParams }: ArticlePageProp
   }
 
   const title = resolveMetaTitle(article, lang);
-  const description = resolveMetaDescription(article, lang) || SITE_CONFIG.domain;
-  const image = article.ogImage || article.coverImage || "/logo/logo.png";
+  const description =
+    resolveMetaDescription(article, lang) || defaultDescription(lang);
+  const image =
+    article.ogImage || article.coverImage || SITE_CONFIG.ogImagePath;
   const keywords = resolveKeywords(article, lang);
   const path = `/article/${article.slug}`;
+  const brand = lang === "en" ? SITE_CONFIG.name : SITE_CONFIG.nameNp;
 
   return {
     title: pageTitle(title, lang),
@@ -85,17 +89,17 @@ export async function generateMetadata({ params, searchParams }: ArticlePageProp
       includeEn: editionAllows(article.languageEdition, "en"),
     }),
     openGraph: {
-      title,
+      title: pageTitle(title, lang),
       description,
       url: absoluteUrl(path, lang),
-      siteName: SITE_CONFIG.name,
+      siteName: brand,
       locale: lang === "en" ? "en_US" : "ne_NP",
       images: [{ url: image, width: 1200, height: 630, alt: title }],
       type: "article",
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: pageTitle(title, lang),
       description,
       images: [image],
     },

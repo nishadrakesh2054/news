@@ -128,7 +128,7 @@ export function PublicFooter({ categories: initialCategories = [] }: PublicFoote
             <Link href={isEnglish ? "/?lang=en" : "/"} className="inline-block">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/newslogo.png"
+                src="/logo/logo.png"
                 alt={isEnglish ? SITE_CONFIG.name : SITE_CONFIG.nameNp}
                 className="h-11 w-auto object-contain brightness-0 invert"
               />
@@ -139,33 +139,39 @@ export function PublicFooter({ categories: initialCategories = [] }: PublicFoote
                 : "नेपालको विश्वसनीय डिजिटल समाचार — निष्पक्ष पत्रकारिता र सार्वजनिक हितप्रति समर्पित।"}
             </p>
             <div className="mt-2.5 flex items-center gap-0.5">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Facebook"
-                className="inline-flex h-7 w-7 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <FacebookIcon className="h-3.5 w-3.5" />
-              </a>
-              <a
-                href={`https://twitter.com/${SITE_CONFIG.twitter.replace("@", "")}`}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="X / Twitter"
-                className="inline-flex h-7 w-7 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <TwitterIcon className="h-3.5 w-3.5" />
-              </a>
-              <a
-                href="https://youtube.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="YouTube"
-                className="inline-flex h-7 w-7 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <YoutubeIcon className="h-3.5 w-3.5" />
-              </a>
+              {SITE_CONFIG.social.facebook ? (
+                <a
+                  href={SITE_CONFIG.social.facebook}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Facebook"
+                  className="inline-flex h-7 w-7 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <FacebookIcon className="h-3.5 w-3.5" />
+                </a>
+              ) : null}
+              {SITE_CONFIG.social.twitter ? (
+                <a
+                  href={SITE_CONFIG.social.twitter}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="X / Twitter"
+                  className="inline-flex h-7 w-7 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <TwitterIcon className="h-3.5 w-3.5" />
+                </a>
+              ) : null}
+              {SITE_CONFIG.social.youtube ? (
+                <a
+                  href={SITE_CONFIG.social.youtube}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="YouTube"
+                  className="inline-flex h-7 w-7 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <YoutubeIcon className="h-3.5 w-3.5" />
+                </a>
+              ) : null}
             </div>
           </div>
 

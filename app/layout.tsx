@@ -8,6 +8,7 @@ import {
   getAdminSeoMetadataOverrides,
   requestHost,
 } from "@/lib/seo";
+import { getEnglishSiteUrl, getSiteUrl } from "@/lib/site-url";
 import { Toaster } from "sonner";
 import {
   GoogleTagManagerNoscript,
@@ -27,16 +28,20 @@ const khand = Khand({
   weight: ["400", "500", "600", "700"],
 });
 
+const siteUrl = getSiteUrl();
+const englishUrl = getEnglishSiteUrl();
+
 const baseMetadata: Metadata = {
-  metadataBase: new URL(SITE_CONFIG.url),
+  metadataBase: new URL(siteUrl),
   applicationName: SITE_CONFIG.name,
   title: {
-    default: SITE_CONFIG.title,
+    default: SITE_CONFIG.titleNp,
     template: "%s",
   },
-  description: SITE_CONFIG.description,
+  description: SITE_CONFIG.descriptionNp,
   keywords: [
     "Echo Manch",
+    "इको माञ्च",
     "नेपाल समाचार",
     "नेपाली खबर",
     "breaking news nepal",
@@ -48,27 +53,27 @@ const baseMetadata: Metadata = {
     "latest updates",
   ],
   alternates: {
-    canonical: SITE_CONFIG.url,
+    canonical: siteUrl,
     languages: {
-      "ne-NP": SITE_CONFIG.url,
-      en: SITE_CONFIG.englishUrl,
-      "x-default": SITE_CONFIG.url,
+      "ne-NP": siteUrl,
+      en: englishUrl,
+      "x-default": siteUrl,
     },
   },
   openGraph: {
     siteName: SITE_CONFIG.name,
-    title: SITE_CONFIG.title,
-    description: SITE_CONFIG.description,
-    url: SITE_CONFIG.url,
+    title: SITE_CONFIG.titleNp,
+    description: SITE_CONFIG.descriptionNp,
+    url: siteUrl,
     type: "website",
     locale: "ne_NP",
     alternateLocale: ["en_US"],
     images: [
       {
-        url: "/logo/logo.png",
+        url: SITE_CONFIG.ogImagePath,
         width: 1200,
         height: 630,
-        alt: SITE_CONFIG.name,
+        alt: SITE_CONFIG.nameNp,
       },
     ],
   },
@@ -76,9 +81,9 @@ const baseMetadata: Metadata = {
     card: "summary_large_image",
     site: SITE_CONFIG.twitter,
     creator: SITE_CONFIG.twitter,
-    title: SITE_CONFIG.title,
-    description: SITE_CONFIG.description,
-    images: ["/logo/logo.png"],
+    title: SITE_CONFIG.titleNp,
+    description: SITE_CONFIG.descriptionNp,
+    images: [SITE_CONFIG.ogImagePath],
   },
   icons: {
     icon: [
@@ -110,6 +115,8 @@ export async function generateMetadata(): Promise<Metadata> {
     requestHost(headerList)
   );
   const overrides = await getAdminSeoMetadataOverrides(lang);
+  const canonical = lang === "en" ? englishUrl : siteUrl;
+  const brand = lang === "en" ? SITE_CONFIG.name : SITE_CONFIG.nameNp;
 
   return {
     ...baseMetadata,
@@ -117,7 +124,8 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       ...baseMetadata.openGraph,
       ...overrides.openGraph,
-      url: lang === "en" ? SITE_CONFIG.englishUrl : SITE_CONFIG.url,
+      url: canonical,
+      siteName: brand,
     },
     twitter: {
       ...(baseMetadata.twitter as object),
@@ -125,11 +133,11 @@ export async function generateMetadata(): Promise<Metadata> {
     } as Metadata["twitter"],
     alternates: {
       ...baseMetadata.alternates,
-      canonical: lang === "en" ? SITE_CONFIG.englishUrl : SITE_CONFIG.url,
+      canonical,
       languages: {
-        "ne-NP": SITE_CONFIG.url,
-        en: SITE_CONFIG.englishUrl,
-        "x-default": SITE_CONFIG.url,
+        "ne-NP": siteUrl,
+        en: englishUrl,
+        "x-default": siteUrl,
       },
     },
     robots: overrides.robots ?? baseMetadata.robots,

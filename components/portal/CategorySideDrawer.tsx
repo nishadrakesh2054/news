@@ -202,7 +202,7 @@ export function CategorySideDrawer({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/newslogo.png"
+              src="/logo/logo.png"
               alt={isEnglish ? SITE_CONFIG.name : SITE_CONFIG.nameNp}
               className="h-7 w-auto max-w-[8.5rem] object-contain object-left"
             />

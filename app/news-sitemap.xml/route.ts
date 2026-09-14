@@ -4,6 +4,9 @@ import { ArticleStatus, LanguageEdition } from "@prisma/client";
 import { absoluteUrl } from "@/lib/site-url";
 import { SITE_CONFIG } from "@/constants/site";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 600;
+
 function escapeXml(value: string) {
   return value
     .replace(/&/g, "&amp;")

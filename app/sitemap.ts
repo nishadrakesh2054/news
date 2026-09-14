@@ -1,9 +1,14 @@
 import type { MetadataRoute } from "next";
 import { ArticleStatus } from "@prisma/client";
+import { AU_REGIONS } from "@/constants/australia-regions";
+import { PROVINCES } from "@/constants/provinces";
+import { DEFAULT_DETAILED_RASHIFAL } from "@/lib/rashifal";
 import { prisma } from "@/lib/prisma";
 import { sitemapEditionUrls } from "@/lib/seo";
 
-export const revalidate = 3600;
+/** Always generate at request time so deploy builds never cache an empty article list. */
+export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPaths = [
@@ -11,6 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/epaper", changeFrequency: "daily" as const, priority: 0.6 },
     { path: "/media", changeFrequency: "daily" as const, priority: 0.6 },
     { path: "/galleries", changeFrequency: "daily" as const, priority: 0.6 },
+    { path: "/australia", changeFrequency: "daily" as const, priority: 0.7 },
     { path: "/rashifal", changeFrequency: "daily" as const, priority: 0.5 },
     { path: "/forex", changeFrequency: "daily" as const, priority: 0.5 },
     { path: "/gold-rate", changeFrequency: "daily" as const, priority: 0.5 },
@@ -29,9 +35,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
   );
 
-  if (process.env.NEXT_PHASE === "phase-production-build") {
-    return staticPages;
-  }
+  const provincePages = PROVINCES.flatMap((p) =>
+    sitemapEditionUrls(`/province/${p.slug}`, {
+      changeFrequency: "daily",
+      priority: 0.65,
+    })
+  );
+
+  const australiaRegionPages = AU_REGIONS.flatMap((r) =>
+    sitemapEditionUrls(`/australia/${r.slug}`, {
+      changeFrequency: "daily",
+      priority: 0.65,
+    })
+  );
+
+  const rashifalPages = DEFAULT_DETAILED_RASHIFAL.flatMap((r) =>
+    sitemapEditionUrls(`/rashifal/${r.slug}`, {
+      changeFrequency: "daily",
+      priority: 0.45,
+    })
+  );
 
   try {
     const [articles, categories, tags, galleries, authors] = await Promise.all([
@@ -47,6 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         take: 5000,
       }),
       prisma.category.findMany({
+        where: { isActive: true },
         select: { slug: true, updatedAt: true },
       }),
       prisma.tag.findMany({
@@ -116,6 +140,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     return [
       ...staticPages,
+      ...provincePages,
+      ...australiaRegionPages,
+      ...rashifalPages,
       ...categoryPages,
       ...tagPages,
       ...galleryPages,
@@ -123,6 +150,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...articlePages,
     ];
   } catch {
-    return staticPages;
+    return [...staticPages, ...provincePages, ...australiaRegionPages, ...rashifalPages];
   }
 }

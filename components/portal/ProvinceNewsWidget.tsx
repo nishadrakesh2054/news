@@ -8,16 +8,9 @@ import { formatTimeAgo } from "@/lib/nepaliDate";
 import { optimizeCloudinaryUrl } from "@/lib/cloudinary-url";
 import { PORTAL } from "@/constants/portal";
 import { SectionHeader } from "@/components/portal/SectionHeader";
+import { PROVINCES } from "@/constants/provinces";
 
-export const PROVINCES = [
-  { id: 1, name: "कोशी", nameEn: "Koshi", slug: "koshi" },
-  { id: 2, name: "मधेश", nameEn: "Madhesh", slug: "madhesh" },
-  { id: 3, name: "बागमती", nameEn: "Bagmati", slug: "bagmati" },
-  { id: 4, name: "गण्डकी", nameEn: "Gandaki", slug: "gandaki" },
-  { id: 5, name: "लुम्बिनी", nameEn: "Lumbini", slug: "lumbini" },
-  { id: 6, name: "कर्णाली", nameEn: "Karnali", slug: "karnali" },
-  { id: 7, name: "सुदूरपश्चिम", nameEn: "Sudurpashchim", slug: "sudurpashchim" },
-] as const;
+export { PROVINCES };
 
 type ProvinceArticle = {
   id: string;

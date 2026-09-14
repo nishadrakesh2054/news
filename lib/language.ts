@@ -153,13 +153,15 @@ export function resolveMetaDescription(
     return (
       article.metaDescription?.trim() ||
       article.metaDescriptionNp?.trim() ||
-      resolveArticleExcerpt(article, lang)
+      resolveArticleExcerpt(article, lang) ||
+      (article.title?.trim() || article.titleNp?.trim() || "")
     );
   }
   return (
     article.metaDescriptionNp?.trim() ||
     article.metaDescription?.trim() ||
-    resolveArticleExcerpt(article, lang)
+    resolveArticleExcerpt(article, lang) ||
+    (article.titleNp?.trim() || article.title?.trim() || "")
   );
 }
 
