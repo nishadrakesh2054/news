@@ -35,8 +35,10 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
+    qualities: [70, 75, 80],
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" },
+      { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
       { protocol: "https", hostname: "echomanch.com", pathname: "/**" },
       { protocol: "https", hostname: "en.echomanch.com", pathname: "/**" },
       { protocol: "https", hostname: "echomanchnews.com", pathname: "/**" },

@@ -18,6 +18,7 @@ function isOptimizableSrc(src: string): boolean {
       host === "en.echomanch.com" ||
       host === "echomanchnews.com" ||
       host === "en.echomanchnews.com" ||
+      host === "images.unsplash.com" ||
       host.endsWith(".vercel.app")
     );
   } catch {
@@ -52,7 +53,11 @@ export function PortalImage({
       <img
         src={src}
         alt={alt}
-        className={className}
+        className={
+          useFill
+            ? `absolute inset-0 h-full w-full object-cover ${className || ""}`
+            : className
+        }
         loading={priority ? "eager" : "lazy"}
         decoding="async"
       />

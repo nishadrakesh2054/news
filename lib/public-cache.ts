@@ -196,7 +196,7 @@ async function loadHomePayload(lang: LanguageEditionType) {
 export function getCachedHomePayload(lang: LanguageEditionType) {
   return unstable_cache(
     () => loadHomePayload(lang),
-    [`public-home-payload-${lang}`],
+    [`public-home-payload-v2-${lang}`],
     { revalidate: 60, tags: [CACHE_TAGS.home, CACHE_TAGS.articles] }
   )();
 }

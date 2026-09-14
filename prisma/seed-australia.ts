@@ -153,6 +153,25 @@ const SAMPLES: Array<{
   },
 ];
 
+const REGION_COVERS: Record<AuRegion, string> = {
+  [AuRegion.NSW]:
+    "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=1200&q=80",
+  [AuRegion.VIC]:
+    "https://images.unsplash.com/photo-1514395462725-fb4566210144?w=1200&q=80",
+  [AuRegion.QLD]:
+    "https://images.unsplash.com/photo-1523482580745-df8e6f4ac8d3?w=1200&q=80",
+  [AuRegion.SA]:
+    "https://images.unsplash.com/photo-1590725121839-892b458a74fe?w=1200&q=80",
+  [AuRegion.WA]:
+    "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=1200&q=80",
+  [AuRegion.TAS]:
+    "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80",
+  [AuRegion.ACT]:
+    "https://images.unsplash.com/photo-1524293581917-878a6d017c71?w=1200&q=80",
+  [AuRegion.NT]:
+    "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1200&q=80",
+};
+
 function bodyHtml(en: string, np: string) {
   return {
     content: `<p>${en}</p><p>This is sample Australia regional coverage for Echo Manch.</p>`,
@@ -184,7 +203,9 @@ async function main() {
     const publishedAt = new Date(Date.now() - i * 36e5);
 
     const existing = await prisma.article.findUnique({ where: { slug: sample.slug } });
-    const coverImage = `https://picsum.photos/seed/${sample.slug}/800/500`;
+    const coverImage =
+      REGION_COVERS[sample.auRegion] ||
+      "https://images.unsplash.com/photo-1523482580745-df8e6f4ac8d3?w=1200&q=80";
     if (existing) {
       await prisma.article.update({
         where: { id: existing.id },

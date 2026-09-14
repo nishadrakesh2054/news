@@ -25,6 +25,15 @@ type AustraliaNewsSectionProps = {
   lang: LanguageEditionType;
 };
 
+/** Site logo / empty covers are not real story photos — treat as missing. */
+function realCoverUrl(coverImage?: string | null): string | null {
+  if (!coverImage?.trim()) return null;
+  const src = coverImage.trim();
+  if (src === "/logo/logo.png" || src.endsWith("/logo/logo.png")) return null;
+  if (src.includes("picsum.photos")) return null;
+  return optimizeCloudinaryUrl(src, "card") || src;
+}
+
 function AuCard({
   article,
   lang,
@@ -36,9 +45,7 @@ function AuCard({
 }) {
   const title = resolveArticleTitle(article, lang);
   const href = lang === "en" ? `/article/${article.slug}?lang=en` : `/article/${article.slug}`;
-  const image =
-    optimizeCloudinaryUrl(article.coverImage, size === "large" ? "hero" : "thumbnail") ||
-    article.coverImage;
+  const image = realCoverUrl(article.coverImage);
   const region = AU_REGIONS.find((r) => r.code === article.auRegion);
   const category = article.category ? resolveCategoryName(article.category, lang) : null;
   const label = region?.short || category;
@@ -51,7 +58,7 @@ function AuCard({
     return (
       <Link
         href={href}
-        className="group relative block min-h-[200px] flex-1 overflow-hidden bg-neutral-800 sm:min-h-[240px]"
+        className="group relative block min-h-[180px] flex-1 overflow-hidden bg-gray-100 sm:min-h-[200px]"
       >
         {image ? (
           <PortalImage
@@ -59,26 +66,28 @@ function AuCard({
             alt={title}
             fill
             sizes="(max-width: 640px) 100vw, 40vw"
-            className="z-0 object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
-        ) : null}
+        ) : (
+          <div
+            className="absolute inset-0 opacity-90"
+            style={{
+              background: `linear-gradient(135deg, ${PORTAL.brand} 0%, #0d3a73 55%, ${PORTAL.accent} 100%)`,
+            }}
+            aria-hidden
+          />
+        )}
         <div
-          className="absolute inset-x-0 bottom-0 z-10 px-3 pb-3 pt-14 sm:px-4 sm:pb-4 sm:pt-20"
+          className="absolute inset-x-0 bottom-0 z-10 px-3 pb-3 pt-12 sm:px-4 sm:pb-4 sm:pt-16"
           style={{
             background:
-              "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0) 100%)",
+              "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0) 100%)",
           }}
         >
-          <h3
-            className="line-clamp-3 text-base font-extrabold leading-snug text-white sm:text-lg"
-            style={{ textShadow: "0 1px 3px rgba(0,0,0,0.65)" }}
-          >
+          <h3 className="line-clamp-3 text-base font-extrabold leading-snug text-white sm:text-lg">
             {title}
           </h3>
-          <p
-            className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-medium text-white/90"
-            style={{ textShadow: "0 1px 2px rgba(0,0,0,0.55)" }}
-          >
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-medium text-white/90">
             {label ? <span>{label}</span> : null}
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3 w-3 opacity-80" aria-hidden />
@@ -93,9 +102,9 @@ function AuCard({
   return (
     <Link
       href={href}
-      className="group flex min-h-0 flex-1 items-center gap-3 border-b border-gray-100 py-2 last:border-0"
+      className="group flex min-h-0 items-center gap-3 border-b border-gray-100 py-2.5 last:border-0"
     >
-      <div className="relative h-14 w-14 shrink-0 overflow-hidden bg-gray-200 sm:h-16 sm:w-16">
+      <div className="relative h-14 w-14 shrink-0 overflow-hidden bg-gray-100 sm:h-16 sm:w-16">
         {image ? (
           <PortalImage
             src={image}
@@ -104,7 +113,15 @@ function AuCard({
             sizes="64px"
             className="object-cover"
           />
-        ) : null}
+        ) : (
+          <div
+            className="flex h-full w-full items-center justify-center text-[10px] font-bold text-white"
+            style={{ backgroundColor: PORTAL.brand }}
+            aria-hidden
+          >
+            {region?.short || "AU"}
+          </div>
+        )}
       </div>
       <div className="min-w-0 flex-1 space-y-0.5">
         {label ? (
@@ -124,6 +141,14 @@ function AuCard({
   );
 }
 
+function sortPreferCover(articles: AuNewsArticle[]) {
+  return [...articles].sort((a, b) => {
+    const aOk = realCoverUrl(a.coverImage) ? 1 : 0;
+    const bOk = realCoverUrl(b.coverImage) ? 1 : 0;
+    return bOk - aOk;
+  });
+}
+
 export function AustraliaNewsSection({
   stateArticles,
   territoryArticles,
@@ -135,9 +160,8 @@ export function AustraliaNewsSection({
   const states = AU_REGIONS.filter((r) => r.kind === "state");
   const territories = AU_REGIONS.filter((r) => r.kind === "territory");
 
-  // 2 large + 6 small = equal paired columns
-  const stateList = stateArticles.slice(0, 8);
-  const territoryList = territoryArticles.slice(0, 2);
+  const stateList = sortPreferCover(stateArticles).slice(0, 8);
+  const territoryList = sortPreferCover(territoryArticles).slice(0, 2);
   const bigs = stateList.slice(0, 2);
   const smalls = stateList.slice(2, 8);
 
@@ -165,19 +189,26 @@ export function AustraliaNewsSection({
             ))}
           </div>
 
-          {/* Equal-height: 2 bigs left stretch with 6 smalls right */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1.45fr_1fr] sm:items-stretch sm:gap-4">
-            <div className="flex min-h-[480px] flex-col gap-3 sm:min-h-[520px]">
-              {bigs.map((art) => (
-                <AuCard key={art.id} article={art} lang={lang} size="large" />
-              ))}
+          {stateList.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1.45fr_1fr] sm:items-start sm:gap-4">
+              <div className="flex flex-col gap-3">
+                {bigs.map((art) => (
+                  <AuCard key={art.id} article={art} lang={lang} size="large" />
+                ))}
+              </div>
+              {smalls.length > 0 ? (
+                <aside className="flex flex-col">
+                  {smalls.map((art) => (
+                    <AuCard key={art.id} article={art} lang={lang} size="small" />
+                  ))}
+                </aside>
+              ) : null}
             </div>
-            <aside className="flex min-h-[480px] flex-col sm:min-h-[520px]">
-              {smalls.map((art) => (
-                <AuCard key={art.id} article={art} lang={lang} size="small" />
-              ))}
-            </aside>
-          </div>
+          ) : (
+            <p className="py-4 text-sm text-gray-500">
+              {isEnglish ? "No state stories yet." : "राज्य समाचार उपलब्ध छैन।"}
+            </p>
+          )}
         </div>
 
         <div className="border-t border-gray-200 pt-5 lg:col-span-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
@@ -193,10 +224,16 @@ export function AustraliaNewsSection({
             ))}
           </div>
 
-          <div className="flex min-h-[480px] flex-col gap-3 sm:min-h-[520px]">
-            {territoryList.map((art) => (
-              <AuCard key={art.id} article={art} lang={lang} size="large" />
-            ))}
+          <div className="flex flex-col gap-3">
+            {territoryList.length > 0 ? (
+              territoryList.map((art) => (
+                <AuCard key={art.id} article={art} lang={lang} size="large" />
+              ))
+            ) : (
+              <p className="py-4 text-sm text-gray-500">
+                {isEnglish ? "No territory stories yet." : "टेरिटोरी समाचार उपलब्ध छैन।"}
+              </p>
+            )}
           </div>
         </div>
       </div>

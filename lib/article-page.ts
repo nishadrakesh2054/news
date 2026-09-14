@@ -35,20 +35,39 @@ const articlePageSelect = {
   showAds: true,
 } as const;
 
+type ArticlePageRow = {
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  publishedAt: Date | string | null;
+  [key: string]: unknown;
+};
+
+/** unstable_cache JSON-serializes Dates → revive so .toISOString() works. */
+function reviveArticleDates<T extends ArticlePageRow>(article: T | null): T | null {
+  if (!article) return null;
+  return {
+    ...article,
+    createdAt: new Date(article.createdAt),
+    updatedAt: new Date(article.updatedAt),
+    publishedAt: article.publishedAt ? new Date(article.publishedAt) : null,
+  };
+}
+
 /**
  * Cross-request cache + per-request React cache.
  * Metadata and page share one DB read for the same slug.
  */
 export const getArticleBySlug = cache(async (slug: string) => {
-  return unstable_cache(
+  const row = await unstable_cache(
     () =>
       prisma.article.findUnique({
         where: { slug },
         select: articlePageSelect,
       }),
-    [`public-article-v1-${slug}`],
+    [`public-article-v2-${slug}`],
     { revalidate: 60, tags: [CACHE_TAGS.articles] }
   )();
+  return reviveArticleDates(row as ArticlePageRow | null);
 });
 
 /** Same loader as getArticleBySlug — kept for call-site clarity in generateMetadata. */

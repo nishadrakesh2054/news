@@ -183,7 +183,9 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
   const coverSrc =
     optimizeCloudinaryUrl(article.coverImage || undefined, "hero") || article.coverImage;
   const authorName = resolveAuthorName(article.author.name, lang);
-  const publishedAt = article.publishedAt || article.createdAt;
+  const publishedAt = new Date(
+    (article.publishedAt || article.createdAt) as Date | string
+  );
   const authorUrl = absoluteUrl(`/author/${article.author.id}`, lang);
 
   const jsonLd = newsArticleJsonLd({
